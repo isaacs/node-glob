@@ -23,7 +23,9 @@ GlobError (int er) {
     case GLOB_ABORTED: return String::New("GLOB_ABORTED"); break;
 #endif
 #ifdef GLOB_ABEND
+#ifndef GLOB_ABORTED
     case GLOB_ABEND: return String::New("GLOB_ABEND"); break;
+#endif
 #endif
 #ifdef GLOB_NOMATCH
     case GLOB_NOMATCH: return String::New("GLOB_NOMATCH"); break;

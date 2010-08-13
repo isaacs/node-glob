@@ -3,4 +3,5 @@
 , "author" : "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)"
 , "version" : "1.0.0"
 , "scripts" : { "preinstall" : "node-waf configure build" }
+, "main" : "./lib/glob"
 }
