@@ -19,9 +19,18 @@ using namespace v8;
 static Handle<String>
 GlobError (int er) {
   switch (er) {
+#ifdef GLOB_ABORTED
     case GLOB_ABORTED: return String::New("GLOB_ABORTED"); break;
+#endif
+#ifdef GLOB_ABEND
+    case GLOB_ABEND: return String::New("GLOB_ABEND"); break;
+#endif
+#ifdef GLOB_NOMATCH
     case GLOB_NOMATCH: return String::New("GLOB_NOMATCH"); break;
+#endif
+#ifdef GLOB_NOSPACE
     case GLOB_NOSPACE: return String::New("GLOB_NOSPACE"); break;
+#endif
   }
 
   return String::New("undefined glob error");
