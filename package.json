@@ -1,0 +1,6 @@
+{ "name" : "glob"
+, "description" : "glob binding for node"
+, "author" : "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)"
+, "version" : "0.0.1"
+, "scripts" : { "preinstall" : "node-waf configure build" }
+}
