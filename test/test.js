@@ -1,9 +1,22 @@
-var g = require("../lib/glob")
-  , gt = new g.glob_t()
+// var g = require("../lib/glob")
+var g = require("../build/default/glob")
 
-console.log(g.globSync("*", 0, gt))
-console.log(g.globSync("*/*.js", g.GLOB_APPEND, gt))
+// console.log(g.globSync("*", 0))
+// console.log(g.globSync("*/*.js", 0))
+// console.log(g.globSync("lib/*", 0))
+// console.log(g.globSync("~/*", g.GLOB_TILDE))
 
-g.glob("*/*/*.js", g.GLOB_APPEND, gt, function (er, ok) {
-  console.log(er, ok)
+
+g.glob("*", 0, function (er, m) {
+  console.log(er, m)
+  g.glob("*/*.js", 0, function (er, m) {
+    console.log(er, m)
+    g.glob("lib/*", 0, function (er, m) {
+      console.log(er, m)
+      g.glob("~/*", 0 | g.GLOB_TILDE, function(er, m) {
+        console.log(er, m)
+        console.log("ok")
+      })
+    })
+  })
 })
