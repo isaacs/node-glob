@@ -8,12 +8,21 @@ using namespace v8;
 void
 GlobConstants (Handle<Object> target) {
   // flags
-#ifdef GLOB_APPEND
-  NODE_DEFINE_CONSTANT(target, GLOB_APPEND);
-#endif
-#ifdef GLOB_ERR
-  NODE_DEFINE_CONSTANT(target, GLOB_ERR);
-#endif
+
+// this is actually useless, because the glob_t object isn't exposed
+// to the javascript layer.  Since it's so trivial to concatenate
+// arrays in JS anyway, it's a bit silly to even bother with this.
+// #ifdef GLOB_APPEND
+//   NODE_DEFINE_CONSTANT(target, GLOB_APPEND);
+// #endif
+
+// this is useless as well, because there is no way to supply the errfunc
+// function to glob().  It's just handled like the rest of node, passing
+// an Error() obj to the cb.
+// #ifdef GLOB_ERR
+//   NODE_DEFINE_CONSTANT(target, GLOB_ERR);
+// #endif
+
 #ifdef GLOB_MARK
   NODE_DEFINE_CONSTANT(target, GLOB_MARK);
 #endif
