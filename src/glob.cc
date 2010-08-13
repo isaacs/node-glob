@@ -23,7 +23,7 @@ GlobError (int er) {
     case GLOB_NOMATCH: return String::New("GLOB_NOMATCH"); break;
     case GLOB_NOSPACE: return String::New("GLOB_NOSPACE"); break;
   }
-  
+
   return String::New("undefined glob error");
 }
 
@@ -100,7 +100,7 @@ static Handle<Value> GlobAsync (const Arguments& args) {
   }
 
   String::Utf8Value pattern(args[0]);
-  
+
   int flags = args[1]->Int32Value();
   Local<Function> cb = Local<Function>::Cast(args[2]);
 
@@ -151,7 +151,7 @@ static Handle<Value> GlobSync (const Arguments& args) {
 
 
 extern "C" void
-init (Handle<Object> target) 
+init (Handle<Object> target)
 {
   HandleScope scope;
   GlobConstants(target);
