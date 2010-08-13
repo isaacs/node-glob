@@ -93,11 +93,9 @@ static int EIO_GlobAfter (eio_req *req) {
   if (try_catch.HasCaught()) {
     FatalException(try_catch);
   }
-  // fprintf(stderr, "EIO_GlobAfter about to free\n");
   gr->cb.Dispose();
   globfree(g);
   free(gr);
-  // fprintf(stderr, "EIO_GlobAfter freed\n");
   return 0;
 }
 static Handle<Value> GlobAsync (const Arguments& args) {
