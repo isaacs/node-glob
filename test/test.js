@@ -1,15 +1,9 @@
-#!/usr/bin/env node
+var g = require("../lib/glob")
+  , gt = new g.glob_t()
 
-var path = require("path");
-require.paths.unshift(path.join(path.dirname(path.dirname(__filename))));
-process.mixin(process.fs, require("glob"));
+console.log(g.globSync("*", 0, gt))
+console.log(g.globSync("*/*.js", g.GLOB_APPEND, gt))
 
-
-[ "*/", "*/*", "foo/ba{r,z}"].forEach(function (glob) {
-  log("glob! "+glob+"\n"+process.fs.glob(glob).wait().join("\n")+"\ndone")
-});
-
-
-function log (m) {
-  process.stdio.writeError(m+"\n");
-};
+g.glob("*/*/*.js", g.GLOB_APPEND, gt, function (er, ok) {
+  console.log(er, ok)
+})
