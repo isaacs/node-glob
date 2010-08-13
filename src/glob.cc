@@ -7,6 +7,7 @@
 #include <v8.h>
 #include <glob.h>
 #include <node.h>
+#include <string.h>
 
 using namespace std;
 using namespace node;
@@ -52,7 +53,7 @@ struct glob_request {
   glob_t *g;
   int retval;
   int flags;
-  char *pattern;
+  char pattern[1];
 };
 static int EIO_Glob (eio_req *req) {
   glob_request *gr = (glob_request *)req->data;
@@ -68,6 +69,7 @@ static int EIO_GlobAfter (eio_req *req) {
   Local<Value> argv[2];
   if (gr->retval != 0) {
     argv[0] = Exception::Error(GlobError(gr->retval));
+    argv[1] = String::New(gr->pattern);
   } else {
     Local<Array> pathv = Array::New(g->gl_pathc);
     for (int i = 0; i < g->gl_pathc; i ++) {
@@ -98,12 +100,15 @@ static Handle<Value> GlobAsync (const Arguments& args) {
   }
 
   String::Utf8Value pattern(args[0]);
+  
   int flags = args[1]->Int32Value();
   Local<Function> cb = Local<Function>::Cast(args[2]);
 
-  glob_request *gr = (glob_request *)malloc(sizeof(glob_request));
+  glob_request *gr = (glob_request *)
+    calloc(1, sizeof(struct glob_request) + pattern.length() + 1);
+
   gr->cb = Persistent<Function>::New(cb);
-  gr->pattern = *pattern;
+  strncpy(gr->pattern, *pattern, pattern.length() + 1);
   gr->flags = flags;
   gr->g = new glob_t;
   eio_custom(EIO_Glob, EIO_PRI_DEFAULT, EIO_GlobAfter, gr);
