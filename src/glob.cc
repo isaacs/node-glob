@@ -8,6 +8,7 @@
 #include <glob.h>
 #include <node.h>
 #include <string.h>
+#include <stdlib.h>
 
 using namespace std;
 using namespace node;
