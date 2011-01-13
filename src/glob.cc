@@ -6,6 +6,7 @@
 
 #include <v8.h>
 #include <glob.h>
+#include <fnmatch.h>
 #include <node.h>
 #include <string.h>
 #include <stdlib.h>
@@ -57,6 +58,22 @@ Throw (Handle<String> msg) {
   ThrowException(Exception::Error(msg));
 }
 
+
+// binding to fnmatch
+// Not really glob-specific, but useful if you're doing globbing.
+// int fnmatch(const char *pattern, const char *string, int flags);
+static Handle<Value> FNMatch (const Arguments& args) {
+  if (args.Length() != 3) return Throw(
+    "usage: fnmatch(pattern, string, flags)");
+
+  String::Utf8Value pattern(args[0]);
+  String::Utf8Value str(args[1]);
+  int flags = args[2]->Int32Value();
+
+  int res = fnmatch(*pattern, *str, flags);
+
+  return Integer::New(res);
+}
 
 
 // async EIO globbing
@@ -167,5 +184,6 @@ init (Handle<Object> target)
   GlobConstants(target);
   NODE_SET_METHOD(target, "glob", GlobAsync);
   NODE_SET_METHOD(target, "globSync", GlobSync);
+  NODE_SET_METHOD(target, "fnmatch", FNMatch);
 }
 

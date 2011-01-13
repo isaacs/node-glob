@@ -1,5 +1,6 @@
 #include <v8.h>
 #include <glob.h>
+#include <fnmatch.h>
 #include <node.h>
 
 using namespace node;
@@ -88,5 +89,25 @@ GlobConstants (Handle<Object> target) {
 #ifdef GLOB_NOSPACE
   NODE_DEFINE_CONSTANT(target, GLOB_NOSPACE);
 #endif
-}
 
+// the fnmatch stuff
+#ifdef FNM_NOESCAPE
+  NODE_DEFINE_CONSTANT(target, FNM_NOESCAPE);
+#endif
+#ifdef FNM_PATHNAME
+  NODE_DEFINE_CONSTANT(target, FNM_PATHNAME);
+#endif
+#ifdef FNM_PERIOD
+  NODE_DEFINE_CONSTANT(target, FNM_PERIOD);
+#endif
+#ifdef FNM_LEADING_DIR
+  NODE_DEFINE_CONSTANT(target, FNM_LEADING_DIR);
+#endif
+#ifdef FNM_CASEFOLD
+  NODE_DEFINE_CONSTANT(target, FNM_CASEFOLD);
+#endif
+#ifdef FNM_NOMATCH
+  NODE_DEFINE_CONSTANT(target, FNM_NOMATCH);
+#endif
+
+}

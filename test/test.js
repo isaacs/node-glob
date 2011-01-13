@@ -1,5 +1,4 @@
-// var g = require("../lib/glob")
-var g = require("../build/default/glob")
+var g = require("../lib/glob")
 
 try {
   console.log(g.globSync("*", 0))
@@ -23,3 +22,20 @@ g.glob("*", 0, function (er, m) {
     })
   })
 })
+
+function f (pattern, str, flags, expect) {
+  if (arguments.length === 3) expect = flags, flags = undefined
+  if (g.fnmatch(pattern, str, flags) !== expect) {
+    throw new Error(JSON.stringify([pattern,str,flags]) + " expected "+expect)
+  }
+  console.error("%s, %s, %s => %j", pattern, str, flags, expect)
+}
+
+f("*", "foo", true)
+f(".*", "foo", false)
+f("*", ".foo", false)
+f("*", "foo/bar", false)
+f("*/*", "foo/bar", true)
+f("*", ".foo", g.FNM_DEFAULT & ~g.FNM_PERIOD, true)
+f("*/*", "foo/bar", g.FNM_DEFAULT & ~g.FNM_PATHNAME, true)
+
