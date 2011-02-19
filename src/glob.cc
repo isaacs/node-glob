@@ -4,9 +4,8 @@
 // glob(const char *restrict pattern, int flags,
 //     int (*errfunc)(const char *epath, int errno), glob_t *restrict pglob);
 
+#include "glob_constants.h"
 #include <v8.h>
-#include <glob.h>
-#include <fnmatch.h>
 #include <node.h>
 #include <string.h>
 #include <stdlib.h>
@@ -15,7 +14,6 @@ using namespace std;
 using namespace node;
 using namespace v8;
 
-#include "glob_constants.h"
 
 
 static Handle<String>
