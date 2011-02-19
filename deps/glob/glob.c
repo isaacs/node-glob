@@ -32,6 +32,12 @@
  * SUCH DAMAGE.
  */
 
+/* isaacs */
+#ifdef C++
+extern C {
+#endif
+
+
 #include <sys/cdefs.h>
 #if defined(LIBC_SCCS) && !defined(lint)
 #if 0
@@ -41,7 +47,7 @@ __RCSID("$NetBSD: glob.c,v 1.27 2010/09/06 14:40:25 christos Exp $");
 #endif
 #endif /* LIBC_SCCS and not lint */
 
-// isaacs
+/* isaacs */
 #ifndef __UNCONST
 # define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
 #endif
@@ -72,7 +78,7 @@ __RCSID("$NetBSD: glob.c,v 1.27 2010/09/06 14:40:25 christos Exp $");
  *	Number of matches in the current invocation of glob.
  */
 
-//#include "namespace.h"
+/* isaacs #include "namespace.h" */
 #include <sys/param.h>
 #include <sys/stat.h>
 
@@ -80,7 +86,7 @@ __RCSID("$NetBSD: glob.c,v 1.27 2010/09/06 14:40:25 christos Exp $");
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
-#include "glob.h"
+#include <glob.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stddef.h>
@@ -910,8 +916,9 @@ globextend(const Char *path, glob_t *pglob, size_t *limit)
 	_DIAGASSERT(pglob != NULL);
 
 	newsize = sizeof(*pathv) * (2 + pglob->gl_pathc + pglob->gl_offs);
-	pathv = pglob->gl_pathv ? realloc(pglob->gl_pathv, newsize) :
-	    malloc(newsize);
+  /* isaacs - added explicit cast */
+	pathv = (char**) (pglob->gl_pathv ? realloc(pglob->gl_pathv, newsize) :
+	    malloc(newsize));
 	if (pathv == NULL)
 		return GLOB_NOSPACE;
 
@@ -927,7 +934,8 @@ globextend(const Char *path, glob_t *pglob, size_t *limit)
 		continue;
 	len = (size_t)(p - path);
 	limit[GLOB_INDEX_MALLOC] += len;
-	if ((copy = malloc(len)) != NULL) {
+  /* isaacs - added explicit cast */
+	if ((copy = (char*)malloc(len)) != NULL) {
 		if (g_Ctoc(path, copy, len)) {
 			free(copy);
 			return GLOB_ABORTED;
@@ -1069,10 +1077,12 @@ g_opendir(Char *str, glob_t *pglob)
 			return NULL;
 	}
 
+  /* isaacs - added explicit cast */
 	if (pglob->gl_flags & GLOB_ALTDIRFUNC)
-		return (*pglob->gl_opendir)(buf);
+		return (DIR *)(*pglob->gl_opendir)(buf);
 
-	return opendir(buf);
+  /* isaacs - added explicit cast */
+	return (DIR *)opendir(buf);
 }
 
 static int
@@ -1115,7 +1125,8 @@ g_strchr(const Char *str, int ch)
 
 	do {
 		if (*str == ch)
-			return __UNCONST(str);
+      /* isaacs - added explicit cast */
+			return (Char *)__UNCONST(str);
 	} while (*str++);
 	return NULL;
 }
@@ -1159,13 +1170,21 @@ qprintf(const char *str, Char *s)
 }
 #endif
 
+#ifdef GLOB_STANDALONE
 int main (int argc, char **argv) {
   glob_t g;
+  int i;
 
   g.gl_offs = 2;
-  glob("*.c", GLOB_DOOFFS, NULL, &g);
-  glob("*.h", GLOB_DOOFFS | GLOB_APPEND, NULL, &g);
-  g.gl_pathv[0] = "ls";
-  g.gl_pathv[1] = "-l";
-  execvp("ls", g.gl_pathv);
+  glob("**", GLOB_DOOFFS|GLOB_STAR, NULL, &g);
+
+  for (i = 0; i < g.gl_pathc; i ++) {
+    fprintf(stderr, "glob found:%s\n", g.gl_pathv[i]);
+  }
 }
+#endif
+
+/* isaacs */
+#ifdef C++
+}
+#endif
