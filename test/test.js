@@ -1,10 +1,13 @@
 var g = require("../lib/glob")
 
+process.chdir(__dirname)
+
 try {
   console.log(g.globSync("*", 0))
   console.log(g.globSync("*/*.js", 0))
   console.log(g.globSync("lib/*", 0))
   console.log(g.globSync("~/*", g.GLOB_TILDE))
+  console.log(g.globSync("foo/**/bar"))
 } catch (ex) {
   console.log(ex.stack)
 }
@@ -15,9 +18,12 @@ g.glob("*", 0, function (er, m) {
     console.log(er, m)
     g.glob("lib/*", 0, function (er, m) {
       console.log(er, m)
-      g.glob("~/*", 0 | g.GLOB_TILDE, function(er, m) {
+      g.glob("~/*", g.GLOB_DEFAULT | g.GLOB_TILDE, function(er, m) {
         console.log(er, m)
-        console.log("ok")
+        g.glob("foo/**/bar", function (er, m) {
+          console.log(er, m)
+          console.log("ok")
+        })
       })
     })
   })
@@ -38,4 +44,6 @@ f("*", "foo/bar", false)
 f("*/*", "foo/bar", true)
 f("*", ".foo", g.FNM_DEFAULT & ~g.FNM_PERIOD, true)
 f("*/*", "foo/bar", g.FNM_DEFAULT & ~g.FNM_PATHNAME, true)
-
+f("**/bar", "foo/bar", true)
+//f("**/bar", "foo/baz/bar", true)
+//f("foo/**/bar", "foo/bar/baz/quux/bar", true)
