@@ -32,6 +32,11 @@
  * SUCH DAMAGE.
  */
 
+/* isaacs */
+#ifdef C++
+extern C {
+#endif
+
 #include <sys/cdefs.h>
 #if defined(LIBC_SCCS) && !defined(lint)
 #if 0
@@ -41,12 +46,22 @@ __RCSID("$NetBSD: fnmatch.c,v 1.24 2011/01/31 19:10:18 christos Exp $");
 #endif
 #endif /* LIBC_SCCS and not lint */
 
+/* isaacs */
+#ifndef __UNCONST
+# define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
+#endif
+
+/* isaacs */
+#ifndef _DIAGASSERT
+# define _DIAGASSERT(a)  assert(a)
+#endif
+
 /*
  * Function fnmatch() as specified in POSIX 1003.2-1992, section B.6.
  * Compares a filename or pathname to a pattern.
  */
 
-#include "namespace.h"
+/* isaacs #include "namespace.h" */
 
 #include <assert.h>
 #include <ctype.h>
@@ -211,3 +226,8 @@ fnmatch(const char *pattern, const char *string, int flags)
 {
 	return fnmatchx(pattern, string, flags, 64);
 }
+
+/* isaacs */
+#ifdef C++
+}
+#endif
