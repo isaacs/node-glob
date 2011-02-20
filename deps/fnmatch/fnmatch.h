@@ -43,10 +43,10 @@
 #define	FNM_NOESCAPE	0x01	/* Disable backslash escaping. */
 #define	FNM_PATHNAME	0x02	/* Slash must be matched by slash. */
 #define	FNM_PERIOD	0x04	/* Period must be matched by period. */
-#if defined(_NETBSD_SOURCE)
+/* isaacs: removed #if defined(_NETBSD_SOURCE) */
 #define	FNM_CASEFOLD	0x08	/* Pattern is matched case-insensitive */
 #define	FNM_LEADING_DIR	0x10	/* Ignore /<tail> after Imatch. */
-#endif
+/* isaacs: removed #endif */
 
 #include <sys/cdefs.h>
 
