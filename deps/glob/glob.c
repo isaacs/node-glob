@@ -33,10 +33,9 @@
  */
 
 /* isaacs */
-#ifdef C++
-extern C {
+#ifdef __cplusplus
+extern "C" {
 #endif
-
 
 #include <sys/cdefs.h>
 #if defined(LIBC_SCCS) && !defined(lint)
@@ -1185,6 +1184,6 @@ int main (int argc, char **argv) {
 #endif
 
 /* isaacs */
-#ifdef C++
+#ifdef __cplusplus
 }
 #endif

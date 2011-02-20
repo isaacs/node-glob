@@ -33,8 +33,8 @@
  */
 
 /* isaacs */
-#ifdef C++
-extern C {
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 #include <sys/cdefs.h>
@@ -228,6 +228,6 @@ fnmatch(const char *pattern, const char *string, int flags)
 }
 
 /* isaacs */
-#ifdef C++
+#ifdef __cplusplus
 }
 #endif
