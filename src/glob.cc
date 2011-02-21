@@ -1,10 +1,11 @@
 // exposes the glob function to node.
 
 // int
-// glob(const char *restrict pattern, int flags,
+// myglob(const char *restrict pattern, int flags,
 //     int (*errfunc)(const char *epath, int errno), glob_t *restrict pglob);
 
 #include "glob_constants.h"
+#include <glob.h>
 #include <v8.h>
 #include <node.h>
 #include <string.h>
@@ -19,20 +20,9 @@ using namespace v8;
 static Handle<String>
 GlobError (int er) {
   switch (er) {
-#ifdef GLOB_ABORTED
     case GLOB_ABORTED: return String::New("GLOB_ABORTED"); break;
-#endif
-#ifdef GLOB_ABEND
-#ifndef GLOB_ABORTED
-    case GLOB_ABEND: return String::New("GLOB_ABEND"); break;
-#endif
-#endif
-#ifdef GLOB_NOMATCH
     case GLOB_NOMATCH: return String::New("GLOB_NOMATCH"); break;
-#endif
-#ifdef GLOB_NOSPACE
     case GLOB_NOSPACE: return String::New("GLOB_NOSPACE"); break;
-#endif
   }
 
   return String::New("undefined glob error");
@@ -84,7 +74,7 @@ struct glob_request {
 };
 static int EIO_Glob (eio_req *req) {
   glob_request *gr = (glob_request *)req->data;
-  gr->retval = glob(gr->pattern, gr->flags, NULL, gr->g);
+  gr->retval = myglob(gr->pattern, gr->flags, NULL, gr->g);
   return 0;
 }
 static int EIO_GlobAfter (eio_req *req) {
@@ -112,7 +102,7 @@ static int EIO_GlobAfter (eio_req *req) {
     FatalException(try_catch);
   }
   gr->cb.Dispose();
-  globfree(g);
+  myglobfree(g);
   free(gr);
   return 0;
 }
@@ -155,10 +145,10 @@ static Handle<Value> GlobSync (const Arguments& args) {
   int flags = args[1]->Int32Value();
 
   glob_t g;
-  int retval = glob(*pattern, flags, NULL, &g);
+  int retval = myglob(*pattern, flags, NULL, &g);
 
   if (retval != 0) {
-    globfree(&g);
+    if (retval != GLOB_NOSPACE) myglobfree(&g);
     return Throw(retval);
   }
 
@@ -170,7 +160,7 @@ static Handle<Value> GlobSync (const Arguments& args) {
     pathv->Set(Integer::New(i), String::New(g.gl_pathv[i]));
   }
 
-  globfree(&g);
+  myglobfree(&g);
   return scope.Close(pathv);
 }
 

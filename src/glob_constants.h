@@ -1,6 +1,6 @@
-#include <v8.h>
 #include <glob.h>
 #include <fnmatch.h>
+#include <v8.h>
 #include <node.h>
 
 using namespace node;
@@ -54,11 +54,7 @@ NODE_DEFINE_CONSTANT(target, FNM_NORES);
 NODE_DEFINE_CONSTANT(target, FNM_NOESCAPE);
 NODE_DEFINE_CONSTANT(target, FNM_PATHNAME);
 NODE_DEFINE_CONSTANT(target, FNM_PERIOD);
-#ifdef FNM_CASEFOLD
 NODE_DEFINE_CONSTANT(target, FNM_CASEFOLD);
-#endif
-#ifdef FNM_LEADING_DIR
 NODE_DEFINE_CONSTANT(target, FNM_LEADING_DIR);
-#endif
 
 }

@@ -250,7 +250,7 @@ static void	 qprintf(const char *, Char *);
 #endif
 
 int
-glob(const char *pattern, int flags, int (*errfunc)(const char *, int),
+myglob(const char *pattern, int flags, int (*errfunc)(const char *, int),
     glob_t *pglob)
 {
 	const u_char *patnext;
@@ -1075,7 +1075,7 @@ match(const Char *name, const Char *pat, const Char *patend)
 
 /* Free allocated data belonging to a glob_t structure. */
 void
-globfree(glob_t *pglob)
+myglobfree(glob_t *pglob)
 {
 	size_t i;
 	char **pp;
@@ -1093,9 +1093,8 @@ globfree(glob_t *pglob)
 	}
 }
 
-#ifndef __LIBC12_SOURCE__
 int
-glob_pattern_p(const char *pattern, int quote)
+myglob_pattern_p(const char *pattern, int quote)
 {
 	int range = 0;
 
@@ -1124,7 +1123,6 @@ glob_pattern_p(const char *pattern, int quote)
 
 	  return 0;
 }
-#endif
 
 static DIR *
 g_opendir(Char *str, glob_t *pglob)
@@ -1240,7 +1238,7 @@ int main (int argc, char **argv) {
   int i;
 
   g.gl_offs = 2;
-  glob("**", GLOB_DOOFFS|GLOB_STAR, NULL, &g);
+  myglob("**", GLOB_DOOFFS|GLOB_STAR, NULL, &g);
 
   for (i = 0; i < g.gl_pathc; i ++) {
     fprintf(stderr, "glob found:%s\n", g.gl_pathv[i]);

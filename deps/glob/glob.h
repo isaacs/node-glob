@@ -98,14 +98,10 @@ typedef struct {
 #define	GLOB_ABEND	GLOB_ABORTED	/* source compatibility */
 
 __BEGIN_DECLS
-#ifndef __LIBC12_SOURCE__
-int	glob(const char * __restrict, int,
+int	myglob(const char * __restrict, int,
     int (*)(const char *, int), glob_t * __restrict);
-void	globfree(glob_t *);
-#endif
-#ifdef _NETBSD_SOURCE
-int	glob_pattern_p(const char *, int);
-#endif
+void	myglobfree(glob_t *);
+int	myglob_pattern_p(const char *, int);
 __END_DECLS
 
 #endif /* !_GLOB_H_ */
