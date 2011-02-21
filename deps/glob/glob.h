@@ -98,14 +98,14 @@ typedef struct {
 #define	GLOB_ABEND	GLOB_ABORTED	/* source compatibility */
 
 __BEGIN_DECLS
-#ifndef __LIBC12_SOURCE__
+/* isaacs: removed #ifndef __LIBC12_SOURCE__ */
 int	glob(const char * __restrict, int,
     int (*)(const char *, int), glob_t * __restrict);
 void	globfree(glob_t *);
-#endif
-#ifdef _NETBSD_SOURCE
+/* isaacs: removed #endif */
+/* isaacs: removed #ifdef _NETBSD_SOURCE */
 int	glob_pattern_p(const char *, int);
-#endif
+/* isaacs: removed #endif */
 __END_DECLS
 
 #endif /* !_GLOB_H_ */

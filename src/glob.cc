@@ -4,11 +4,13 @@
 // glob(const char *restrict pattern, int flags,
 //     int (*errfunc)(const char *epath, int errno), glob_t *restrict pglob);
 
-#include "glob_constants.h"
+#include <glob.h>
+#include <fnmatch.h>
 #include <v8.h>
 #include <node.h>
 #include <string.h>
 #include <stdlib.h>
+#include "glob_constants.h"
 
 using namespace std;
 using namespace node;
@@ -19,20 +21,9 @@ using namespace v8;
 static Handle<String>
 GlobError (int er) {
   switch (er) {
-#ifdef GLOB_ABORTED
     case GLOB_ABORTED: return String::New("GLOB_ABORTED"); break;
-#endif
-#ifdef GLOB_ABEND
-#ifndef GLOB_ABORTED
-    case GLOB_ABEND: return String::New("GLOB_ABEND"); break;
-#endif
-#endif
-#ifdef GLOB_NOMATCH
     case GLOB_NOMATCH: return String::New("GLOB_NOMATCH"); break;
-#endif
-#ifdef GLOB_NOSPACE
     case GLOB_NOSPACE: return String::New("GLOB_NOSPACE"); break;
-#endif
   }
 
   return String::New("undefined glob error");
@@ -155,10 +146,13 @@ static Handle<Value> GlobSync (const Arguments& args) {
   int flags = args[1]->Int32Value();
 
   glob_t g;
+  fprintf(stderr, "about to glob\n");
   int retval = glob(*pattern, flags, NULL, &g);
+  fprintf(stderr, "Back from glob with %i\n", retval);
 
   if (retval != 0) {
-    globfree(&g);
+    fprintf(stderr, "about to globfree %i\n", &g);
+    if (retval != GLOB_NOSPACE) globfree(&g);
     return Throw(retval);
   }
 

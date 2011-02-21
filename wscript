@@ -18,7 +18,7 @@ def build(bld):
   bsd_glob.name = "bsd_glob"
   bsd_glob.target = "bsd_glob"
   bsd_glob.install_path = None
-  bsd_glob.cxxflags = ["-fPIC"]
+  bsd_glob.cxxflags = ["-fPIC", "-DDEBUG"]
 
   ### bsd_fnmatch
   bsd_fnmatch = bld.new_task_gen("cxx")

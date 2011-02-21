@@ -3,7 +3,9 @@ var g = require("../lib/glob")
 process.chdir(__dirname)
 
 try {
+  console.error("before first globsync")
   console.log(g.globSync("*", 0))
+  console.error("after")
   console.log(g.globSync("*/*.js", 0))
   console.log(g.globSync("lib/*", 0))
   console.log(g.globSync("~/*", g.GLOB_TILDE))

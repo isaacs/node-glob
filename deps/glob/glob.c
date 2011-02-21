@@ -253,6 +253,8 @@ int
 glob(const char *pattern, int flags, int (*errfunc)(const char *, int),
     glob_t *pglob)
 {
+  fprintf(stderr, "Yes, we are using this glob.\n");
+  return 0;
 	const u_char *patnext;
 	int c;
 	Char *bufnext, *bufend, patbuf[MAXPATHLEN+1];
@@ -703,6 +705,7 @@ glob2(Char *pathbuf, Char *pathend, Char *pathlim, const Char *pattern,
 				errno = 0;
 				*pathend++ = SEP;
 				*pathend = EOS;
+        fprintf(stderr, "nospace stat limit\n");
 				return GLOB_NOSPACE;
 			}
 			if (((pglob->gl_flags & GLOB_MARK) &&
@@ -864,6 +867,7 @@ glob3(Char *pathbuf, Char *pathend, Char *pathlim, const Char *pattern,
 			errno = 0;
 			*pathend++ = SEP;
 			*pathend = EOS;
+      fprintf(stderr, "nospace readdir limit\n");
 			return GLOB_NOSPACE;
 		}
 
@@ -983,8 +987,10 @@ globextend(const Char *path, glob_t *pglob, size_t *limit)
   /* isaacs - added explicit cast */
 	pathv = (char**) (pglob->gl_pathv ? realloc(pglob->gl_pathv, newsize) :
 	    malloc(newsize));
-	if (pathv == NULL)
+	if (pathv == NULL) {
+      fprintf(stderr, "nospace malloc failed\n");
 		return GLOB_NOSPACE;
+  }
 
 	if (pglob->gl_pathv == NULL && pglob->gl_offs > 0) {
 		/* first time around -- clear initial gl_offs items */
@@ -1011,8 +1017,10 @@ globextend(const Char *path, glob_t *pglob, size_t *limit)
 	if ((pglob->gl_flags & GLOB_LIMIT) &&
 	    (newsize + limit[GLOB_INDEX_MALLOC]) >= GLOB_LIMIT_MALLOC) {
 		errno = 0;
+      fprintf(stderr, "nospace malloc limit\n");
 		return GLOB_NOSPACE;
 	}
+  if (copy == NULL) fprintf(stderr, "nospace copy malloc failed\n");
 
 	return copy == NULL ? GLOB_NOSPACE : 0;
 }
@@ -1077,13 +1085,17 @@ match(const Char *name, const Char *pat, const Char *patend)
 void
 globfree(glob_t *pglob)
 {
+  fprintf(stderr, "in globfree, nothing touched yet.\n");
 	size_t i;
 	char **pp;
 
 	_DIAGASSERT(pglob != NULL);
 
+  fprintf(stderr, "in globfree %i\n", pglob);
 	if (pglob->gl_pathv != NULL) {
+    fprintf(stderr, "gl_pathv not null\n");
 		pp = pglob->gl_pathv + pglob->gl_offs;
+    fprintf(stderr, "gl_offs = %i\n", pglob->gl_offs);
 		for (i = pglob->gl_pathc; i--; ++pp)
 			if (*pp)
 				free(*pp);
@@ -1091,9 +1103,10 @@ globfree(glob_t *pglob)
 		pglob->gl_pathv = NULL;
 		pglob->gl_pathc = 0;
 	}
+  fprintf(stderr, "done with globfree\n");
 }
 
-#ifndef __LIBC12_SOURCE__
+/* isaacs removed #ifndef __LIBC12_SOURCE__ */
 int
 glob_pattern_p(const char *pattern, int quote)
 {
@@ -1124,7 +1137,7 @@ glob_pattern_p(const char *pattern, int quote)
 
 	  return 0;
 }
-#endif
+/* isaacs: removed #endif */
 
 static DIR *
 g_opendir(Char *str, glob_t *pglob)
