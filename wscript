@@ -18,6 +18,7 @@ def build(bld):
   bsd_glob.name = "bsd_glob"
   bsd_glob.target = "bsd_glob"
   bsd_glob.install_path = None
+  bsd_glob.cxxflags = ["-fPIC"]
 
   ### bsd_fnmatch
   bsd_fnmatch = bld.new_task_gen("cxx")
@@ -26,6 +27,7 @@ def build(bld):
   bsd_fnmatch.name = "bsd_fnmatch"
   bsd_fnmatch.target = "bsd_fnmatch"
   bsd_fnmatch.install_path = None
+  bsd_fnmatch.cxxflags = ["-fPIC"]
 
   obj = bld.new_task_gen("cxx", "shlib", "node_addon")
   obj.add_objects = "bsd_glob bsd_fnmatch"
