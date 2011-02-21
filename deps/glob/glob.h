@@ -99,12 +99,12 @@ typedef struct {
 
 __BEGIN_DECLS
 /* isaacs: removed #ifndef __LIBC12_SOURCE__ */
-int	glob(const char * __restrict, int,
+int	myglob(const char * __restrict, int,
     int (*)(const char *, int), glob_t * __restrict);
-void	globfree(glob_t *);
+void myglobfree(glob_t *);
 /* isaacs: removed #endif */
 /* isaacs: removed #ifdef _NETBSD_SOURCE */
-int	glob_pattern_p(const char *, int);
+int myglob_pattern_p(const char *, int);
 /* isaacs: removed #endif */
 __END_DECLS
 

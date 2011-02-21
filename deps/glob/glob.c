@@ -250,11 +250,11 @@ static void	 qprintf(const char *, Char *);
 #endif
 
 int
-glob(const char *pattern, int flags, int (*errfunc)(const char *, int),
+myglob(const char *pattern, int flags, int (*errfunc)(const char *, int),
     glob_t *pglob)
 {
-  fprintf(stderr, "Yes, we are using this glob.\n");
-  return 0;
+//  fprintf(stderr, "Yes, we are using this glob.\n");
+//  return 0;
 	const u_char *patnext;
 	int c;
 	Char *bufnext, *bufend, patbuf[MAXPATHLEN+1];
@@ -1083,7 +1083,7 @@ match(const Char *name, const Char *pat, const Char *patend)
 
 /* Free allocated data belonging to a glob_t structure. */
 void
-globfree(glob_t *pglob)
+myglobfree(glob_t *pglob)
 {
   fprintf(stderr, "in globfree, nothing touched yet.\n");
 	size_t i;
@@ -1108,7 +1108,7 @@ globfree(glob_t *pglob)
 
 /* isaacs removed #ifndef __LIBC12_SOURCE__ */
 int
-glob_pattern_p(const char *pattern, int quote)
+myglob_pattern_p(const char *pattern, int quote)
 {
 	int range = 0;
 
@@ -1253,7 +1253,7 @@ int main (int argc, char **argv) {
   int i;
 
   g.gl_offs = 2;
-  glob("**", GLOB_DOOFFS|GLOB_STAR, NULL, &g);
+  myglob("**", GLOB_DOOFFS|GLOB_STAR, NULL, &g);
 
   for (i = 0; i < g.gl_pathc; i ++) {
     fprintf(stderr, "glob found:%s\n", g.gl_pathv[i]);

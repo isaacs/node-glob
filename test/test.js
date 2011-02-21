@@ -12,6 +12,7 @@ try {
   console.log(g.globSync("foo/**/bar"))
 } catch (ex) {
   console.log(ex.stack)
+  throw ex
 }
 
 g.glob("*", 0, function (er, m) {

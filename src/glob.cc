@@ -75,7 +75,7 @@ struct glob_request {
 };
 static int EIO_Glob (eio_req *req) {
   glob_request *gr = (glob_request *)req->data;
-  gr->retval = glob(gr->pattern, gr->flags, NULL, gr->g);
+  gr->retval = myglob(gr->pattern, gr->flags, NULL, gr->g);
   return 0;
 }
 static int EIO_GlobAfter (eio_req *req) {
@@ -103,7 +103,7 @@ static int EIO_GlobAfter (eio_req *req) {
     FatalException(try_catch);
   }
   gr->cb.Dispose();
-  globfree(g);
+  myglobfree(g);
   free(gr);
   return 0;
 }
@@ -147,12 +147,12 @@ static Handle<Value> GlobSync (const Arguments& args) {
 
   glob_t g;
   fprintf(stderr, "about to glob\n");
-  int retval = glob(*pattern, flags, NULL, &g);
+  int retval = myglob(*pattern, flags, NULL, &g);
   fprintf(stderr, "Back from glob with %i\n", retval);
 
   if (retval != 0) {
     fprintf(stderr, "about to globfree %i\n", &g);
-    if (retval != GLOB_NOSPACE) globfree(&g);
+    if (retval != GLOB_NOSPACE) myglobfree(&g);
     return Throw(retval);
   }
 
@@ -164,7 +164,7 @@ static Handle<Value> GlobSync (const Arguments& args) {
     pathv->Set(Integer::New(i), String::New(g.gl_pathv[i]));
   }
 
-  globfree(&g);
+  myglobfree(&g);
   return scope.Close(pathv);
 }
 
