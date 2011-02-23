@@ -37,7 +37,7 @@
 extern "C" {
 #endif
 
-#include <sys/cdefs.h>
+
 #if defined(LIBC_SCCS) && !defined(lint)
 #if 0
 static char sccsid[] = "@(#)glob.c	8.3 (Berkeley) 10/13/93";
@@ -170,11 +170,12 @@ strlcpy(char *dst, const char *src, size_t siz)
 #define	GLOB_INDEX_STAT		1
 #define	GLOB_INDEX_READDIR	2
 
-/*
- * XXX: For NetBSD 1.4.x compatibility. (kill me l8r)
- */
 #ifndef _DIAGASSERT
-#define _DIAGASSERT(a)
+# ifdef DEBUG
+#  define _DIAGASSERT(a) assert(a)
+# else
+#  define _DIAGASSERT(a)
+# endif
 #endif
 
 #define	DOLLAR		'$'
@@ -247,6 +248,8 @@ static int	 globexp2(const Char *, const Char *, glob_t *, int *,
 static int	 match(const Char *, const Char *, const Char *);
 #ifdef DEBUG
 static void	 qprintf(const char *, Char *);
+#else
+#define qprintf(a,b)
 #endif
 
 int
@@ -420,9 +423,7 @@ globexp2(const Char *ptr, const Char *pattern, glob_t *pglob, int *rv,
 					continue;
 
 				/* Expand the current pattern */
-#ifdef DEBUG
 				qprintf("globexp2", patbuf);
-#endif
 				*rv = globexp1(patbuf, pglob, limit);
 
 				/* move after the comma, to the next string */
@@ -603,9 +604,7 @@ glob0(const Char *pattern, glob_t *pglob, size_t *limit)
 		}
 	}
 	*bufnext = EOS;
-#ifdef DEBUG
 	qprintf("glob0", patbuf);
-#endif
 
 	if ((error = glob1(patbuf, pglob, limit)) != 0)
 		return error;
@@ -685,9 +684,7 @@ glob2(Char *pathbuf, Char *pathend, Char *pathlim, const Char *pattern,
 	_DIAGASSERT(pattern != NULL);
 	_DIAGASSERT(pglob != NULL);
 
-#ifdef DEBUG
 	qprintf("glob2", pathbuf);
-#endif
 	/*
 	 * Loop over pattern segments until end of pattern or until
 	 * segment with meta character found.

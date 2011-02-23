@@ -37,10 +37,14 @@
 #ifndef _GLOB_H_
 #define	_GLOB_H_
 
+/*
 #include <sys/cdefs.h>
 //#include <sys/featuretest.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+*/
+#include <stdlib.h>
+#include <stddef.h>
 
 #ifndef __gl_size_t
 #define __gl_size_t	size_t
@@ -97,11 +101,15 @@ typedef struct {
 
 #define	GLOB_ABEND	GLOB_ABORTED	/* source compatibility */
 
-__BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 int	myglob(const char * __restrict, int,
     int (*)(const char *, int), glob_t * __restrict);
 void	myglobfree(glob_t *);
 int	myglob_pattern_p(const char *, int);
-__END_DECLS
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !_GLOB_H_ */

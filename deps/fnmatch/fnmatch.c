@@ -37,7 +37,6 @@
 extern "C" {
 #endif
 
-#include <sys/cdefs.h>
 #if defined(LIBC_SCCS) && !defined(lint)
 #if 0
 static char sccsid[] = "@(#)fnmatch.c	8.2 (Berkeley) 4/16/94";
@@ -53,7 +52,11 @@ __RCSID("$NetBSD: fnmatch.c,v 1.24 2011/01/31 19:10:18 christos Exp $");
 
 /* isaacs */
 #ifndef _DIAGASSERT
-# define _DIAGASSERT(a)  assert(a)
+# ifdef DEBUG
+#  define _DIAGASSERT(a) assert(a)
+# else
+#  define _DIAGASSERT(a)
+# endif
 #endif
 
 /*
@@ -61,11 +64,11 @@ __RCSID("$NetBSD: fnmatch.c,v 1.24 2011/01/31 19:10:18 christos Exp $");
  * Compares a filename or pathname to a pattern.
  */
 
-/* isaacs #include "namespace.h" */
-
+#include <fnmatch.h>
 #include <assert.h>
 #include <ctype.h>
-#include <fnmatch.h>
+#include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifdef __weak_alias
