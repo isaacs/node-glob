@@ -31,8 +31,9 @@ g.glob("*", 0, function (er, m) {
 
 function f (pattern, str, flags, expect) {
   if (arguments.length === 3) expect = flags, flags = undefined
-  if (g.fnmatch(pattern, str, flags) !== expect) {
-    throw new Error(JSON.stringify([pattern,str,flags]) + " expected "+expect)
+  var actual = g.fnmatch(pattern, str, flags)
+  if (actual !== expect) {
+    throw new Error(JSON.stringify([pattern,str,flags]) + " expected "+expect + " actual "+actual)
   }
   console.error("%s, %s, %s => %j", pattern, str, flags, expect)
 }
