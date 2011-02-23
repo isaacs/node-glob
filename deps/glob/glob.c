@@ -78,9 +78,6 @@ __RCSID("$NetBSD: glob.c,v 1.27 2010/09/06 14:40:25 christos Exp $");
  */
 
 /* isaacs #include "namespace.h" */
-#include <sys/param.h>
-#include <sys/stat.h>
-
 #include <assert.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -92,6 +89,16 @@ __RCSID("$NetBSD: glob.c,v 1.27 2010/09/06 14:40:25 christos Exp $");
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+
+#ifndef __P
+# if __STDC__ || defined(__cplusplus)
+#  define __P(protos) protos    /* full-blown ANSI C */
+# else
+#  define __P(protos) ()
+# endif
+#endif
 
 #ifdef HAVE_NBTOOL_CONFIG_H
 #define NO_GETPW_R
