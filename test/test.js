@@ -2,41 +2,64 @@ var g = require("../lib/glob")
 
 process.chdir(__dirname)
 
+var failures = 0
+
+function testSync(pattern, flags) {
+  console.error("testing: %j %j", pattern, flags)
+  console.error(g.globSync(pattern, flags))
+}
 try {
-  console.log(g.globSync("*", 0))
-  console.log(g.globSync("*/*.js", 0))
-  console.log(g.globSync("lib/*", 0))
-  console.log(g.globSync("~/*", g.GLOB_TILDE))
-  console.log(g.globSync("foo/**/bar"))
+  testSync("*", 0)
+  testSync("*/*.js", 0)
+  testSync("lib/*", 0)
+  testSync("~/*", g.GLOB_TILDE)
+  testSync("foo/**/bar")
 } catch (ex) {
-  console.log(ex.stack)
+  console.error(ex.stack)
+  failures ++
 }
 
-g.glob("*", 0, function (er, m) {
-  console.log("*", er || m)
-  g.glob("../*/*.js", 0, function (er, m) {
-    console.log("*/*.js", er || m)
-    g.glob("../lib/*", 0, function (er, m) {
-      console.log("../lib/*", er || m)
-      g.glob("~/*", g.GLOB_DEFAULT | g.GLOB_TILDE, function(er, m) {
-        console.log("~/*", er || m)
-        g.glob("foo/**/bar", function (er, m) {
-          console.log("foo/**/bar", er || m)
-          testFnmatch()
-        })
-      })
-    })
+function testAsync (pattern, flags, cb) {
+  if (!cb) cb = flags, flags = undefined
+  console.error("testing async: %j %j", pattern, flags)
+  g.glob(pattern, flags, function (er, m) {
+    if (er) {
+      console.error(" FAIL: "+(er.stack||er.message))
+      failures ++
+    } else console.error("  %j", m)
+    cb()
   })
-})
+}
+
+function testAsyncList (list, cb) {
+  next()
+  function next (er, m) {
+    var test = list.shift()
+    if (!test) return cb()
+    test.push(cb)
+    testAsync.apply(null, test)
+  }
+}
+
+testAsyncList
+  ([["*", 0]
+   ,["../*/*.js", 0]
+   ,["../lib/*", 0]
+   ,["~/*", g.GLOB_DEFAULT | g.GLOB_TILDE]
+   ,["foo/**/bar"]
+   ]
+  ,testFnmatch)
 
 function f (pattern, str, flags, expect) {
   if (arguments.length === 3) expect = flags, flags = undefined
   var actual = g.fnmatch(pattern, str, flags)
   if (actual !== expect) {
-    throw new Error(JSON.stringify([pattern,str,flags]) + " expected "+expect + " actual "+actual)
+    console.error("Fail: "+JSON.stringify([pattern,str,flags]) + " expected "+expect + " actual "+actual)
+    failures ++
   }
   console.error("%s, %s, %s => %j", pattern, str, flags, expect)
 }
+
 function testFnmatch () {
   f("*", "foo", true)
   f(".*", "foo", false)
@@ -48,4 +71,13 @@ function testFnmatch () {
   f("**/bar", "foo/bar", true)
   f("**/bar", "foo/baz/bar", true)
   f("foo/**/bar", "foo/bar/baz/quux/bar", true)
+  done()
+}
+
+function done () {
+  if (failures === 0) console.log("ok")
+  else {
+    console.error("Failures: %j", failures)
+    process.exit(failures)
+  }
 }

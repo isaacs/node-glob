@@ -10,11 +10,19 @@
 #include <node.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 using namespace std;
 using namespace node;
 using namespace v8;
 
+#ifdef DEBUG
+# define debug_p(a,b) ((NULL != (void *)b) ? fprintf(stderr, a, b) : fprintf(stderr, a, ""))
+# define ASSERT(x) assert(x)
+#else
+# define debug_p(a,b)
+# define ASSERT(x)
+#endif
 
 
 static Handle<String>
@@ -74,7 +82,9 @@ struct glob_request {
 };
 static int EIO_Glob (eio_req *req) {
   glob_request *gr = (glob_request *)req->data;
+  debug_p("EIO_Glob pattern=%s\n", gr->pattern);
   gr->retval = myglob(gr->pattern, gr->flags, NULL, gr->g);
+  debug_p("EIO_Glob retval=%i\n", gr->retval);
   return 0;
 }
 static int EIO_GlobAfter (eio_req *req) {
@@ -84,12 +94,15 @@ static int EIO_GlobAfter (eio_req *req) {
   glob_t *g = gr->g;
 
   Local<Value> argv[2];
+  debug_p("EIO_GlobAfter pattern=%s\n", gr->pattern);
   if (gr->retval != 0) {
     argv[0] = Exception::Error(GlobError(gr->retval));
     argv[1] = String::New(gr->pattern);
+    debug_p("EIO_GlobAfter error=%i\n", gr->retval);
   } else {
     Local<Array> pathv = Array::New(g->gl_pathc);
     for (int i = 0; i < g->gl_pathc; i ++) {
+      debug_p("EIO_GlobAfter path=%s\n", g->gl_pathv[i]);
       pathv->Set(Integer::New(i), String::New(g->gl_pathv[i]));
     }
     argv[0] = Local<Value>::New(Null());
@@ -97,12 +110,16 @@ static int EIO_GlobAfter (eio_req *req) {
   }
 
   TryCatch try_catch;
+  debug_p("EIO_GlobAfter calling cb%s\n", "");
   gr->cb->Call(Context::GetCurrent()->Global(), 2, argv);
   if (try_catch.HasCaught()) {
+    debug_p("EIO_GlobAfter cb threw%s\n", "");
     FatalException(try_catch);
   }
   gr->cb.Dispose();
+  debug_p("EIO_GlobAfter globfreeing %i\n", g);
   myglobfree(g);
+  debug_p("EIO_GlobAfter freeing %i\n", gr);
   free(gr);
   return 0;
 }
@@ -122,11 +139,16 @@ static Handle<Value> GlobAsync (const Arguments& args) {
   glob_request *gr = (glob_request *)
     calloc(1, sizeof(struct glob_request) + pattern.length() + 1);
 
+  debug_p("GlobAsync gr=%i\n", gr);
+
+  ASSERT(gr != NULL);
+
   gr->cb = Persistent<Function>::New(cb);
   strncpy(gr->pattern, *pattern, pattern.length() + 1);
   gr->flags = flags;
   gr->g = new glob_t;
-  eio_custom(EIO_Glob, EIO_PRI_DEFAULT, EIO_GlobAfter, gr);
+  eio_req* eioret = eio_custom(EIO_Glob, EIO_PRI_DEFAULT, EIO_GlobAfter, gr);
+  debug_p("GlobAsync eioret=%i\n", eioret);
   ev_ref(EV_DEFAULT_UC);
 
   return Undefined();
@@ -144,10 +166,13 @@ static Handle<Value> GlobSync (const Arguments& args) {
 
   int flags = args[1]->Int32Value();
 
+  debug_p("GlobSync pattern=%s\n", *pattern);
+  debug_p("GlobSync flags=%i\n", flags);
   glob_t g;
   int retval = myglob(*pattern, flags, NULL, &g);
 
   if (retval != 0) {
+    debug_p("GlobSync fail: %i", retval);
     if (retval != GLOB_NOSPACE) myglobfree(&g);
     return Throw(retval);
   }
@@ -157,9 +182,11 @@ static Handle<Value> GlobSync (const Arguments& args) {
   // then return the JS array.
   Handle<Array> pathv = Array::New(g.gl_pathc);
   for (int i = 0; i < g.gl_pathc; i ++) {
+    debug_p("GlobSync path=%s\n", g.gl_pathv[i]);
     pathv->Set(Integer::New(i), String::New(g.gl_pathv[i]));
   }
 
+  debug_p("GlobSync freeing%s\n", "");
   myglobfree(&g);
   return scope.Close(pathv);
 }
