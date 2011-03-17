@@ -114,7 +114,8 @@ function if it is an fnmatch flag.
 That is, `fnmatch[fnmatch.FNM_CASEFOLD] === 'FNM_CASEFOLD'`.
 
 * `GLOB_DEFAULT` Used if no flags are passed to `glob()` or
-  `globSync()`. Equivalent of `GLOB_BRACE|GLOB_LIMIT|GLOB_STAR`.
+  `globSync()`. Equivalent of
+  `GLOB_BRACE|GLOB_LIMIT|GLOB_STAR|GLOB_MARK|GLOB_TILDE`.
 * `FNM_DEFAULT` Used if no flags are passed to `fnmatch()`.  Equivalent
   of `FNM_PATHNAME|FNM_PERIOD`.
 * `GLOB_MARK` Append / to matching directories.
