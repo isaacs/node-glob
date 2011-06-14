@@ -1,7 +1,7 @@
 { "name" : "glob"
 , "description" : "glob/fnmatch binding for node"
 , "author" : "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)"
-, "version" : "2.0.6"
+, "version" : "2.0.7"
 , "main" : "./lib/glob"
 , "repository" : "git://github.com/isaacs/node-glob.git"
 , "homepage" : "https://github.com/isaacs/node-glob"
