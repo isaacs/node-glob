@@ -80,12 +80,11 @@ struct glob_request {
   int flags;
   char pattern[1];
 };
-static int EIO_Glob (eio_req *req) {
+static void EIO_Glob (eio_req *req) {
   glob_request *gr = (glob_request *)req->data;
   debug_p("EIO_Glob pattern=%s\n", gr->pattern);
   gr->retval = myglob(gr->pattern, gr->flags, NULL, gr->g);
   debug_p("EIO_Glob retval=%i\n", gr->retval);
-  return 0;
 }
 static int EIO_GlobAfter (eio_req *req) {
   HandleScope scope;

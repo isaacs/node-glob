@@ -6,6 +6,6 @@
 , "repository" : "git://github.com/isaacs/node-glob.git"
 , "homepage" : "https://github.com/isaacs/node-glob"
 , "keywords" : ["glob", "pattern", "match", "filesystem", "posix", "fnmatch"]
-, "bugs" : { "web" : "https://github.com/isaacs/node-glob/issues" }
-, "engines": { "node": "0.4" }
+, "bugs" : { "url" : "https://github.com/isaacs/node-glob/issues" }
+, "engines": { "node": "> 0.5" }
 }
