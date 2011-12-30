@@ -1,0 +1,22 @@
+{
+  "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
+  "name": "miniglob",
+  "description": "a little globber",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/isaacs/miniglob.git"
+  },
+  "main": "miniglob.js",
+  "engines": {
+    "node": "*"
+  },
+  "dependencies": {
+    "minimatch": "0.1",
+    "graceful-fs": "~1.1.2",
+    "inherits": "1"
+  },
+  "devDependencies": {
+    "tap": "0.1"
+  }
+}
