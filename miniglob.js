@@ -27,10 +27,14 @@ var fs = require("graceful-fs")
 
 function miniglob (pattern, options, cb) {
   if (typeof options === "function") cb = options, options = {}
+  if (!options) options = {}
 
   var g = new Miniglob(pattern, options)
-  g.on("error", cb)
-  g.findAll(function (matches) { cb(null, matches) })
+  if (typeof cb === "function") {
+    g.on("error", cb)
+    g.on("end", function (matches) { cb(null, matches) })
+  }
+  return g
 }
 
 miniglob.Miniglob = Miniglob
@@ -52,94 +56,137 @@ function Miniglob (pattern, options) {
   options = this.options = mm.options
   pattern = this.pattern = mm.pattern
 
-  this.queue = new FastList()
+  this.error = null
+
   this.matches = new FastList()
   EE.call(this)
-}
-
-Miniglob.prototype.findAll = findAll
-function findAll (cb) {
   var me = this
-    , cwd = me.cwd
-    // almost always want lstat
-    , stat = me.options.follow ? "stat" : "lstat"
-
-  if (me.options.debug) {
-    console.error("findAll", cwd, "\n", me.matches.slice())
-  }
-
-  fs.readdir(cwd, function (er, files) {
-    if (me.options.debug) {
-      console.error("readdir", cwd, files)
+  this._process(this.cwd, 1, function () {
+    if (me.options.debug) console.error("!!! GLOB top level cb", me)
+    var found = me.matches.length
+    if (found === 0 && !options.null) {
+      found = [pattern]
+    } else {
+      found = me.matches.slice()
     }
-    files = files.filter(function (f) {
-      return f !== ".." && (me.options.dot || f.charAt(0) !== ".")
-    }).map(function (f) {
-      return path.resolve(cwd, f)
+
+    found = found.map(function (m) {
+      return path.relative(me.options.cwd, m)
     })
 
-    var count = files.length
-    if (count === 0) next()
-
-    files.forEach(function (f) {
-      fs[stat](f, function (er, st) {
-        if (er) {
-          er.miniglob = me
-          er.miniglob_pattern = me.pattern
-          er.miniglob_options = me.options
-          er.miniglob_cwd = cwd
-          return me.emit("error", er)
-        }
-        count --
-        if (me.options.debug) {
-          console.error(f, st.isDirectory())
-        }
-
-        // if this thing is a match, then add to the matches list.
-        var matches = me.minimatch.match(f)
-        if (matches) {
-          me.matches.push(f)
-        }
-        if (st.isDirectory()) {
-          // if it's a dir, it can also match partially, and still be
-          // worth exploring.
-          matches = matches || me.minimatch.match(f, true)
-          if (me.options.debug) {
-            console.error("  partial", f, matches)
-          }
-          if (matches) me.queue.push(f)
-        }
-
-        // if we have no more files to process in this pass, and
-        // we haven't added anything to the queue, then we're done.
-        if (me.options.debug) {
-          console.error("findAll done", count, f, me.queue.slice())
-        }
-
-        if (count === 0) next()
+    if (!me.options.nosort) {
+      found = found.sort(function (a, b) {
+        return a > b ? 1 : a < b ? -1 : 0
       })
-
-    })
-
-    function next () {
-      if (me.options.debug) {
-        console.error("  count is 0")
-      }
-      if (me.queue.length === 0) {
-        var matches = me.matches.slice().map(function (m) {
-          return path.relative(me.options.cwd, m)
-        })
-        if (!me.options.nosort) {
-          matches = matches.sort(function (a, b) {
-            return a > b ? 1 : a < b ? -1 : 0
-          })
-        }
-        cb(matches)
-      } else {
-        me.cwd = me.queue.shift()
-        me.findAll(cb)
-      }
     }
 
+    me.emit("end", found)
   })
 }
+
+Miniglob.prototype._process = function (f, depth, cb) {
+  var pref = depth + new Array(depth + 1).join(" ") + "GLOB "
+  var me = this
+
+  // if f matches, then it's a match.  emit it, move on.
+  // if it *partially* matches, then it might be a dir.
+  //
+  // possible optimization: don't just minimatch everything
+  // against the full pattern.  if a bit of the pattern is
+  // not magical, it'd be good to reduce the number of stats
+  // that had to be made.  so, in the pattern: "a/*/b", we could
+  // readdir a, then stat a/<child>/b in all of them.
+  //
+  // however, that'll require a lot of muddying between minimatch
+  // and miniglob, and at least for the time being, it's kind of nice to
+  // keep them a little bit separate.
+
+  // if this thing is a match, then add to the matches list.
+  var match = me.minimatch.match(f)
+  if (!match) return me._processPartial(f, depth, cb)
+  if (match) {
+    if (me.options.debug) console.error(pref + " %s matches %s", f, me.pattern)
+    // make sure it exists if asked.
+    if (me.options.stat) {
+      var stat = me.options.follow ? "stat" : "lstat"
+      fs[stat](f, function (er, st) {
+        if (er) return cb()
+        emitMatch()
+      })
+    } else process.nextTick(emitMatch)
+
+    return
+
+    function emitMatch () {
+      if (me.options.debug) console.error(pref, "emitting match", f)
+      me.matches.push(f)
+      me.emit("match", f)
+      // move on, since it might also be a partial match
+      // eg, a/**/c matches both a/c and a/c/d/c
+      me._processPartial(f, depth, cb)
+    }
+  }
+
+}
+
+
+Miniglob.prototype._processPartial = _processPartial
+function _processPartial (f, depth, cb) {
+
+  var me = this
+
+  var partial = me.minimatch.match(f, true)
+  if (!partial) {
+    if (me.options.debug) console.error(pref + "not a partial", f)
+
+    // if not a match or partial match, just move on.
+    return cb()
+  }
+
+  // partial match
+  // however, this only matters if it's a dir.
+  if (me.options.debug) console.error(pref, "got a partial", f)
+  me.emit("partial", f)
+
+  // now the fun stuff.
+  // if it's a dir, then we'll read all the children, and process them.
+  // if it's not a dir, or we can't access it, then it'll fail.
+  // We log a warning for EACCES and EPERM, but ENOTDIR and ENOENT are
+  // expected and fine.
+
+  fs.readdir(f, function (er, children) {
+    if (er) switch (er.code) {
+      case "ENOENT":
+      case "ENOTDIR":
+        return cb()
+      default:
+        if (!me.options.silent) console.error("miniglob error", er)
+        if (me.options.strict) return cb(er)
+        return cb()
+    }
+    var count = children.length
+    if (me.options.debug) console.error(pref + "count=%d %s", count, f, children)
+
+    children.forEach(function (c) {
+      if (c === "." || c === "..") {
+        count --
+        return
+      }
+      if (me.options.debug) console.error(pref + " processing", path.join(f, c))
+      me._process(path.join(f, c), depth + 1, then)
+    })
+
+    if (count === 0) {
+      if (me.options.debug) console.error("no children?", children, f)
+      return then()
+    }
+
+    function then (er) {
+      count --
+      if (me.error) return
+      if (er) return me.emit("error", me.error = er)
+      if (count <= 0) cb()
+    }
+  })
+}
+
