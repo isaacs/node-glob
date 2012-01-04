@@ -62,7 +62,9 @@ function Miniglob (pattern, options) {
   EE.call(this)
   var me = this
   this._process(this.cwd, 1, function () {
-    if (me.options.debug) console.error("!!! GLOB top level cb", me)
+    if (me.options.debug) {
+      console.error("!!! GLOB top level cb", me)
+    }
     var found = me.matches.length
     if (found === 0 && !options.null) {
       found = [pattern]
@@ -71,7 +73,10 @@ function Miniglob (pattern, options) {
     }
 
     found = found.map(function (m) {
-      return path.relative(me.options.cwd, m)
+      if (m.indexOf(me.options.cwd) === 0) {
+        m = m.substr(me.options.cwd.length + 1)
+      }
+      return m
     })
 
     if (!me.options.nosort) {
@@ -84,7 +89,9 @@ function Miniglob (pattern, options) {
   })
 }
 
-Miniglob.prototype._process = function (f, depth, cb) {
+
+Miniglob.prototype._process = _process
+function _process (f, depth, cb) {
   var pref = depth + new Array(depth + 1).join(" ") + "GLOB "
   var me = this
 
@@ -104,8 +111,11 @@ Miniglob.prototype._process = function (f, depth, cb) {
   // if this thing is a match, then add to the matches list.
   var match = me.minimatch.match(f)
   if (!match) return me._processPartial(f, depth, cb)
+
   if (match) {
-    if (me.options.debug) console.error(pref + " %s matches %s", f, me.pattern)
+    if (me.options.debug) {
+      console.error(pref + " %s matches %s", f, me.pattern)
+    }
     // make sure it exists if asked.
     if (me.options.stat) {
       var stat = me.options.follow ? "stat" : "lstat"
@@ -118,7 +128,9 @@ Miniglob.prototype._process = function (f, depth, cb) {
     return
 
     function emitMatch () {
-      if (me.options.debug) console.error(pref, "emitting match", f)
+      if (me.options.debug) {
+        console.error(pref, "emitting match", f)
+      }
       me.matches.push(f)
       me.emit("match", f)
       // move on, since it might also be a partial match
@@ -127,13 +139,13 @@ Miniglob.prototype._process = function (f, depth, cb) {
     }
   }
 
-}
+ }
 
 
-Miniglob.prototype._processPartial = _processPartial
-function _processPartial (f, depth, cb) {
+Miniglob.prototype._processPartial = function _processPartial (f, depth, cb) {
 
   var me = this
+  var pref = depth + new Array(depth + 1).join(" ") + "GLOB "
 
   var partial = me.minimatch.match(f, true)
   if (!partial) {
@@ -145,8 +157,19 @@ function _processPartial (f, depth, cb) {
 
   // partial match
   // however, this only matters if it's a dir.
-  if (me.options.debug) console.error(pref, "got a partial", f)
+  //if (me.options.debug)
+  if (me.options.debug) {
+    console.error(pref, "got a partial", f)
+  }
   me.emit("partial", f)
+
+  me._processDir(f, depth, cb)
+}
+
+Miniglob.prototype._processDir = function _processDir (f, depth, cb) {
+
+  var me = this
+  var pref = depth + new Array(depth + 1).join(" ") + "GLOB "
 
   // now the fun stuff.
   // if it's a dir, then we'll read all the children, and process them.
@@ -164,29 +187,46 @@ function _processPartial (f, depth, cb) {
         if (me.options.strict) return cb(er)
         return cb()
     }
-    var count = children.length
-    if (me.options.debug) console.error(pref + "count=%d %s", count, f, children)
 
-    children.forEach(function (c) {
-      if (c === "." || c === "..") {
-        count --
-        return
-      }
-      if (me.options.debug) console.error(pref + " processing", path.join(f, c))
-      me._process(path.join(f, c), depth + 1, then)
-    })
+    if (-1 === children.indexOf(".")) children.push(".")
+    if (-1 === children.indexOf("..")) children.push("..")
+
+    var count = children.length
+    if (me.options.debug) {
+      console.error(pref + "count=%d %s", count, f, children)
+    }
 
     if (count === 0) {
-      if (me.options.debug) console.error("no children?", children, f)
-      return then()
+      //if (me.options.debug)
+      if (me.options.debug) {
+        console.error("no children?", children, f)
+      }
+      return then(f)()
     }
 
-    function then (er) {
+    children.forEach(function (c) {
+      //if (c === "." || c === "..") {
+      //  count --
+      //  return
+      //}
+      if (me.options.debug) {
+        console.error(pref + " processing", f + "/" + c)
+      }
+      me._process(f + "/" + c, depth + 1, then(f + "/" + c))
+    })
+
+
+    function then (f) { return function (er) {
       count --
+      if (me.options.debug) {
+        console.error("%s THEN %s", pref, f, count, count <= 0 ? "done" : "not done")
+      }
       if (me.error) return
       if (er) return me.emit("error", me.error = er)
-      if (count <= 0) cb()
-    }
+      if (count <= 0) {
+        cb()
+      }
+    }}
   })
 }
 
