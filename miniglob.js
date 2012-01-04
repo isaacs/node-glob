@@ -65,11 +65,10 @@ function Miniglob (pattern, options) {
     if (me.options.debug) {
       console.error("!!! GLOB top level cb", me)
     }
-    var found = me.matches.length
-    if (found === 0 && !options.null) {
-      found = [pattern]
+    if (options.nonull && me.matches.length === 0) {
+      var found = [pattern]
     } else {
-      found = me.matches.slice()
+      var found = me.matches.slice()
     }
 
     found = found.map(function (m) {
