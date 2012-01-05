@@ -6,6 +6,7 @@ var fs = require("graceful-fs")
 , EE = require("events").EventEmitter
 , FastList = require("fast-list")
 , path = require("path")
+, isDir = {}
 
 // Globbing is a *little* bit different than just matching, in some
 // key ways.
@@ -40,7 +41,7 @@ function miniglob (pattern, options, cb) {
 miniglob.Miniglob = Miniglob
 inherits(Miniglob, EE)
 function Miniglob (pattern, options) {
-  var options = options || {}
+  options = options || {}
 
   var cwd = this.cwd = options.cwd =
     options.cwd || process.cwd()
@@ -61,32 +62,64 @@ function Miniglob (pattern, options) {
   this.matches = new FastList()
   EE.call(this)
   var me = this
-  this._process(this.cwd, 1, function () {
-    if (me.options.debug) {
-      console.error("!!! GLOB top level cb", me)
-    }
-    if (options.nonull && me.matches.length === 0) {
-      var found = [pattern]
-    } else {
-      var found = me.matches.slice()
-    }
+  this._process(this.cwd, 1, this._finish.bind(this))
+}
 
-    found = found.map(function (m) {
-      if (m.indexOf(me.options.cwd) === 0) {
-        m = m.substr(me.options.cwd.length + 1)
+Miniglob.prototype._finish = _finish
+function _finish () {
+  var me = this
+  if (me.options.debug) {
+    console.error("!!! GLOB top level cb", me)
+  }
+  if (me.options.nonull && me.matches.length === 0) {
+    return me.emit("end", [pattern])
+  }
+
+  var found = me.matches.slice()
+
+  found = found.map(function (m) {
+    if (m.indexOf(me.options.cwd) === 0) {
+      m = m.substr(me.options.cwd.length + 1)
+    }
+    return m
+  })
+
+  if (!me.options.mark) return next()
+
+  // mark all directories with a /.
+  // This may involve some stat calls for things that are unknown.
+  var needStat = []
+  found = found.map(function (f) {
+    if (isDir[f] === undefined) needStat.push(f)
+    else if (isDir[f] && f.slice(-1) !== "/") f += "/"
+    return f
+  })
+  var c = needStat.length
+  if (c === 0) return next()
+
+  var stat = me.options.follow ? "stat" : "lstat"
+  needStat.forEach(function (f) {
+    fs[stat](f, function (er, st) {
+      // ignore errors.  if the user only wants to show
+      // existing files, then set options.stat to exclude anything
+      // that doesn't exist.
+      if (st && st.isDirectory()) {
+        found.splice(found.indexOf(f), 1, f + "/")
       }
-      return m
+      if (-- c <= 0) return next()
     })
+  })
 
+  function next () {
     if (!me.options.nosort) {
       found = found.sort(function (a, b) {
         return a > b ? 1 : a < b ? -1 : 0
       })
     }
-
     me.emit("end", found)
-  })
+  }
 }
+
 
 
 Miniglob.prototype._process = _process
@@ -120,6 +153,7 @@ function _process (f, depth, cb) {
       var stat = me.options.follow ? "stat" : "lstat"
       fs[stat](f, function (er, st) {
         if (er) return cb()
+        isDir[f] = st.isDirectory()
         emitMatch()
       })
     } else process.nextTick(emitMatch)
@@ -180,12 +214,17 @@ Miniglob.prototype._processDir = function _processDir (f, depth, cb) {
     if (er) switch (er.code) {
       case "ENOENT":
       case "ENOTDIR":
+        isDir[f] = false
         return cb()
       default:
         if (!me.options.silent) console.error("miniglob error", er)
         if (me.options.strict) return cb(er)
         return cb()
     }
+
+    // at this point, we know it's a dir, so save a stat later if
+    // mark is set.
+    isDir[f] = true
 
     if (-1 === children.indexOf(".")) children.push(".")
     if (-1 === children.indexOf("..")) children.push("..")
