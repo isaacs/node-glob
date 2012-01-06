@@ -58,6 +58,7 @@ function Miniglob (pattern, options) {
   pattern = this.pattern = mm.pattern
 
   this.error = null
+  this.aborted = false
 
   this.matches = new FastList()
   EE.call(this)
@@ -121,9 +122,17 @@ function _finish () {
 }
 
 
+Miniglob.prototype.abort = abort
+function abort () {
+  this.aborted = true
+  this.emit("abort")
+}
+
 
 Miniglob.prototype._process = _process
 function _process (f, depth, cb) {
+  if (this.aborted) return cb()
+
   var pref = depth + new Array(depth + 1).join(" ") + "GLOB "
   var me = this
 
@@ -175,7 +184,9 @@ function _process (f, depth, cb) {
  }
 
 
-Miniglob.prototype._processPartial = function _processPartial (f, depth, cb) {
+Miniglob.prototype._processPartial = _processPartial
+function _processPartial (f, depth, cb) {
+  if (this.aborted) return cb()
 
   var me = this
   var pref = depth + new Array(depth + 1).join(" ") + "GLOB "
@@ -199,7 +210,9 @@ Miniglob.prototype._processPartial = function _processPartial (f, depth, cb) {
   me._processDir(f, depth, cb)
 }
 
-Miniglob.prototype._processDir = function _processDir (f, depth, cb) {
+Miniglob.prototype._processDir = _processDir
+function _processDir (f, depth, cb) {
+  if (this.aborted) return cb()
 
   var me = this
   var pref = depth + new Array(depth + 1).join(" ") + "GLOB "
@@ -235,7 +248,6 @@ Miniglob.prototype._processDir = function _processDir (f, depth, cb) {
     }
 
     if (count === 0) {
-      //if (me.options.debug)
       if (me.options.debug) {
         console.error("no children?", children, f)
       }
@@ -243,10 +255,6 @@ Miniglob.prototype._processDir = function _processDir (f, depth, cb) {
     }
 
     children.forEach(function (c) {
-      //if (c === "." || c === "..") {
-      //  count --
-      //  return
-      //}
       if (me.options.debug) {
         console.error(pref + " processing", f + "/" + c)
       }
