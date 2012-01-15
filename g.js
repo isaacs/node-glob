@@ -1,6 +1,9 @@
 var MG = require("./").Miniglob
 
-var mg = new MG("a/**/[cg]/../[cg]", {mark: true})
+var pattern = "test/a/**/[cg]/../[cg]"
+console.log(pattern)
+
+var mg = new MG(pattern, {mark: true})
 mg.on("end", function (matches) {
   console.log("matches", matches)
 })
