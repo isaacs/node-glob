@@ -30,18 +30,39 @@ function miniglob (pattern, options, cb) {
   if (typeof options === "function") cb = options, options = {}
   if (!options) options = {}
 
-  var g = new Miniglob(pattern, options)
-  if (typeof cb === "function") {
-    g.on("error", cb)
-    g.on("end", function (matches) { cb(null, matches) })
+  var m = new Miniglob(pattern, options, cb)
+
+  if (options.sync) {
+    return m.found
+  } else {
+    return m
   }
-  return g
 }
+
+miniglob.sync = miniglobSync
+function miniglobSync (pattern, options) {
+  options = options || {}
+  options.sync = true
+  return miniglob(pattern, options)
+}
+
 
 miniglob.Miniglob = Miniglob
 inherits(Miniglob, EE)
-function Miniglob (pattern, options) {
+function Miniglob (pattern, options, cb) {
+  if (!(this instanceof Miniglob)) {
+    return new Miniglob(pattern, options, cb)
+  }
+
+  if (typeof cb === "function") {
+    this.on("error", cb)
+    this.on("end", function (matches) { cb(null, matches) })
+  }
+
   options = options || {}
+
+  if (!options.hasOwnProperty("maxDepth")) options.maxDepth = 1000
+  if (!options.hasOwnProperty("maxLength")) options.maxLength = 1024
 
   var cwd = this.cwd = options.cwd =
     options.cwd || process.cwd()
@@ -63,6 +84,7 @@ function Miniglob (pattern, options) {
   this.matches = new FastList()
   EE.call(this)
   var me = this
+
   this._process(this.cwd, 1, this._finish.bind(this))
 }
 
@@ -76,7 +98,7 @@ function _finish () {
     return me.emit("end", [pattern])
   }
 
-  var found = me.matches.slice()
+  var found = me.found = me.matches.slice()
 
   found = found.map(function (m) {
     if (m.indexOf(me.options.cwd) === 0) {
@@ -100,16 +122,24 @@ function _finish () {
 
   var stat = me.options.follow ? "stat" : "lstat"
   needStat.forEach(function (f) {
-    fs[stat](f, function (er, st) {
-      // ignore errors.  if the user only wants to show
-      // existing files, then set options.stat to exclude anything
-      // that doesn't exist.
-      if (st && st.isDirectory()) {
-        found.splice(found.indexOf(f), 1, f + "/")
+    if (me.options.sync) {
+      try {
+        afterStat(null, fs[stat + "Sync"](f))
+      } catch (er) {
+        afterStat(er)
       }
-      if (-- c <= 0) return next()
-    })
+    } else fs[stat](f, afterStat)
   })
+
+  function afterStat (er, st) {
+    // ignore errors.  if the user only wants to show
+    // existing files, then set options.stat to exclude anything
+    // that doesn't exist.
+    if (st && st.isDirectory()) {
+      found.splice(found.indexOf(f), 1, f + "/")
+    }
+    if (-- c <= 0) return next()
+  }
 
   function next () {
     if (!me.options.nosort) {
@@ -133,7 +163,6 @@ Miniglob.prototype._process = _process
 function _process (f, depth, cb) {
   if (this.aborted) return cb()
 
-  var pref = depth + new Array(depth + 1).join(" ") + "GLOB "
   var me = this
 
   // if f matches, then it's a match.  emit it, move on.
@@ -155,23 +184,35 @@ function _process (f, depth, cb) {
 
   if (match) {
     if (me.options.debug) {
-      console.error(pref + " %s matches %s", f, me.pattern)
+      console.error(" %s matches %s", f, me.pattern)
     }
     // make sure it exists if asked.
     if (me.options.stat) {
       var stat = me.options.follow ? "stat" : "lstat"
-      fs[stat](f, function (er, st) {
-        if (er) return cb()
-        isDir[f] = st.isDirectory()
-        emitMatch()
-      })
-    } else process.nextTick(emitMatch)
+      if (me.options.sync) {
+        try {
+          afterStat(null, fs[stat + "Sync"](f))
+        } catch (ex) {
+          afterStat(ex)
+        }
+      } else fs[stat](f, afterStat)
+    } else if (me.options.sync) {
+      emitMatch()
+    } else {
+      process.nextTick(emitMatch)
+    }
 
     return
 
+    function afterStat (er, st) {
+      if (er) return cb()
+      isDir[f] = st.isDirectory()
+      emitMatch()
+    }
+
     function emitMatch () {
       if (me.options.debug) {
-        console.error(pref, "emitting match", f)
+        console.error("emitting match", f)
       }
       me.matches.push(f)
       me.emit("match", f)
@@ -181,7 +222,7 @@ function _process (f, depth, cb) {
     }
   }
 
- }
+}
 
 
 Miniglob.prototype._processPartial = _processPartial
@@ -189,11 +230,10 @@ function _processPartial (f, depth, cb) {
   if (this.aborted) return cb()
 
   var me = this
-  var pref = depth + new Array(depth + 1).join(" ") + "GLOB "
 
   var partial = me.minimatch.match(f, true)
   if (!partial) {
-    if (me.options.debug) console.error(pref + "not a partial", f)
+    if (me.options.debug) console.error("not a partial", f)
 
     // if not a match or partial match, just move on.
     return cb()
@@ -203,7 +243,7 @@ function _processPartial (f, depth, cb) {
   // however, this only matters if it's a dir.
   //if (me.options.debug)
   if (me.options.debug) {
-    console.error(pref, "got a partial", f)
+    console.error("got a partial", f)
   }
   me.emit("partial", f)
 
@@ -214,22 +254,41 @@ Miniglob.prototype._processDir = _processDir
 function _processDir (f, depth, cb) {
   if (this.aborted) return cb()
 
-  var me = this
-  var pref = depth + new Array(depth + 1).join(" ") + "GLOB "
+  // If we're already at the maximum depth, then don't read the dir.
+  if (depth >= this.options.maxDepth) return cb()
+
+  // if the path is at the maximum length, then don't proceed, either.
+  if (f.length >= this.options.maxLength) return cb()
 
   // now the fun stuff.
   // if it's a dir, then we'll read all the children, and process them.
   // if it's not a dir, or we can't access it, then it'll fail.
   // We log a warning for EACCES and EPERM, but ENOTDIR and ENOENT are
   // expected and fine.
+  cb = this._afterReaddir(f, depth, cb)
+  if (this.options.sync) return this._processDirSync(f, depth, cb)
+  fs.readdir(f, cb)
+}
 
-  fs.readdir(f, function (er, children) {
+Miniglob.prototype._processDirSync = _processDirSync
+function _processDirSync (f, depth, cb) {
+  try {
+    cb(null, fs.readdirSync(f))
+  } catch (ex) {
+    cb(ex)
+  }
+}
+
+Miniglob.prototype._afterReaddir = _afterReaddir
+function _afterReaddir (f, depth, cb) {
+  var me = this
+  return function afterReaddir (er, children) {
     if (er) switch (er.code) {
       case "ENOENT":
       case "ENOTDIR":
         isDir[f] = false
         return cb()
-      default:
+      default: // some other kind of problem.
         if (!me.options.silent) console.error("miniglob error", er)
         if (me.options.strict) return cb(er)
         return cb()
@@ -239,40 +298,43 @@ function _processDir (f, depth, cb) {
     // mark is set.
     isDir[f] = true
 
-    if (-1 === children.indexOf(".")) children.push(".")
-    if (-1 === children.indexOf("..")) children.push("..")
-
-    var count = children.length
-    if (me.options.debug) {
-      console.error(pref + "count=%d %s", count, f, children)
-    }
-
-    if (count === 0) {
-      if (me.options.debug) {
-        console.error("no children?", children, f)
-      }
-      return then(f)()
-    }
-
-    children.forEach(function (c) {
-      if (me.options.debug) {
-        console.error(pref + " processing", f + "/" + c)
-      }
-      me._process(f + "/" + c, depth + 1, then(f + "/" + c))
-    })
-
-
-    function then (f) { return function (er) {
-      count --
-      if (me.options.debug) {
-        console.error("%s THEN %s", pref, f, count, count <= 0 ? "done" : "not done")
-      }
-      if (me.error) return
-      if (er) return me.emit("error", me.error = er)
-      if (count <= 0) {
-        cb()
-      }
-    }}
-  })
+    me._processChildren(f, depth, children, cb)
+  }
 }
 
+Miniglob.prototype._processChildren = _processChildren
+function _processChildren (f, depth, children, cb) {
+  var me = this
+  if (-1 === children.indexOf(".")) children.push(".")
+  if (-1 === children.indexOf("..")) children.push("..")
+
+  var count = children.length
+  if (me.options.debug) {
+    console.error("count=%d %s", count, f, children)
+  }
+
+  if (count === 0) {
+    if (me.options.debug) {
+      console.error("no children?", children, f)
+    }
+    return then()
+  }
+
+  children.forEach(function (c) {
+    if (me.options.debug) {
+      console.error(" processing", f + "/" + c)
+    }
+    me._process(f + "/" + c, depth + 1, then)
+  })
+
+
+  function then (er) {
+    count --
+    if (me.options.debug) {
+      console.error("%s THEN %s", f, count, count <= 0 ? "done" : "not done")
+    }
+    if (me.error) return
+    if (er) return me.emit("error", me.error = er)
+    if (count <= 0) cb()
+  }
+}
