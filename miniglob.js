@@ -62,7 +62,7 @@ function Miniglob (pattern, options, cb) {
   options = options || {}
 
   if (!options.hasOwnProperty("maxDepth")) options.maxDepth = 1000
-  if (!options.hasOwnProperty("maxLength")) options.maxLength = 1024
+  if (!options.hasOwnProperty("maxLength")) options.maxLength = 4096
 
   var cwd = this.cwd = options.cwd =
     options.cwd || process.cwd()
