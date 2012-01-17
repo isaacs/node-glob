@@ -2,7 +2,12 @@
 // show that it does the same thing by default as the shell.
 var tap = require("tap")
 , child_process = require("child_process")
-, globs = ["test/a/**/[cg]/../[cg]"]
+, globs =
+  ["test/a/*/+(c|g)/./d"
+  ,"test/a/**/[cg]/../[cg]"
+  ,"test/a/{b,c,d,e,f}/**/g"
+  ,"test/a/b/**"
+  ]
 , mg = require("../")
 , path = require("path")
 
@@ -13,17 +18,24 @@ process.chdir(path.resolve(__dirname, ".."))
 globs.forEach(function (pattern) {
   var echoOutput
   tap.test(pattern, function (t) {
-    var cp = child_process.spawn("bash", ["-c",
-        "shopt -s globstar;" +
-        "shopt -s extglob;" +
-        "for i in " + pattern + "; do echo $i; done"])
+    var bashPattern = pattern //.replace(/(\(|\||\))/g, "\\$1")
+    , cmd = "shopt -s globstar && " +
+            "shopt -s extglob && " +
+            "shopt -s nullglob && " +
+            // "shopt >&2; " +
+            "eval \'for i in " + bashPattern + "; do echo $i; done\'"
+    , cp = child_process.spawn("bash", ["-c",cmd])
     , out = []
     , globResult
     cp.stdout.on("data", function (c) {
       out.push(c)
     })
+    cp.stderr.on("data", function (c) {
+    })
     cp.on("exit", function () {
-      echoOutput = flatten(out).split(/\r*\n/)
+      echoOutput = flatten(out)
+      if (!echoOutput) echoOutput = []
+      else echoOutput = echoOutput.split(/\r*\n/)
       next()
     })
 
