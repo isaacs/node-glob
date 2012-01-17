@@ -18,6 +18,11 @@
     "inherits": "1"
   },
   "devDependencies": {
-    "tap": "0.1"
+    "tap": "0.1",
+    "mkdirp":"0.2",
+    "rimraf":"1"
+  },
+  "scripts": {
+    "test": "tap test/*.js"
   }
 }
