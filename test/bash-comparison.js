@@ -7,6 +7,9 @@ var tap = require("tap")
   ,"test/a/**/[cg]/../[cg]"
   ,"test/a/{b,c,d,e,f}/**/g"
   ,"test/a/b/**"
+  ,"test/**/g"
+  ,"test/a/abc{fed,def}/g/h"
+  ,"test/a/abc{fed/g,def}/**/"
   ]
 , mg = require("../")
 , path = require("path")
@@ -14,6 +17,12 @@ var tap = require("tap")
 // run from the root of the project
 // this is usually where you're at anyway, but be sure.
 process.chdir(path.resolve(__dirname, ".."))
+
+function alphasort (a, b) {
+  a = a.toLowerCase()
+  b = b.toLowerCase()
+  return a > b ? 1 : a < b ? -1 : 0
+}
 
 globs.forEach(function (pattern) {
   var echoOutput
@@ -36,7 +45,14 @@ globs.forEach(function (pattern) {
     cp.on("exit", function () {
       echoOutput = flatten(out)
       if (!echoOutput) echoOutput = []
-      else echoOutput = echoOutput.split(/\r*\n/)
+      else {
+        echoOutput = echoOutput.split(/\r*\n/).map(function (m) {
+          return m.replace(/\/$/, "")
+        }).sort(alphasort).reduce(function (set, f) {
+          if (f !== set[set.length - 1]) set.push(f)
+          return set
+        }, [])
+      }
       next()
     })
 
