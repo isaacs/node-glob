@@ -100,7 +100,7 @@ function _finish () {
 
   var found = me.found = me.matches.slice()
 
-  found = found.map(function (m) {
+  found = me.found = found.map(function (m) {
     if (m.indexOf(me.options.cwd) === 0) {
       m = m.substr(me.options.cwd.length + 1)
     }
@@ -112,7 +112,7 @@ function _finish () {
   // mark all directories with a /.
   // This may involve some stat calls for things that are unknown.
   var needStat = []
-  found = found.map(function (f) {
+  found = me.found = found.map(function (f) {
     if (isDir[f] === undefined) needStat.push(f)
     else if (isDir[f] && f.slice(-1) !== "/") f += "/"
     return f

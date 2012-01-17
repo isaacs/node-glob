@@ -11,13 +11,13 @@ var tap = require("tap")
 process.chdir(path.resolve(__dirname, ".."))
 
 globs.forEach(function (pattern) {
+  var echoOutput
   tap.test(pattern, function (t) {
     var cp = child_process.spawn("bash", ["-c",
         "shopt -s globstar;" +
         "shopt -s extglob;" +
         "for i in " + pattern + "; do echo $i; done"])
     , out = []
-    , echoOutput
     , globResult
     cp.stdout.on("data", function (c) {
       out.push(c)
@@ -36,9 +36,14 @@ globs.forEach(function (pattern) {
     function next () {
       if (!echoOutput || !globResult) return
 
-      t.deepEqual(echoOutput, globResult, "should match shell")
+      t.deepEqual(globResult, echoOutput, "should match shell")
       t.end()
     }
+  })
+
+  tap.test(pattern + " sync", function (t) {
+    t.deepEqual(mg.sync(pattern), echoOutput, "should match shell")
+    t.end()
   })
 })
 
