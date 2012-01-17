@@ -284,10 +284,11 @@ function _afterReaddir (f, depth, cb) {
   var me = this
   return function afterReaddir (er, children) {
     if (er) switch (er.code) {
-      case "ENOENT":
-      case "ENOTDIR":
+      case "UNKNOWN": // probably too deep
+      case "ENOTDIR": // completely expected and normal.
         isDir[f] = false
         return cb()
+      case "ENOENT":  // should never happen.
       default: // some other kind of problem.
         if (!me.options.silent) console.error("miniglob error", er)
         if (me.options.strict) return cb(er)
