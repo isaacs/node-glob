@@ -31,6 +31,7 @@ globs.forEach(function (pattern) {
       out.push(c)
     })
     cp.stderr.on("data", function (c) {
+      process.stderr.write(c)
     })
     cp.on("exit", function () {
       echoOutput = flatten(out)
