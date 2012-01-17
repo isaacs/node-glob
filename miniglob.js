@@ -1,7 +1,8 @@
 module.exports = miniglob
 
 var fs = require("graceful-fs")
-, Minimatch = require("minimatch").Minimatch
+, minimatch = require("minimatch")
+, Minimatch = minimatch.Minimatch
 , inherits = require("inherits")
 , EE = require("events").EventEmitter
 , FastList = require("fast-list")
@@ -326,6 +327,21 @@ function _processChildren (f, depth, children, cb) {
       console.error(" processing", f + "/" + c)
     }
     me._process(f + "/" + c, depth + 1, then)
+  })
+
+  // special case:
+  // If it ends in **, and we match that pattern otherwise,
+  // then the dir ending in / is a match, but only if it is
+  // a directory (which we know it is at this point).
+  me.minimatch.set.forEach(function (pattern) {
+    var tail = pattern[ pattern.length - 1 ]
+    if (tail !== minimatch.GLOBSTAR) return
+
+    pattern = pattern.slice(0, -1)
+    if (me.minimatch.matchOne(f.split("/"), pattern)) {
+      me.matches.push(f + "/")
+      me.emit("match", f)
+    }
   })
 
 
