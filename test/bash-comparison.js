@@ -2,6 +2,8 @@
 // show that it does the same thing by default as the shell.
 var tap = require("tap")
 , child_process = require("child_process")
+
+// put more patterns here.
 , globs =
   ["test/a/*/+(c|g)/./d"
   ,"test/a/**/[cg]/../[cg]"
@@ -10,6 +12,12 @@ var tap = require("tap")
   ,"test/**/g"
   ,"test/a/abc{fed,def}/g/h"
   ,"test/a/abc{fed/g,def}/**/"
+  ,"test/a/abc{fed/g,def}/**///**/"
+  ,"test/**/a/**/"
+  ,"test/+(a|b|c)/a{/,bc*}/**"
+  ,"test/*/*/*/f"
+  ,"test/**/f"
+  ,"test/a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/**/b/c/**"
   ]
 , mg = require("../")
 , path = require("path")
@@ -47,7 +55,10 @@ globs.forEach(function (pattern) {
       if (!echoOutput) echoOutput = []
       else {
         echoOutput = echoOutput.split(/\r*\n/).map(function (m) {
-          return m.replace(/\/$/, "")
+          // Bash is a oddly inconsistent with slashes in the
+          // the results.  This implementation is a bit more
+          // normalized.  Account for this in the test results.
+          return m.replace(/\/+/g, "/").replace(/\/$/, "")
         }).sort(alphasort).reduce(function (set, f) {
           if (f !== set[set.length - 1]) set.push(f)
           return set

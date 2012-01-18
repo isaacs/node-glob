@@ -307,6 +307,18 @@ function _afterReaddir (f, depth, cb) {
 Miniglob.prototype._processChildren = _processChildren
 function _processChildren (f, depth, children, cb) {
   var me = this
+
+  // note: the file ending with / might match, but only if
+  // it's a directory, which we know it is at this point.
+  // For example, /a/b/ or /a/b/** would match /a/b/ but not
+  // /a/b.  Note: it'll get the trailing "/" strictly based
+  // on the "mark" param, but that happens later.
+  // This is slightly different from bash's glob.
+  if (!me.minimatch.match(f) && me.minimatch.match(f + "/")) {
+    me.matches.push(f)
+    me.emit("match", f)
+  }
+
   if (-1 === children.indexOf(".")) children.push(".")
   if (-1 === children.indexOf("..")) children.push("..")
 
@@ -328,22 +340,6 @@ function _processChildren (f, depth, children, cb) {
     }
     me._process(f + "/" + c, depth + 1, then)
   })
-
-  // special case:
-  // If it ends in **, and we match that pattern otherwise,
-  // then the dir ending in / is a match, but only if it is
-  // a directory (which we know it is at this point).
-  me.minimatch.set.forEach(function (pattern) {
-    var tail = pattern[ pattern.length - 1 ]
-    if (tail !== minimatch.GLOBSTAR) return
-
-    pattern = pattern.slice(0, -1)
-    if (me.minimatch.matchOne(f.split("/"), pattern)) {
-      me.matches.push(f + "/")
-      me.emit("match", f)
-    }
-  })
-
 
   function then (er) {
     count --
