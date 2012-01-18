@@ -3,6 +3,17 @@
 This is a glob implementation in JavaScript.  It uses the `minimatch`
 library to do its matching.
 
+## Attention: node-glob users!
+
+The API has changed dramatically between 2.x and 3.x. This library is
+now 100% JavaScript, and the integer flags have been replaced with an
+options object.
+
+Also, there's an event emitter class, proper tests, and all the other
+things you've come to expect from node modules.
+
+And best of all, no compilation!
+
 ## Usage
 
 ```javascript
