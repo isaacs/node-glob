@@ -99,8 +99,8 @@ All options are false by default.
 * `root` Since Glob requires a root setting, this defaults to
   `path.resolve(options.cwd, "/")`.
 * `mark` Add a `/` character to directory matches.
-* `follow` Use `stat` instead of `lstat`.  This can cause undesirable
-  behavior in the case of symbolic link cycles.
+* `follow` Use `stat` instead of `lstat`.  This is only relevant if
+  `stat` or `mark` are true.
 * `nosort` Don't sort the results.
 * `stat` Set to true to stat/lstat *all* results.  This reduces performance
   somewhat, but guarantees that the results are files that actually
