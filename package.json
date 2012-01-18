@@ -1,13 +1,13 @@
 {
   "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
-  "name": "miniglob",
+  "name": "glob",
   "description": "a little globber",
-  "version": "0.0.0",
+  "version": "3.0.0",
   "repository": {
     "type": "git",
-    "url": "git://github.com/isaacs/miniglob.git"
+    "url": "git://github.com/isaacs/glob.git"
   },
-  "main": "miniglob.js",
+  "main": "glob.js",
   "engines": {
     "node": "*"
   },

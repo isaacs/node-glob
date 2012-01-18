@@ -1,21 +1,15 @@
-# miniglob
+# Glob
 
-miniglob : glob :: minimatch : fnmatch
-
-This is a glob implementation in JavaScript.  Very soon, it will replace
-the C++ binding in node-glob.  It may be folded into minimatch, as well,
-but for now, keeping the two libs separate is convenient.
-
-This is still very alpha.  Come back later for better tests and docs,
-once it solidifies a bit more.
+This is a glob implementation in JavaScript.  It uses the `minimatch`
+library to do its matching.
 
 ## Usage
 
 ```javascript
-var miniglob = require("miniglob")
+var glob = require("glob")
 
 // options is optional
-miniglob("**/*.js", options, function (er, files) {
+glob("**/*.js", options, function (er, files) {
   // files is an array of filenames.
   // If the `nonull` option is set, and nothing
   // was found, then files is ["**/*.js"]
@@ -42,25 +36,25 @@ See:
 * `man 5 gitignore`
 * [minimatch documentation](https://github.com/isaacs/minimatch)
 
-## Miniglob Class
+## Glob Class
 
-Create a miniglob object by instanting the `miniglob.Miniglob` class.
+Create a glob object by instanting the `glob.Glob` class.
 
 ```javascript
-var Miniglob = require("miniglob").Miniglob
-var mg = new Miniglob(pattern, options)
+var Glob = require("glob").Glob
+var mg = new Glob(pattern, options)
 ```
 
 It's an EventEmitter.
 
 ### Properties
 
-* `minimatch` The minimatch object that the miniglob uses.
+* `minimatch` The minimatch object that the glob uses.
 * `options` The options object passed in.
 * `matches` A [FastList](https://github.com/isaacs/fast-list) object
   containing the matches as they are found.
 * `error` The error encountered.  When an error is encountered, the
-  miniglob object is in an undefined state, and should be discarded.
+  glob object is in an undefined state, and should be discarded.
 * `aborted` Boolean which is set to true when calling `abort()`.  There
   is no way at this time to continue a glob search after aborting.
 
@@ -83,15 +77,15 @@ It's an EventEmitter.
 ### Options
 
 All the options that can be passed to Minimatch can also be passed to
-Miniglob to change pattern matching behavior.  Additionally, these ones
+Glob to change pattern matching behavior.  Additionally, these ones
 are added which are glob-specific, or have glob-specific ramifcations.
 
 All options are false by default.
 
 * `cwd` The current working directory in which to search.  Since, unlike
-  Minimatch, Miniglob requires a working directory to start in, this
+  Minimatch, Glob requires a working directory to start in, this
   defaults to `process.cwd()`.
-* `root` Since Miniglob requires a root setting, this defaults to
+* `root` Since Glob requires a root setting, this defaults to
   `path.resolve(options.cwd, "/")`.
 * `mark` Add a `/` character to directory matches.
 * `follow` Use `stat` instead of `lstat`.  This can cause undesirable

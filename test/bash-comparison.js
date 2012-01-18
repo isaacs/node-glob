@@ -19,7 +19,7 @@ var tap = require("tap")
   ,"test/**/f"
   ,"test/a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/**/b/c/**"
   ]
-, mg = require("../")
+, glob = require("../")
 , path = require("path")
 
 // run from the root of the project
@@ -67,7 +67,7 @@ globs.forEach(function (pattern) {
       next()
     })
 
-    mg(pattern, function (er, matches) {
+    glob(pattern, function (er, matches) {
       t.ifError(er, pattern + " should not error")
       globResult = matches
       next()
@@ -82,7 +82,7 @@ globs.forEach(function (pattern) {
   })
 
   tap.test(pattern + " sync", function (t) {
-    t.deepEqual(mg.sync(pattern), echoOutput, "should match shell")
+    t.deepEqual(glob.sync(pattern), echoOutput, "should match shell")
     t.end()
   })
 })

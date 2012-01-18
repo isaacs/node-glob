@@ -1,4 +1,4 @@
-module.exports = miniglob
+module.exports = glob
 
 var fs = require("graceful-fs")
 , minimatch = require("minimatch")
@@ -27,11 +27,16 @@ var fs = require("graceful-fs")
 // match on all the files if it's a dir, or a regular match if it's not.
 
 
-function miniglob (pattern, options, cb) {
+function glob (pattern, options, cb) {
   if (typeof options === "function") cb = options, options = {}
   if (!options) options = {}
 
-  var m = new Miniglob(pattern, options, cb)
+  if (typeof options === "number") {
+    deprecated()
+    return
+  }
+
+  var m = new Glob(pattern, options, cb)
 
   if (options.sync) {
     return m.found
@@ -40,19 +45,30 @@ function miniglob (pattern, options, cb) {
   }
 }
 
-miniglob.sync = miniglobSync
-function miniglobSync (pattern, options) {
+glob.fnmatch = deprecated
+
+function deprecated () {
+  throw new Error("glob's interface has changed. Please see the docs.")
+}
+
+glob.sync = globSync
+function globSync (pattern, options) {
+  if (typeof options === "number") {
+    deprecated()
+    return
+  }
+
   options = options || {}
   options.sync = true
-  return miniglob(pattern, options)
+  return glob(pattern, options)
 }
 
 
-miniglob.Miniglob = Miniglob
-inherits(Miniglob, EE)
-function Miniglob (pattern, options, cb) {
-  if (!(this instanceof Miniglob)) {
-    return new Miniglob(pattern, options, cb)
+glob.Glob = Glob
+inherits(Glob, EE)
+function Glob (pattern, options, cb) {
+  if (!(this instanceof Glob)) {
+    return new Glob(pattern, options, cb)
   }
 
   if (typeof cb === "function") {
@@ -89,7 +105,7 @@ function Miniglob (pattern, options, cb) {
   this._process(this.cwd, 1, this._finish.bind(this))
 }
 
-Miniglob.prototype._finish = _finish
+Glob.prototype._finish = _finish
 function _finish () {
   var me = this
   if (me.options.debug) {
@@ -153,14 +169,14 @@ function _finish () {
 }
 
 
-Miniglob.prototype.abort = abort
+Glob.prototype.abort = abort
 function abort () {
   this.aborted = true
   this.emit("abort")
 }
 
 
-Miniglob.prototype._process = _process
+Glob.prototype._process = _process
 function _process (f, depth, cb) {
   if (this.aborted) return cb()
 
@@ -176,7 +192,7 @@ function _process (f, depth, cb) {
   // readdir a, then stat a/<child>/b in all of them.
   //
   // however, that'll require a lot of muddying between minimatch
-  // and miniglob, and at least for the time being, it's kind of nice to
+  // and glob, and at least for the time being, it's kind of nice to
   // keep them a little bit separate.
 
   // if this thing is a match, then add to the matches list.
@@ -226,7 +242,7 @@ function _process (f, depth, cb) {
 }
 
 
-Miniglob.prototype._processPartial = _processPartial
+Glob.prototype._processPartial = _processPartial
 function _processPartial (f, depth, cb) {
   if (this.aborted) return cb()
 
@@ -251,7 +267,7 @@ function _processPartial (f, depth, cb) {
   me._processDir(f, depth, cb)
 }
 
-Miniglob.prototype._processDir = _processDir
+Glob.prototype._processDir = _processDir
 function _processDir (f, depth, cb) {
   if (this.aborted) return cb()
 
@@ -271,7 +287,7 @@ function _processDir (f, depth, cb) {
   fs.readdir(f, cb)
 }
 
-Miniglob.prototype._processDirSync = _processDirSync
+Glob.prototype._processDirSync = _processDirSync
 function _processDirSync (f, depth, cb) {
   try {
     cb(null, fs.readdirSync(f))
@@ -280,7 +296,7 @@ function _processDirSync (f, depth, cb) {
   }
 }
 
-Miniglob.prototype._afterReaddir = _afterReaddir
+Glob.prototype._afterReaddir = _afterReaddir
 function _afterReaddir (f, depth, cb) {
   var me = this
   return function afterReaddir (er, children) {
@@ -291,7 +307,7 @@ function _afterReaddir (f, depth, cb) {
         return cb()
       case "ENOENT":  // should never happen.
       default: // some other kind of problem.
-        if (!me.options.silent) console.error("miniglob error", er)
+        if (!me.options.silent) console.error("glob error", er)
         if (me.options.strict) return cb(er)
         return cb()
     }
@@ -304,7 +320,7 @@ function _afterReaddir (f, depth, cb) {
   }
 }
 
-Miniglob.prototype._processChildren = _processChildren
+Glob.prototype._processChildren = _processChildren
 function _processChildren (f, depth, children, cb) {
   var me = this
 
