@@ -102,7 +102,24 @@ function Glob (pattern, options, cb) {
   EE.call(this)
   var me = this
 
-  this._process(this.cwd, 1, this._finish.bind(this))
+  this._checkedRoot = false
+
+  // if we have any patterns starting with /, then we need to
+  // start at the root.  If we don't, then we can take a short
+  // cut and just start at the cwd.
+  var start = this.cwd
+  for (var i = 0, l = this.minimatch.set.length; i < l; i ++) {
+    if (this.minimatch.set[i].absolute) {
+      start = this.root
+      break
+    }
+  }
+
+  if (me.options.debug) {
+    console.error("start =", start)
+  }
+
+  this._process(start, 1, this._finish.bind(this))
 }
 
 Glob.prototype._finish = _finish
@@ -141,33 +158,39 @@ function _finish () {
   needStat.forEach(function (f) {
     if (me.options.sync) {
       try {
-        afterStat(null, fs[stat + "Sync"](f))
+        afterStat(f)(null, fs[stat + "Sync"](f))
       } catch (er) {
-        afterStat(er)
+        afterStat(f)(er)
       }
-    } else fs[stat](f, afterStat)
+    } else fs[stat](f, afterStat(f))
   })
 
-  function afterStat (er, st) {
+  function afterStat (f) { return function (er, st) {
     // ignore errors.  if the user only wants to show
     // existing files, then set options.stat to exclude anything
     // that doesn't exist.
-    if (st && st.isDirectory()) {
-      found.splice(found.indexOf(f), 1, f + "/")
+    if (st && st.isDirectory() && f.substr(-1) !== "/") {
+      var i = found.indexOf(f)
+      if (i !== -1) {
+        found.splice(i, 1, f + "/")
+      }
     }
     if (-- c <= 0) return next()
-  }
+  }}
 
   function next () {
     if (!me.options.nosort) {
-      found = found.sort(function (a, b) {
-        return a > b ? 1 : a < b ? -1 : 0
-      })
+      found = found.sort(alphasort)
     }
     me.emit("end", found)
   }
 }
 
+function alphasort (a, b) {
+  a = a.toLowerCase()
+  b = b.toLowerCase()
+  return a > b ? 1 : a < b ? -1 : 0
+}
 
 Glob.prototype.abort = abort
 function abort () {
@@ -197,7 +220,12 @@ function _process (f, depth, cb) {
 
   // if this thing is a match, then add to the matches list.
   var match = me.minimatch.match(f)
-  if (!match) return me._processPartial(f, depth, cb)
+  if (!match) {
+    if (me.options.debug) {
+      console.error("not a match", f)
+    }
+    return me._processPartial(f, depth, cb)
+  }
 
   if (match) {
     if (me.options.debug) {
@@ -208,11 +236,11 @@ function _process (f, depth, cb) {
       var stat = me.options.follow ? "stat" : "lstat"
       if (me.options.sync) {
         try {
-          afterStat(null, fs[stat + "Sync"](f))
+          afterStat(f)(null, fs[stat + "Sync"](f))
         } catch (ex) {
-          afterStat(ex)
+          afterStat(f)(ex)
         }
-      } else fs[stat](f, afterStat)
+      } else fs[stat](f, afterStat(f))
     } else if (me.options.sync) {
       emitMatch()
     } else {
@@ -221,11 +249,11 @@ function _process (f, depth, cb) {
 
     return
 
-    function afterStat (er, st) {
+    function afterStat (f) { return function (er, st) {
       if (er) return cb()
       isDir[f] = st.isDirectory()
       emitMatch()
-    }
+    }}
 
     function emitMatch () {
       if (me.options.debug) {
@@ -250,7 +278,9 @@ function _processPartial (f, depth, cb) {
 
   var partial = me.minimatch.match(f, true)
   if (!partial) {
-    if (me.options.debug) console.error("not a partial", f)
+    if (me.options.debug) {
+      console.error("not a partial", f)
+    }
 
     // if not a match or partial match, just move on.
     return cb()
@@ -351,10 +381,13 @@ function _processChildren (f, depth, children, cb) {
   }
 
   children.forEach(function (c) {
+    if (f === "/") c = f + c
+    else c = f + "/" + c
+
     if (me.options.debug) {
-      console.error(" processing", f + "/" + c)
+      console.error(" processing", c)
     }
-    me._process(f + "/" + c, depth + 1, then)
+    me._process(c, depth + 1, then)
   })
 
   function then (er) {

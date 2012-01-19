@@ -18,6 +18,8 @@ var tap = require("tap")
   ,"test/*/*/*/f"
   ,"test/**/f"
   ,"test/a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/**/b/c/**"
+  ,"{./*/*,/usr/local/*}"
+  ,"{/*,*}" // evil owl face!  how you taunt me!
   ]
 , glob = require("../")
 , path = require("path")
