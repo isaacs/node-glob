@@ -89,7 +89,6 @@ function Glob (pattern, options, cb) {
   }
 
   if (typeof cb === "function") {
-    console.error("cb is function")
     this.on("error", cb)
     this.on("end", function (matches) {
       // console.error("cb with matches", matches)
@@ -329,7 +328,6 @@ function _process (pattern, depth, index, cb) {
     if (n === pattern.length - 1 &&
         !this.options.mark &&
         !this.options.stat) {
-      console.error("skip final stat")
       entries.forEach(function (e) {
         if (prefix) {
           if (prefix !== "/") e = prefix + "/" + e
