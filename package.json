@@ -12,8 +12,7 @@
     "node": "*"
   },
   "dependencies": {
-    "fast-list":"1",
-    "minimatch": "0.1",
+    "minimatch": "0.2",
     "graceful-fs": "~1.1.2",
     "inherits": "1"
   },

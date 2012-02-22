@@ -62,8 +62,6 @@ It's an EventEmitter.
 
 * `minimatch` The minimatch object that the glob uses.
 * `options` The options object passed in.
-* `matches` A [FastList](https://github.com/isaacs/fast-list) object
-  containing the matches as they are found.
 * `error` The error encountered.  When an error is encountered, the
   glob object is in an undefined state, and should be discarded.
 * `aborted` Boolean which is set to true when calling `abort()`.  There
@@ -75,10 +73,9 @@ It's an EventEmitter.
   matches found.  If the `nonull` option is set, and no match was found,
   then the `matches` list contains the original pattern.  The matches
   are sorted, unless the `nosort` flag is set.
-* `match` Every time a match is found, this is emitted with the pattern.
-* `partial` Emitted when a directory matches the start of a pattern, and
-  is then searched for additional matches.
-* `error` Emitted when an unexpected error is encountered.
+* `match` Every time a match is found, this is emitted with the matched.
+* `error` Emitted when an unexpected error is encountered, or whenever
+  any fs error occurs if `options.strict` is set.
 * `abort` When `abort()` is called, this event is raised.
 
 ### Methods
@@ -91,24 +88,27 @@ All the options that can be passed to Minimatch can also be passed to
 Glob to change pattern matching behavior.  Additionally, these ones
 are added which are glob-specific, or have glob-specific ramifcations.
 
-All options are false by default.
+All options are false by default, unless otherwise noted.
 
-* `cwd` The current working directory in which to search.  Since, unlike
-  Minimatch, Glob requires a working directory to start in, this
-  defaults to `process.cwd()`.
-* `root` Since Glob requires a root setting, this defaults to
-  `path.resolve(options.cwd, "/")`.
-* `mark` Add a `/` character to directory matches.
-* `follow` Use `stat` instead of `lstat`.  This is only relevant if
-  `stat` or `mark` are true.
+* `cwd` The current working directory in which to search.  Defaults
+  to `process.cwd()`.
+* `root` The place where patterns starting with `/` will be mounted
+  onto.  Defaults to `path.resolve(options.cwd, "/")` (`/` on Unix
+  systems, and `C:\` or some such on Windows.)
+* `mark` Add a `/` character to directory matches.  Note that this
+  requires additional stat calls.
 * `nosort` Don't sort the results.
-* `stat` Set to true to stat/lstat *all* results.  This reduces performance
-  somewhat, but guarantees that the results are files that actually
-  exist.
-* `silent` When an error other than `ENOENT` or `ENOTDIR` is encountered
+* `stat` Set to true to stat *all* results.  This reduces performance
+  somewhat.
+* `silent` When an unusual error is encountered
   when attempting to read a directory, a warning will be printed to
   stderr.  Set the `silent` option to true to suppress these warnings.
-* `strict` When an error other than `ENOENT` or `ENOTDIR` is encountered
+* `strict` When an unusual error is encountered
   when attempting to read a directory, the process will just continue on
   in search of other matches.  Set the `strict` option to raise an error
   in these cases.
+* `statCache` A cache of results of filesystem information, to prevent
+  unnecessary stat calls.  While it should not normally be necessary to
+  set this, you may pass the statCache from one glob() call to the
+  options object of another, if you know that the filesystem will not
+  change between calls.

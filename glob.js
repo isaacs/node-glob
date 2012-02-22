@@ -1,3 +1,39 @@
+// Approach:
+//
+// 1. Get the minimatch set
+// 2. For each pattern in the set, PROCESS(pattern)
+// 3. Store matches per-set, then uniq them
+//
+// PROCESS(pattern)
+// Get the first [n] items from pattern that are all strings
+// Join these together.  This is PREFIX.
+//   If there is no more remaining, then stat(PREFIX) and
+//   add to matches if it succeeds.  END.
+// readdir(PREFIX) as ENTRIES
+//   If fails, END
+//   If pattern[n] is GLOBSTAR
+//     // handle the case where the globstar match is empty
+//     // by pruning it out, and testing the resulting pattern
+//     PROCESS(pattern[0..n] + pattern[n+1 .. $])
+//     // handle other cases.
+//     for ENTRY in ENTRIES (not dotfiles)
+//       // attach globstar + tail onto the entry
+//       PROCESS(pattern[0..n] + ENTRY + pattern[n .. $])
+//
+//   else // not globstar
+//     for ENTRY in ENTRIES (not dotfiles, unless pattern[n] is dot)
+//       Test ENTRY against pattern[n+1]
+//       If fails, continue
+//       If passes, PROCESS(pattern[0..n] + item + pattern[n+1 .. $])
+//
+// Caveat:
+//   Cache all stats and readdirs results to minimize syscall.  Since all
+//   we ever care about is existence and directory-ness, we can just keep
+//   `true` for files, and [children,...] for directories, or `false` for
+//   things that don't exist.
+
+
+
 module.exports = glob
 
 var fs = require("graceful-fs")
@@ -5,27 +41,8 @@ var fs = require("graceful-fs")
 , Minimatch = minimatch.Minimatch
 , inherits = require("inherits")
 , EE = require("events").EventEmitter
-, FastList = require("fast-list")
 , path = require("path")
 , isDir = {}
-
-// Globbing is a *little* bit different than just matching, in some
-// key ways.
-//
-// First, and importantly, it matters a great deal whether a pattern
-// is "absolute" or "relative".  Absolute patterns are patterns that
-// start with / on unix, or a full device/unc path on windows.
-//
-// Second, globs interact with the actual filesystem, so being able
-// to stop searching as soon as a match is no longer possible is of
-// the utmost importance.  It would not do to traverse a large file
-// tree, and then eliminate all but one of the options, if it could
-// be possible to skip the traversal early.
-
-// Get a Minimatch object from the pattern and options.  Then, starting
-// from the options.root or the cwd, read the dir, and do a partial
-// match on all the files if it's a dir, or a regular match if it's not.
-
 
 function glob (pattern, options, cb) {
   if (typeof options === "function") cb = options, options = {}
@@ -72,23 +89,34 @@ function Glob (pattern, options, cb) {
   }
 
   if (typeof cb === "function") {
+    console.error("cb is function")
     this.on("error", cb)
-    this.on("end", function (matches) { cb(null, matches) })
+    this.on("end", function (matches) {
+      // console.error("cb with matches", matches)
+      cb(null, matches)
+    })
   }
 
   options = options || {}
 
   if (!options.hasOwnProperty("maxDepth")) options.maxDepth = 1000
-  if (!options.hasOwnProperty("maxLength")) options.maxLength = 4096
-
-  var cwd = this.cwd = options.cwd =
-    options.cwd || process.cwd()
-
-  this.root = options.root =
-    options.root || path.resolve(cwd, "/")
+  if (!options.hasOwnProperty("maxLength")) options.maxLength = Infinity
+  if (!options.hasOwnProperty("statCache")) options.statCache = {}
+  if (!options.hasOwnProperty("cwd")) options.cwd = process.cwd()
+  if (!options.hasOwnProperty("root")) {
+    options.root = path.resolve(options.cwd, "/")
+  }
 
   if (!pattern) {
     throw new Error("must provide pattern")
+  }
+
+  // base-matching: just use globstar for that.
+  if (options.matchBase && -1 === pattern.indexOf("/")) {
+    if (options.noglobstar) {
+      throw new Error("base matching requires globstar")
+    }
+    pattern = "**/" + pattern
   }
 
   var mm = this.minimatch = new Minimatch(pattern, options)
@@ -98,97 +126,85 @@ function Glob (pattern, options, cb) {
   this.error = null
   this.aborted = false
 
-  this.matches = new FastList()
   EE.call(this)
-  var me = this
 
-  this._checkedRoot = false
+  // process each pattern in the minimatch set
+  var n = this.minimatch.set.length
 
-  // if we have any patterns starting with /, then we need to
-  // start at the root.  If we don't, then we can take a short
-  // cut and just start at the cwd.
-  var start = this.cwd
-  for (var i = 0, l = this.minimatch.set.length; i < l; i ++) {
-    if (this.minimatch.set[i].absolute) {
-      start = this.root
-      break
-    }
+  // The matches are stored as {<filename>: true,...} so that
+  // duplicates are automagically pruned.
+  // Later, we do an Object.keys() on these.
+  // Keep them as a list so we can fill in when nonull is set.
+  this.matches = new Array(n)
+
+  this.minimatch.set.forEach(iterator.bind(this))
+  function iterator (pattern, i, set) {
+    this._process(pattern, 0, i, function (er) {
+      if (er) this.emit("error", er)
+      if (-- n <= 0) this._finish()
+    }.bind(this))
   }
-
-  if (me.options.debug) {
-    console.error("start =", start)
-  }
-
-  this._process(start, 1, this._finish.bind(this))
 }
 
-Glob.prototype._finish = _finish
-function _finish () {
-  var me = this
-  if (me.options.debug) {
-    console.error("!!! GLOB top level cb", me)
-  }
-  if (me.options.nonull && me.matches.length === 0) {
-    return me.emit("end", [pattern])
-  }
+Glob.prototype._finish = function () {
 
-  var found = me.found = me.matches.slice()
+  var nou = this.options.nounique
+  , all = nou ? [] : {}
 
-  found = me.found = found.map(function (m) {
-    if (m.indexOf(me.options.cwd) === 0) {
-      m = m.substr(me.options.cwd.length + 1)
-    }
-    return m
-  })
-
-  if (!me.options.mark) return next()
-
-  // mark all directories with a /.
-  // This may involve some stat calls for things that are unknown.
-  var needStat = []
-  found = me.found = found.map(function (f) {
-    if (isDir[f] === undefined) needStat.push(f)
-    else if (isDir[f] && f.slice(-1) !== "/") f += "/"
-    return f
-  })
-  var c = needStat.length
-  if (c === 0) return next()
-
-  var stat = me.options.follow ? "stat" : "lstat"
-  needStat.forEach(function (f) {
-    if (me.options.sync) {
-      try {
-        afterStat(f)(null, fs[stat + "Sync"](f))
-      } catch (er) {
-        afterStat(f)(er)
+  for (var i = 0, l = this.matches.length; i < l; i ++) {
+    var matches = this.matches[i]
+    // console.error("matches[%d] =", i, matches)
+    // do like the shell, and spit out the literal glob
+    if (!matches) {
+      if (this.options.nonull) {
+        var literal = this.minimatch.globSet[i]
+        if (nou) all.push(literal)
+        else nou[literal] = true
       }
-    } else fs[stat](f, afterStat(f))
-  })
-
-  function afterStat (f) { return function (er, st) {
-    // ignore errors.  if the user only wants to show
-    // existing files, then set options.stat to exclude anything
-    // that doesn't exist.
-    if (st && st.isDirectory() && f.substr(-1) !== "/") {
-      var i = found.indexOf(f)
-      if (i !== -1) {
-        found.splice(i, 1, f + "/")
-      }
+    } else {
+      // had matches
+      var m = Object.keys(matches)
+      if (nou) all.push.apply(all, m)
+      else m.forEach(function (m) {
+        all[m] = true
+      })
     }
-    if (-- c <= 0) return next()
-  }}
-
-  function next () {
-    if (!me.options.nosort) {
-      found = found.sort(alphasort)
-    }
-    me.emit("end", found)
   }
+
+  if (!nou) all = Object.keys(all)
+
+  if (!this.options.nosort) {
+    all = all.sort(this.options.nocase ? alphasorti : alphasort)
+  }
+
+  if (this.options.mark) {
+    // at *some* point we statted all of these
+    all = all.map(function (m) {
+      var sc = this.statCache[m]
+      if (!sc) return m
+      if (m.slice(-1) !== "/" && (Array.isArray(sc) || sc === 2)) {
+        return m + "/"
+      }
+      if (m.slice(-1) === "/") {
+        return m.replace(/\/$/, "")
+      }
+      return m
+    })
+  }
+
+  // console.error("emitting end", all)
+
+  this.found = all
+  this.emit("end", all)
+}
+
+function alphasorti (a, b) {
+  a = a.toLowerCase()
+  b = b.toLowerCase()
+  return alphasort(a, b)
 }
 
 function alphasort (a, b) {
-  a = a.toLowerCase()
-  b = b.toLowerCase()
   return a > b ? 1 : a < b ? -1 : 0
 }
 
@@ -200,203 +216,271 @@ function abort () {
 
 
 Glob.prototype._process = _process
-function _process (f, depth, cb) {
+function _process (pattern, depth, index, cb) {
+  cb = cb.bind(this)
   if (this.aborted) return cb()
 
-  var me = this
+  if (depth > this.options.maxDepth) return cb()
 
-  // if f matches, then it's a match.  emit it, move on.
-  // if it *partially* matches, then it might be a dir.
-  //
-  // possible optimization: don't just minimatch everything
-  // against the full pattern.  if a bit of the pattern is
-  // not magical, it'd be good to reduce the number of stats
-  // that had to be made.  so, in the pattern: "a/*/b", we could
-  // readdir a, then stat a/<child>/b in all of them.
-  //
-  // however, that'll require a lot of muddying between minimatch
-  // and glob, and at least for the time being, it's kind of nice to
-  // keep them a little bit separate.
-
-  // if this thing is a match, then add to the matches list.
-  var match = me.minimatch.match(f)
-  if (!match) {
-    if (me.options.debug) {
-      console.error("not a match", f)
-    }
-    return me._processPartial(f, depth, cb)
+  // Get the first [n] parts of pattern that are all strings.
+  var n = 0
+  while (typeof pattern[n] === "string") {
+    n ++
   }
+  // now n is the index of the first one that is *not* a string.
 
-  if (match) {
-    if (me.options.debug) {
-      console.error(" %s matches %s", f, me.pattern)
-    }
-    // make sure it exists if asked.
-    if (me.options.stat) {
-      var stat = me.options.follow ? "stat" : "lstat"
-      if (me.options.sync) {
-        try {
-          afterStat(f)(null, fs[stat + "Sync"](f))
-        } catch (ex) {
-          afterStat(f)(ex)
+  // see if there's anything else
+  switch (n) {
+    // if not, then this is rather simple
+    case pattern.length:
+      var prefix = pattern.join("/")
+      this._stat(prefix, function (exists, isDir) {
+        // either it's there, or it isn't.
+        // nothing more to do, either way.
+        if (exists) {
+          this.matches[index] = this.matches[index] || {}
+          this.matches[index][prefix] = true
+          this.emit("match", prefix)
         }
-      } else fs[stat](f, afterStat(f))
-    } else if (me.options.sync) {
-      emitMatch()
+        return cb()
+      })
+      return
+
+    case 0:
+      // pattern *starts* with some non-trivial item.
+      // going to readdir(cwd), but not include the prefix in matches.
+      var prefix = null
+      break
+
+    default:
+      // pattern has some string bits in the front.
+      // whatever it starts with, whether that's "absolute" like /foo/bar,
+      // or "relative" like "../baz"
+      var prefix = pattern.slice(0, n)
+      prefix = prefix.join("/")
+      // console.error("prefix=%s", prefix)
+      break
+  }
+
+  // get the list of entries.
+  if (prefix !== null && (prefix.charAt(0) === "/" || prefix === "")) {
+    prefix = path.join(this.options.root, prefix)
+  }
+  var read = prefix || this.options.cwd
+  return this._readdir(prefix || process.cwd(), function (er, entries) {
+    // console.error("back from readdir", prefix || process.cwd(), er, entries)
+    if (er) {
+      // not a directory!
+      // this means that, whatever else comes after this, it can never match
+      return cb()
+    }
+
+    // globstar is special
+    if (pattern[n] === minimatch.GLOBSTAR) {
+      // console.error("globstar!", pattern, n)
+      // console.error("entries", prefix, entries)
+      // test without the globstar, and with every child both below
+      // and replacing the globstar.
+      var s = [ pattern.slice(0, n).concat(pattern.slice(n + 1)) ]
+      entries.forEach(function (e) {
+        if (e.charAt(0) === "." && !this.options.dot) return
+        // instead of the globstar
+        s.push(pattern.slice(0, n).concat(e).concat(pattern.slice(n + 1)))
+        // below the globstar
+        s.push(pattern.slice(0, n).concat(e).concat(pattern.slice(n)))
+      }, this)
+
+      // now asyncForEach over this
+      var l = s.length
+      , errState = null
+      s.forEach(function (gsPattern) {
+        this._process(gsPattern, depth + 1, index, function (er) {
+          if (errState) return
+          if (er) return cb(errState = er)
+          if (--l <= 0) return cb()
+        })
+      }, this)
+
+      return
+    }
+
+    // not a globstar
+    // It will only match dot entries if it starts with a dot, or if
+    // options.dot is set.  Stuff like @(.foo|.bar) isn't allowed.
+    var pn = pattern[n]
+    if (typeof pn === "string") {
+      var found = entries.indexOf(pn) !== -1
+      entries = found ? entries[pn] : []
     } else {
-      process.nextTick(emitMatch)
+      var rawGlob = pattern[n]._glob
+      , dotOk = this.options.dot || rawGlob.charAt(0) === "."
+
+      // console.error("pattern", pattern, n, pattern[n])
+      entries = entries.filter(function (e) {
+        return (e.charAt(0) !== "." || dotOk) &&
+               (typeof pattern[n] === "string" && e === pattern[n] ||
+                e.match(pattern[n]))
+      })
     }
 
-    return
-
-    function afterStat (f) { return function (er, st) {
-      if (er) return cb()
-      isDir[f] = st.isDirectory()
-      emitMatch()
-    }}
-
-    function emitMatch () {
-      if (me.options.debug) {
-        console.error("emitting match", f)
-      }
-      me.matches.push(f)
-      me.emit("match", f)
-      // move on, since it might also be a partial match
-      // eg, a/**/c matches both a/c and a/c/d/c
-      me._processPartial(f, depth, cb)
-    }
-  }
-
-}
-
-
-Glob.prototype._processPartial = _processPartial
-function _processPartial (f, depth, cb) {
-  if (this.aborted) return cb()
-
-  var me = this
-
-  var partial = me.minimatch.match(f, true)
-  if (!partial) {
-    if (me.options.debug) {
-      console.error("not a partial", f)
+    // If n === pattern.length - 1, then there's no need for the extra stat
+    // *unless* the user has specified "mark" or "stat" explicitly.
+    // We know that they exist, since the readdir returned them.
+    if (n === pattern.length - 1 &&
+        !this.options.mark &&
+        !this.options.stat) {
+      console.error("skip final stat")
+      entries.forEach(function (e) {
+        if (prefix) {
+          if (prefix !== "/") e = prefix + "/" + e
+          else e = prefix + e
+        }
+        this.matches[index] = this.matches[index] || {}
+        this.matches[index][e] = true
+        this.emit("match", e)
+      }, this)
+      return cb.call(this)
     }
 
-    // if not a match or partial match, just move on.
-    return cb()
-  }
 
-  // partial match
-  // however, this only matters if it's a dir.
-  //if (me.options.debug)
-  if (me.options.debug) {
-    console.error("got a partial", f)
-  }
-  me.emit("partial", f)
 
-  me._processDir(f, depth, cb)
-}
+    // console.error("entries", prefix, entries)
 
-Glob.prototype._processDir = _processDir
-function _processDir (f, depth, cb) {
-  if (this.aborted) return cb()
-
-  // If we're already at the maximum depth, then don't read the dir.
-  if (depth >= this.options.maxDepth) return cb()
-
-  // if the path is at the maximum length, then don't proceed, either.
-  if (f.length >= this.options.maxLength) return cb()
-
-  // now the fun stuff.
-  // if it's a dir, then we'll read all the children, and process them.
-  // if it's not a dir, or we can't access it, then it'll fail.
-  // We log a warning for EACCES and EPERM, but ENOTDIR and ENOENT are
-  // expected and fine.
-  cb = this._afterReaddir(f, depth, cb)
-  if (this.options.sync) return this._processDirSync(f, depth, cb)
-  fs.readdir(f, cb)
-}
-
-Glob.prototype._processDirSync = _processDirSync
-function _processDirSync (f, depth, cb) {
-  try {
-    cb(null, fs.readdirSync(f))
-  } catch (ex) {
-    cb(ex)
-  }
-}
-
-Glob.prototype._afterReaddir = _afterReaddir
-function _afterReaddir (f, depth, cb) {
-  var me = this
-  return function afterReaddir (er, children) {
-    if (er) switch (er.code) {
-      case "UNKNOWN": // probably too deep
-      case "ENOTDIR": // completely expected and normal.
-        isDir[f] = false
-        return cb()
-      case "ENOENT":  // should never happen.
-      default: // some other kind of problem.
-        if (!me.options.silent) console.error("glob error", er)
-        if (me.options.strict) return cb(er)
-        return cb()
-    }
-
-    // at this point, we know it's a dir, so save a stat later if
-    // mark is set.
-    isDir[f] = true
-
-    me._processChildren(f, depth, children, cb)
-  }
-}
-
-Glob.prototype._processChildren = _processChildren
-function _processChildren (f, depth, children, cb) {
-  var me = this
-
-  // note: the file ending with / might match, but only if
-  // it's a directory, which we know it is at this point.
-  // For example, /a/b/ or /a/b/** would match /a/b/ but not
-  // /a/b.  Note: it'll get the trailing "/" strictly based
-  // on the "mark" param, but that happens later.
-  // This is slightly different from bash's glob.
-  if (!me.minimatch.match(f) && me.minimatch.match(f + "/")) {
-    me.matches.push(f)
-    me.emit("match", f)
-  }
-
-  if (-1 === children.indexOf(".")) children.push(".")
-  if (-1 === children.indexOf("..")) children.push("..")
-
-  var count = children.length
-  if (me.options.debug) {
-    console.error("count=%d %s", count, f, children)
-  }
-
-  if (count === 0) {
-    if (me.options.debug) {
-      console.error("no children?", children, f)
-    }
-    return then()
-  }
-
-  children.forEach(function (c) {
-    if (f === "/") c = f + c
-    else c = f + "/" + c
-
-    if (me.options.debug) {
-      console.error(" processing", c)
-    }
-    me._process(c, depth + 1, then)
+    // now test all the remaining entries as stand-ins for that part
+    // of the pattern.
+    var l = entries.length
+    , errState = null
+    if (l === 0) return cb() // no matches possible
+    entries.forEach(function (e) {
+      var p = pattern.slice(0, n).concat(e).concat(pattern.slice(n + 1))
+      // console.error("new pattern!", p)
+      this._process(p, depth + 1, index, function (er) {
+        // console.error("Back from processing", this.matches)
+        if (errState) return
+        if (er) return cb(errState = er)
+        if (--l === 0) return cb.call(this)
+      }.bind(this))
+    }, this)
   })
 
-  function then (er) {
-    count --
-    if (me.options.debug) {
-      console.error("%s THEN %s", f, count, count <= 0 ? "done" : "not done")
+}
+
+Glob.prototype._stat = function (f, cb) {
+  if (f.length > this.options.maxLength) {
+    var er = new Error("Path name too long")
+    er.code = "ENAMETOOLONG"
+    er.path = f
+    return this._afterStat(f, cb, er)
+  }
+
+  if (this.options.statCache.hasOwnProperty(f)) {
+    var exists = this.options.statCache[f]
+    , isDir = exists && (Array.isArray(exists) || exists === 2)
+    if (this.options.sync) return cb.call(this, !!exists, isDir)
+    return process.nextTick(cb.bind(this, !!exists, isDir))
+  }
+
+  if (this.options.sync) {
+    var er, stat
+    try {
+      stat = fs.statSync(f)
+    } catch (e) {
+      er = e
     }
-    if (me.error) return
-    if (er) return me.emit("error", me.error = er)
-    if (count <= 0) cb()
+    this._afterStat(f, cb, er, stat)
+  } else {
+    fs.stat(f, this._afterStat.bind(this, f, cb))
+  }
+}
+
+Glob.prototype._afterStat = function (f, cb, er, stat) {
+  if (er || !stat) {
+    exists = false
+  } else {
+    exists = stat.isDirectory() ? 2 : 1
+  }
+  this.options.statCache[f] = this.options.statCache[f] || exists
+  cb.call(this, !!exists, exists === 2)
+}
+
+Glob.prototype._readdir = function (f, cb) {
+  if (f.length > this.options.maxLength) {
+    var er = new Error("Path name too long")
+    er.code = "ENAMETOOLONG"
+    er.path = f
+    return this._afterReaddir(f, cb, er)
+  }
+
+  if (this.options.statCache.hasOwnProperty(f)) {
+    var c = this.options.statCache[f]
+    if (Array.isArray(c)) {
+      if (this.options.sync) return cb.call(this, null, c)
+      return process.nextTick(cb.bind(this, null, c))
+    }
+
+    if (!c || c === 1) {
+      // either ENOENT or ENOTDIR
+      // console.error("enoent or enotdir?")
+      var code = c ? "ENOTDIR" : "ENOENT"
+      , er = new Error((c ? "Not a directory" : "Not found") + ": " + f)
+      er.path = f
+      er.code = code
+      // console.error(f, er)
+      if (this.options.sync) return cb.call(this, er)
+      return process.nextTick(cb.bind(this, er))
+    }
+
+    // at this point, c === 2, meaning it's a dir, but we haven't
+    // had to read it yet, or c === true, meaning it's *something*
+    // but we don't have any idea what.  Need to read it, either way.
+  }
+
+  if (this.options.sync) {
+    var er, entries
+    try {
+      entries = fs.readdirSync(f)
+    } catch (e) {
+      er = e
+    }
+    return this._afterReaddir(f, cb, er, entries)
+  }
+
+  fs.readdir(f, this._afterReaddir.bind(this, f, cb))
+}
+
+Glob.prototype._afterReaddir = function (f, cb, er, entries) {
+  if (entries && !er) {
+    // console.error("has entries, and no er", f, er, entries)
+    this.options.statCache[f] = entries
+    // if we haven't asked to stat everything for suresies, then just
+    // assume that everything in there exists, so we can avoid
+    // having to stat it a second time.  This also gets us one step
+    // further into ELOOP territory.
+    if (!this.options.mark && !this.options.stat) {
+      entries.forEach(function (e) {
+        if (f === "/") e = f + e
+        else e = f + "/" + e
+        this.options.statCache[e] = true
+      }, this)
+    }
+
+    return cb.call(this, er, entries)
+  }
+
+  // now handle errors, and cache the information
+  if (er) switch (er.code) {
+    case "ENOTDIR": // totally normal. means it *does* exist.
+      this.options.statCache[f] = 1
+      return cb.call(this, er)
+    case "ENOENT": // not terribly unusual
+    case "ELOOP":
+    case "ENAMETOOLONG":
+    case "UNKNOWN":
+      this.options.statCache[f] = false
+      return cb.call(this, er)
+    default: // some unusual error.
+      if (this.options.strict) this.emit("error", er)
+      if (!this.options.silent) console.error("glob error", er)
+      return cb.call(this, er)
   }
 }
