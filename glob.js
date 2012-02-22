@@ -478,7 +478,8 @@ Glob.prototype._afterReaddir = function (f, cb, er, entries) {
     case "UNKNOWN":
       this.options.statCache[f] = false
       return cb.call(this, er)
-    default: // some unusual error.
+    default: // some unusual error.  Treat as failure.
+      this.options.statCache[f] = false
       if (this.options.strict) this.emit("error", er)
       if (!this.options.silent) console.error("glob error", er)
       return cb.call(this, er)
