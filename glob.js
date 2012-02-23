@@ -107,6 +107,7 @@ function Glob (pattern, options, cb) {
   }
 
   this.root = options.root || path.resolve(this.cwd, "/")
+  this.root = path.resolve(this.root)
 
   if (!pattern) {
     throw new Error("must provide pattern")
@@ -128,7 +129,7 @@ function Glob (pattern, options, cb) {
   this.nosort = !!options.nosort
   this.nocase = !!options.nocase
   this.stat = !!options.stat
-  this.debug = !!options.debug
+  this.debug = !!options.debug || !!options.globDebug
   this.silent = !!options.silent
 
   var mm = this.minimatch = new Minimatch(pattern, options)
@@ -271,15 +272,18 @@ Glob.prototype._process = function (pattern, depth, index, cb) {
       // or "relative" like "../baz"
       prefix = pattern.slice(0, n)
       prefix = prefix.join("/")
-      if (this.debug) console.error("prefix=%s", prefix)
       break
   }
 
   // get the list of entries.
-  if (prefix !== null && (prefix.charAt(0) === "/" || prefix === "")) {
-    prefix = path.join(this.root, prefix)
-  }
-  var read = prefix || this.cwd
+  var read
+  if (prefix === null) read = "."
+  else if (prefix.charAt(0) === "/" || prefix === "") {
+    read = prefix = path.join("/", prefix)
+    if (this.debug) console.error('absolute: ', prefix, this.root, pattern)
+  } else read = prefix
+
+  if (this.debug) console.error('readdir(%j)', read, this.cwd, this.root)
   return this._readdir(read, function (er, entries) {
     if (er) {
       // not a directory!
@@ -370,8 +374,13 @@ Glob.prototype._process = function (pattern, depth, index, cb) {
 
 Glob.prototype._stat = function (f, cb) {
   assert(this instanceof Glob)
-  var abs = this.changedCwd ? path.resolve(this.cwd, f) : f
-  if (this.debug) console.error('stat', [this.cwd, f, abs])
+  var abs = f
+  if (f.charAt(0) === "/") {
+    abs = path.join(this.root, f)
+  } else if (this.changedCwd) {
+    abs = path.resolve(this.cwd, f)
+  }
+  if (this.debug) console.error('stat', [this.cwd, f, '=', abs])
   if (f.length > this.maxLength) {
     var er = new Error("Path name too long")
     er.code = "ENAMETOOLONG"
@@ -412,7 +421,13 @@ Glob.prototype._afterStat = function (f, abs, cb, er, stat) {
 
 Glob.prototype._readdir = function (f, cb) {
   assert(this instanceof Glob)
-  var abs = this.changedCwd ? path.resolve(this.cwd, f) : f
+  var abs = f
+  if (f.charAt(0) === "/") {
+    abs = path.join(this.root, f)
+  } else if (this.changedCwd) {
+    abs = path.resolve(this.cwd, f)
+  }
+
   if (this.debug) console.error('readdir', [this.cwd, f, abs])
   if (f.length > this.maxLength) {
     var er = new Error("Path name too long")

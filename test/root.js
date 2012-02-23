@@ -7,7 +7,7 @@ tap.test("changing root and searching for /b*/**", function (t) {
   var glob = require('glob')
   var path = require('path')
   t.test('.', function (t) {
-    glob('/b*/**', { root: '.' }, function (er, matches) {
+    glob('/b*/**', { globDebug: true, root: '.' }, function (er, matches) {
       t.ifError(er)
       t.like(matches, [])
       t.end()
@@ -15,7 +15,7 @@ tap.test("changing root and searching for /b*/**", function (t) {
   })
 
   t.test('a', function (t) {
-    glob('/b*/**', { root: path.resolve('a') }, function (er, matches) {
+    glob('/b*/**', { globDebug: true, root: path.resolve('a') }, function (er, matches) {
       t.ifError(er)
       t.like(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ])
       t.end()
@@ -23,7 +23,7 @@ tap.test("changing root and searching for /b*/**", function (t) {
   })
 
   t.test('root=a, cwd=a/b', function (t) {
-    glob('/b*/**', { root: 'a', cwd: path.resolve('a/b') }, function (er, matches) {
+    glob('/b*/**', { globDebug: true, root: 'a', cwd: path.resolve('a/b') }, function (er, matches) {
       t.ifError(er)
       t.like(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ])
       t.end()
