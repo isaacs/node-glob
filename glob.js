@@ -43,6 +43,7 @@ var fs = require("graceful-fs")
 , EE = require("events").EventEmitter
 , path = require("path")
 , isDir = {}
+, assert = require("assert")
 
 function glob (pattern, options, cb) {
   if (typeof options === "function") cb = options, options = {}
@@ -53,13 +54,8 @@ function glob (pattern, options, cb) {
     return
   }
 
-  var m = new Glob(pattern, options, cb)
-
-  if (options.sync) {
-    return m.found
-  } else {
-    return m
-  }
+  var g = new Glob(pattern, options, cb)
+  return g.sync ? g.found : g
 }
 
 glob.fnmatch = deprecated
@@ -98,13 +94,19 @@ function Glob (pattern, options, cb) {
 
   options = options || {}
 
-  if (!options.hasOwnProperty("maxDepth")) options.maxDepth = 1000
-  if (!options.hasOwnProperty("maxLength")) options.maxLength = Infinity
-  if (!options.hasOwnProperty("statCache")) options.statCache = {}
-  if (!options.hasOwnProperty("cwd")) options.cwd = process.cwd()
-  if (!options.hasOwnProperty("root")) {
-    options.root = path.resolve(options.cwd, "/")
+  this.maxDepth = options.maxDepth || 1000
+  this.maxLength = options.maxLength || Infinity
+  this.statCache = options.statCache || {}
+
+  this.changedCwd = false
+  var cwd = process.cwd()
+  if (!options.hasOwnProperty("cwd")) this.cwd = cwd
+  else {
+    this.cwd = options.cwd
+    this.changedCwd = path.resolve(options.cwd) !== cwd
   }
+
+  this.root = options.root || path.resolve(this.cwd, "/")
 
   if (!pattern) {
     throw new Error("must provide pattern")
@@ -118,8 +120,19 @@ function Glob (pattern, options, cb) {
     pattern = "**/" + pattern
   }
 
+  this.dot = !!options.dot
+  this.mark = !!options.mark
+  this.sync = !!options.sync
+  this.nounique = !!options.nounique
+  this.nonull = !!options.nonull
+  this.nosort = !!options.nosort
+  this.nocase = !!options.nocase
+  this.stat = !!options.stat
+  this.debug = !!options.debug
+  this.silent = !!options.silent
+
   var mm = this.minimatch = new Minimatch(pattern, options)
-  options = this.options = mm.options
+  this.options = mm.options
   pattern = this.pattern = mm.pattern
 
   this.error = null
@@ -146,16 +159,17 @@ function Glob (pattern, options, cb) {
 }
 
 Glob.prototype._finish = function () {
+  assert(this instanceof Glob)
 
-  var nou = this.options.nounique
+  var nou = this.nounique
   , all = nou ? [] : {}
 
   for (var i = 0, l = this.matches.length; i < l; i ++) {
     var matches = this.matches[i]
-    // console.error("matches[%d] =", i, matches)
+    if (this.debug) console.error("matches[%d] =", i, matches)
     // do like the shell, and spit out the literal glob
     if (!matches) {
-      if (this.options.nonull) {
+      if (this.nonull) {
         var literal = this.minimatch.globSet[i]
         if (nou) all.push(literal)
         else nou[literal] = true
@@ -172,11 +186,11 @@ Glob.prototype._finish = function () {
 
   if (!nou) all = Object.keys(all)
 
-  if (!this.options.nosort) {
-    all = all.sort(this.options.nocase ? alphasorti : alphasort)
+  if (!this.nosort) {
+    all = all.sort(this.nocase ? alphasorti : alphasort)
   }
 
-  if (this.options.mark) {
+  if (this.mark) {
     // at *some* point we statted all of these
     all = all.map(function (m) {
       var sc = this.statCache[m]
@@ -191,7 +205,7 @@ Glob.prototype._finish = function () {
     })
   }
 
-  // console.error("emitting end", all)
+  if (this.debug) console.error("emitting end", all)
 
   this.found = all
   this.emit("end", all)
@@ -207,19 +221,18 @@ function alphasort (a, b) {
   return a > b ? 1 : a < b ? -1 : 0
 }
 
-Glob.prototype.abort = abort
-function abort () {
+Glob.prototype.abort = function () {
   this.aborted = true
   this.emit("abort")
 }
 
 
-Glob.prototype._process = _process
-function _process (pattern, depth, index, cb) {
+Glob.prototype._process = function (pattern, depth, index, cb) {
+  assert(this instanceof Glob)
   cb = cb.bind(this)
   if (this.aborted) return cb()
 
-  if (depth > this.options.maxDepth) return cb()
+  if (depth > this.maxDepth) return cb()
 
   // Get the first [n] parts of pattern that are all strings.
   var n = 0
@@ -229,10 +242,11 @@ function _process (pattern, depth, index, cb) {
   // now n is the index of the first one that is *not* a string.
 
   // see if there's anything else
+  var prefix
   switch (n) {
     // if not, then this is rather simple
     case pattern.length:
-      var prefix = pattern.join("/")
+      prefix = pattern.join("/")
       this._stat(prefix, function (exists, isDir) {
         // either it's there, or it isn't.
         // nothing more to do, either way.
@@ -248,26 +262,25 @@ function _process (pattern, depth, index, cb) {
     case 0:
       // pattern *starts* with some non-trivial item.
       // going to readdir(cwd), but not include the prefix in matches.
-      var prefix = null
+      prefix = null
       break
 
     default:
       // pattern has some string bits in the front.
       // whatever it starts with, whether that's "absolute" like /foo/bar,
       // or "relative" like "../baz"
-      var prefix = pattern.slice(0, n)
+      prefix = pattern.slice(0, n)
       prefix = prefix.join("/")
-      // console.error("prefix=%s", prefix)
+      if (this.debug) console.error("prefix=%s", prefix)
       break
   }
 
   // get the list of entries.
   if (prefix !== null && (prefix.charAt(0) === "/" || prefix === "")) {
-    prefix = path.join(this.options.root, prefix)
+    prefix = path.join(this.root, prefix)
   }
-  var read = prefix || this.options.cwd
-  return this._readdir(prefix || process.cwd(), function (er, entries) {
-    // console.error("back from readdir", prefix || process.cwd(), er, entries)
+  var read = prefix || this.cwd
+  return this._readdir(read, function (er, entries) {
     if (er) {
       // not a directory!
       // this means that, whatever else comes after this, it can never match
@@ -276,13 +289,11 @@ function _process (pattern, depth, index, cb) {
 
     // globstar is special
     if (pattern[n] === minimatch.GLOBSTAR) {
-      // console.error("globstar!", pattern, n)
-      // console.error("entries", prefix, entries)
       // test without the globstar, and with every child both below
       // and replacing the globstar.
       var s = [ pattern.slice(0, n).concat(pattern.slice(n + 1)) ]
       entries.forEach(function (e) {
-        if (e.charAt(0) === "." && !this.options.dot) return
+        if (e.charAt(0) === "." && !this.dot) return
         // instead of the globstar
         s.push(pattern.slice(0, n).concat(e).concat(pattern.slice(n + 1)))
         // below the globstar
@@ -305,16 +316,15 @@ function _process (pattern, depth, index, cb) {
 
     // not a globstar
     // It will only match dot entries if it starts with a dot, or if
-    // options.dot is set.  Stuff like @(.foo|.bar) isn't allowed.
+    // dot is set.  Stuff like @(.foo|.bar) isn't allowed.
     var pn = pattern[n]
     if (typeof pn === "string") {
       var found = entries.indexOf(pn) !== -1
       entries = found ? entries[pn] : []
     } else {
       var rawGlob = pattern[n]._glob
-      , dotOk = this.options.dot || rawGlob.charAt(0) === "."
+      , dotOk = this.dot || rawGlob.charAt(0) === "."
 
-      // console.error("pattern", pattern, n, pattern[n])
       entries = entries.filter(function (e) {
         return (e.charAt(0) !== "." || dotOk) &&
                (typeof pattern[n] === "string" && e === pattern[n] ||
@@ -326,8 +336,8 @@ function _process (pattern, depth, index, cb) {
     // *unless* the user has specified "mark" or "stat" explicitly.
     // We know that they exist, since the readdir returned them.
     if (n === pattern.length - 1 &&
-        !this.options.mark &&
-        !this.options.stat) {
+        !this.mark &&
+        !this.stat) {
       entries.forEach(function (e) {
         if (prefix) {
           if (prefix !== "/") e = prefix + "/" + e
@@ -341,9 +351,6 @@ function _process (pattern, depth, index, cb) {
     }
 
 
-
-    // console.error("entries", prefix, entries)
-
     // now test all the remaining entries as stand-ins for that part
     // of the pattern.
     var l = entries.length
@@ -351,9 +358,7 @@ function _process (pattern, depth, index, cb) {
     if (l === 0) return cb() // no matches possible
     entries.forEach(function (e) {
       var p = pattern.slice(0, n).concat(e).concat(pattern.slice(n + 1))
-      // console.error("new pattern!", p)
       this._process(p, depth + 1, index, function (er) {
-        // console.error("Back from processing", this.matches)
         if (errState) return
         if (er) return cb(errState = er)
         if (--l === 0) return cb.call(this)
@@ -364,67 +369,73 @@ function _process (pattern, depth, index, cb) {
 }
 
 Glob.prototype._stat = function (f, cb) {
-  if (f.length > this.options.maxLength) {
+  assert(this instanceof Glob)
+  var abs = this.changedCwd ? path.resolve(this.cwd, f) : f
+  if (this.debug) console.error('stat', [this.cwd, f, abs])
+  if (f.length > this.maxLength) {
     var er = new Error("Path name too long")
     er.code = "ENAMETOOLONG"
     er.path = f
-    return this._afterStat(f, cb, er)
+    return this._afterStat(f, abs, cb, er)
   }
 
-  if (this.options.statCache.hasOwnProperty(f)) {
-    var exists = this.options.statCache[f]
+  if (this.statCache.hasOwnProperty(f)) {
+    var exists = this.statCache[f]
     , isDir = exists && (Array.isArray(exists) || exists === 2)
-    if (this.options.sync) return cb.call(this, !!exists, isDir)
+    if (this.sync) return cb.call(this, !!exists, isDir)
     return process.nextTick(cb.bind(this, !!exists, isDir))
   }
 
-  if (this.options.sync) {
+  if (this.sync) {
     var er, stat
     try {
-      stat = fs.statSync(f)
+      stat = fs.statSync(abs)
     } catch (e) {
       er = e
     }
-    this._afterStat(f, cb, er, stat)
+    this._afterStat(f, abs, cb, er, stat)
   } else {
-    fs.stat(f, this._afterStat.bind(this, f, cb))
+    fs.stat(abs, this._afterStat.bind(this, f, abs, cb))
   }
 }
 
-Glob.prototype._afterStat = function (f, cb, er, stat) {
+Glob.prototype._afterStat = function (f, abs, cb, er, stat) {
+  assert(this instanceof Glob)
   if (er || !stat) {
     exists = false
   } else {
     exists = stat.isDirectory() ? 2 : 1
   }
-  this.options.statCache[f] = this.options.statCache[f] || exists
+  this.statCache[f] = this.statCache[f] || exists
   cb.call(this, !!exists, exists === 2)
 }
 
 Glob.prototype._readdir = function (f, cb) {
-  if (f.length > this.options.maxLength) {
+  assert(this instanceof Glob)
+  var abs = this.changedCwd ? path.resolve(this.cwd, f) : f
+  if (this.debug) console.error('readdir', [this.cwd, f, abs])
+  if (f.length > this.maxLength) {
     var er = new Error("Path name too long")
     er.code = "ENAMETOOLONG"
     er.path = f
-    return this._afterReaddir(f, cb, er)
+    return this._afterReaddir(f, abs, cb, er)
   }
 
-  if (this.options.statCache.hasOwnProperty(f)) {
-    var c = this.options.statCache[f]
+  if (this.statCache.hasOwnProperty(f)) {
+    var c = this.statCache[f]
     if (Array.isArray(c)) {
-      if (this.options.sync) return cb.call(this, null, c)
+      if (this.sync) return cb.call(this, null, c)
       return process.nextTick(cb.bind(this, null, c))
     }
 
     if (!c || c === 1) {
       // either ENOENT or ENOTDIR
-      // console.error("enoent or enotdir?")
       var code = c ? "ENOTDIR" : "ENOENT"
       , er = new Error((c ? "Not a directory" : "Not found") + ": " + f)
       er.path = f
       er.code = code
-      // console.error(f, er)
-      if (this.options.sync) return cb.call(this, er)
+      if (this.debug) console.error(f, er)
+      if (this.sync) return cb.call(this, er)
       return process.nextTick(cb.bind(this, er))
     }
 
@@ -433,32 +444,32 @@ Glob.prototype._readdir = function (f, cb) {
     // but we don't have any idea what.  Need to read it, either way.
   }
 
-  if (this.options.sync) {
+  if (this.sync) {
     var er, entries
     try {
-      entries = fs.readdirSync(f)
+      entries = fs.readdirSync(abs)
     } catch (e) {
       er = e
     }
-    return this._afterReaddir(f, cb, er, entries)
+    return this._afterReaddir(f, abs, cb, er, entries)
   }
 
-  fs.readdir(f, this._afterReaddir.bind(this, f, cb))
+  fs.readdir(abs, this._afterReaddir.bind(this, f, abs, cb))
 }
 
-Glob.prototype._afterReaddir = function (f, cb, er, entries) {
+Glob.prototype._afterReaddir = function (f, abs, cb, er, entries) {
+  assert(this instanceof Glob)
   if (entries && !er) {
-    // console.error("has entries, and no er", f, er, entries)
-    this.options.statCache[f] = entries
+    this.statCache[f] = entries
     // if we haven't asked to stat everything for suresies, then just
     // assume that everything in there exists, so we can avoid
     // having to stat it a second time.  This also gets us one step
     // further into ELOOP territory.
-    if (!this.options.mark && !this.options.stat) {
+    if (!this.mark && !this.stat) {
       entries.forEach(function (e) {
         if (f === "/") e = f + e
         else e = f + "/" + e
-        this.options.statCache[e] = true
+        this.statCache[e] = true
       }, this)
     }
 
@@ -468,18 +479,18 @@ Glob.prototype._afterReaddir = function (f, cb, er, entries) {
   // now handle errors, and cache the information
   if (er) switch (er.code) {
     case "ENOTDIR": // totally normal. means it *does* exist.
-      this.options.statCache[f] = 1
+      this.statCache[f] = 1
       return cb.call(this, er)
     case "ENOENT": // not terribly unusual
     case "ELOOP":
     case "ENAMETOOLONG":
     case "UNKNOWN":
-      this.options.statCache[f] = false
+      this.statCache[f] = false
       return cb.call(this, er)
     default: // some unusual error.  Treat as failure.
-      this.options.statCache[f] = false
-      if (this.options.strict) this.emit("error", er)
-      if (!this.options.silent) console.error("glob error", er)
+      this.statCache[f] = false
+      if (this.strict) this.emit("error", er)
+      if (!this.silent) console.error("glob error", er)
       return cb.call(this, er)
   }
 }
