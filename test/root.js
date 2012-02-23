@@ -17,7 +17,9 @@ tap.test("changing root and searching for /b*/**", function (t) {
   t.test('a', function (t) {
     glob('/b*/**', { globDebug: true, root: path.resolve('a') }, function (er, matches) {
       t.ifError(er)
-      t.like(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ])
+      t.like(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ].map(function (m) {
+        return path.join(path.resolve('a'), m)
+      }))
       t.end()
     })
   })
@@ -25,7 +27,9 @@ tap.test("changing root and searching for /b*/**", function (t) {
   t.test('root=a, cwd=a/b', function (t) {
     glob('/b*/**', { globDebug: true, root: 'a', cwd: path.resolve('a/b') }, function (er, matches) {
       t.ifError(er)
-      t.like(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ])
+      t.like(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ].map(function (m) {
+        return path.join(path.resolve('a'), m)
+      }))
       t.end()
     })
   })

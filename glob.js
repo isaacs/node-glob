@@ -109,6 +109,8 @@ function Glob (pattern, options, cb) {
   this.root = options.root || path.resolve(this.cwd, "/")
   this.root = path.resolve(this.root)
 
+  this.nomount = !!options.nomount
+
   if (!pattern) {
     throw new Error("must provide pattern")
   }
@@ -252,6 +254,9 @@ Glob.prototype._process = function (pattern, depth, index, cb) {
         // either it's there, or it isn't.
         // nothing more to do, either way.
         if (exists) {
+          if (prefix.charAt(0) === "/" && !this.nomount) {
+            prefix = path.join(this.root, prefix)
+          }
           this.matches[index] = this.matches[index] || {}
           this.matches[index][prefix] = true
           this.emit("match", prefix)
@@ -347,6 +352,10 @@ Glob.prototype._process = function (pattern, depth, index, cb) {
           if (prefix !== "/") e = prefix + "/" + e
           else e = prefix + e
         }
+        if (e.charAt(0) === "/" && !this.nomount) {
+          e = path.join(this.root, e)
+        }
+
         this.matches[index] = this.matches[index] || {}
         this.matches[index][e] = true
         this.emit("match", e)
@@ -377,8 +386,6 @@ Glob.prototype._stat = function (f, cb) {
   var abs = f
   if (f.charAt(0) === "/") {
     abs = path.join(this.root, f)
-  } else if (isAbsolute(f)) {
-    abs = f
   } else if (this.changedCwd) {
     abs = path.resolve(this.cwd, f)
   }
