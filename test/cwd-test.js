@@ -1,5 +1,8 @@
 var tap = require("tap")
 
+var origCwd = process.cwd()
+process.chdir(__dirname)
+
 tap.test("changing cwd and searching for **/d", function (t) {
   var glob = require('glob')
   var path = require('path')
@@ -41,6 +44,11 @@ tap.test("changing cwd and searching for **/d", function (t) {
       t.like(matches, [ 'a/b/c/d', 'a/c/d' ])
       t.end()
     })
+  })
+
+  t.test('cd -', function (t) {
+    process.chdir(origCwd)
+    t.end()
   })
 
   t.end()
