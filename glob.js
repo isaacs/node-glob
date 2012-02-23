@@ -278,7 +278,7 @@ Glob.prototype._process = function (pattern, depth, index, cb) {
   // get the list of entries.
   var read
   if (prefix === null) read = "."
-  else if (prefix.charAt(0) === "/" || prefix === "") {
+  else if (isAbsolute(prefix)) {
     read = prefix = path.join("/", prefix)
     if (this.debug) console.error('absolute: ', prefix, this.root, pattern)
   } else read = prefix
@@ -377,6 +377,8 @@ Glob.prototype._stat = function (f, cb) {
   var abs = f
   if (f.charAt(0) === "/") {
     abs = path.join(this.root, f)
+  } else if (isAbsolute(f)) {
+    abs = f
   } else if (this.changedCwd) {
     abs = path.resolve(this.cwd, f)
   }
@@ -424,6 +426,8 @@ Glob.prototype._readdir = function (f, cb) {
   var abs = f
   if (f.charAt(0) === "/") {
     abs = path.join(this.root, f)
+  } else if (isAbsolute(f)) {
+    abs = f
   } else if (this.changedCwd) {
     abs = path.resolve(this.cwd, f)
   }
@@ -508,4 +512,24 @@ Glob.prototype._afterReaddir = function (f, abs, cb, er, entries) {
       if (!this.silent) console.error("glob error", er)
       return cb.call(this, er)
   }
+}
+
+var isAbsolute = process.platform === "win32" ? absWin : absUnix
+
+function absWin (p) {
+  if (absUnix(p)) return true
+  // pull off the device/UNC bit from a windows path.
+  // from node's lib/path.js
+  var splitDeviceRe =
+        /^([a-zA-Z]:|[\\\/]{2}[^\\\/]+[\\\/][^\\\/]+)?([\\\/])?/
+    , result = splitDeviceRe.exec(p)
+    , device = result[1] || ''
+    , isUnc = device && device.charAt(1) !== ':'
+    , isAbsolute = !!result[2] || isUnc // UNC paths are always absolute
+
+  return isAbsolute
+}
+
+function absUnix (p) {
+  return p.charAt(0) === "/" || p === ""
 }
