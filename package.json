@@ -17,8 +17,8 @@
     "inherits": "1"
   },
   "devDependencies": {
-    "tap": "0.1",
-    "mkdirp":"0.2",
+    "tap": "~0.2.3",
+    "mkdirp":"0",
     "rimraf":"1"
   },
   "scripts": {
