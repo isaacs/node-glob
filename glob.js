@@ -418,7 +418,7 @@ Glob.prototype._stat = function (f, cb) {
 }
 
 Glob.prototype._afterStat = function (f, abs, cb, er, stat) {
-  var exists;
+  var exists
   assert(this instanceof Glob)
   if (er || !stat) {
     exists = false
