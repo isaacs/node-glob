@@ -38,7 +38,7 @@ function alphasort (a, b) {
 globs.forEach(function (pattern) {
   var echoOutput
   tap.test(pattern, function (t) {
-    var bashPattern = pattern //.replace(/(\(|\||\))/g, "\\$1")
+    var bashPattern = pattern
     , cmd = "shopt -s globstar && " +
             "shopt -s extglob && " +
             "shopt -s nullglob && " +
