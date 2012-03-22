@@ -53,7 +53,7 @@ globs.forEach(function (pattern) {
     cp.stderr.on("data", function (c) {
       process.stderr.write(c)
     })
-    cp.on("exit", function () {
+    cp.stdout.on("close", function () {
       echoOutput = flatten(out)
       if (!echoOutput) echoOutput = []
       else {
