@@ -47,7 +47,7 @@ See:
 * `man 5 gitignore`
 * [minimatch documentation](https://github.com/isaacs/minimatch)
 
-## glob(pattern, [options], cb)
+## glob(pattern*, [options], cb)
 
 * `pattern` {String} Pattern to be matched
 * `options` {Object}
@@ -57,7 +57,7 @@ See:
 
 Perform an asynchronous glob search.
 
-## glob.sync(pattern, [options]
+## glob.sync(pattern*, [options]
 
 * `pattern` {String} Pattern to be matched
 * `options` {Object}
@@ -77,7 +77,7 @@ var mg = new Glob(pattern, options, cb)
 It's an EventEmitter, and starts walking the filesystem to find matches
 immediately.
 
-### new glob.Glob(pattern, [options], [cb])
+### new glob.Glob(pattern*, [options], [cb])
 
 * `pattern` {String} pattern to search for
 * `options` {Object}
