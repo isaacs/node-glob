@@ -46,7 +46,28 @@ var fs = require("graceful-fs")
 , assert = require("assert").ok
 , EOF = {}
 
-function glob (pattern, options, cb) {
+// parse `pattern*, options, cb` into `{pattern1,pattern2,...}, options, cb`
+function parseArguments(){
+  var obj = {};
+  var patterns = Array.prototype.filter.call(arguments, function(arg){
+    return typeof arg === "string"
+  })
+
+  obj.pattern = arguments[0]
+  if(patterns.length > 1) obj.pattern = '{' + patterns.join(',') + '}'
+
+  obj.options = arguments[patterns.length]
+  obj.cb = arguments[patterns.length +1 ]
+
+  return obj
+}
+
+function glob (/* pattern*, options, cb */) {
+  var args = parseArguments.apply(this, arguments),
+    pattern = args.pattern,
+    options = args.options,
+    cb = args.cb
+
   if (typeof options === "function") cb = options, options = {}
   if (!options) options = {}
 
@@ -66,7 +87,11 @@ function deprecated () {
 }
 
 glob.sync = globSync
-function globSync (pattern, options) {
+function globSync (/* pattern*, options */) {
+  var args = parseArguments.apply(this, arguments),
+    pattern = args.pattern,
+    options = args.options
+
   if (typeof options === "number") {
     deprecated()
     return
@@ -74,16 +99,21 @@ function globSync (pattern, options) {
 
   options = options || {}
   options.sync = true
+
   return glob(pattern, options)
 }
 
 
 glob.Glob = Glob
 inherits(Glob, EE)
-function Glob (pattern, options, cb) {
+function Glob (/* pattern*, options, cb */) {
   if (!(this instanceof Glob)) {
     return new Glob(pattern, options, cb)
   }
+  var args = parseArguments.apply(this, arguments),
+    pattern = args.pattern,
+    options = args.options,
+    cb = args.cb
 
   if (typeof cb === "function") {
     this.on("error", cb)
