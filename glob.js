@@ -318,6 +318,10 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
           if (prefix.charAt(0) === "/" && !this.nomount) {
             prefix = path.join(this.root, prefix)
           }
+
+          if (process.platform === "win32")
+            prefix = prefix.replace(/\\/g, "/")
+
           this.matches[index] = this.matches[index] || {}
           this.matches[index][prefix] = true
           this.emitMatch(prefix)
@@ -416,6 +420,9 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
         if (e.charAt(0) === "/" && !this.nomount) {
           e = path.join(this.root, e)
         }
+
+        if (process.platform === "win32")
+          e = e.replace(/\\/g, "/")
 
         this.matches[index] = this.matches[index] || {}
         this.matches[index][e] = true
