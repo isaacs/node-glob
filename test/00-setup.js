@@ -48,17 +48,32 @@ files.forEach(function (f) {
   })
 })
 
-tap.test("symlinky", function (t) {
-  var d = path.dirname(symlinkTo)
-  console.error("mkdirp", d)
-  mkdirp(d, 0755, function (er) {
-    t.ifError(er)
-    fs.symlink(symlinkFrom, symlinkTo, function (er) {
-      t.ifError(er, "make symlink")
+if (process.platform !== "win32") {
+  tap.test("symlinky", function (t) {
+    var d = path.dirname(symlinkTo)
+    console.error("mkdirp", d)
+    mkdirp(d, 0755, function (er) {
+      t.ifError(er)
+      fs.symlink(symlinkFrom, symlinkTo, "dir", function (er) {
+        t.ifError(er, "make symlink")
+        t.end()
+      })
+    })
+  })
+}
+
+;["foo","bar","baz","asdf","quux","qwer","rewq"].forEach(function (w) {
+  w = "/tmp/glob-test/" + w
+  tap.test("create " + w, function (t) {
+    mkdirp(w, function (er) {
+      if (er)
+        throw er
+      t.pass(w)
       t.end()
     })
   })
 })
+
 
 // generate the bash pattern test-fixtures if possible
 if (process.platform === "win32" || !process.env.TEST_REGEN) {
@@ -89,18 +104,6 @@ var globs =
   ]
 var bashOutput = {}
 var fs = require("fs")
-
-;["foo","bar","baz","asdf","quux","qwer","rewq"].forEach(function (w) {
-  w = "/tmp/glob-test/" + w
-  tap.test("create " + w, function (t) {
-    mkdirp(w, function (er) {
-      if (er)
-        throw er
-      t.pass(w)
-      t.end()
-    })
-  })
-})
 
 globs.forEach(function (pattern) {
   tap.test("generate fixture " + pattern, function (t) {

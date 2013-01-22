@@ -19,6 +19,13 @@ function alphasort (a, b) {
 
 globs.forEach(function (pattern) {
   var expect = bashResults[pattern]
+  // anything regarding the symlink thing will fail on windows, so just skip it
+  if (process.platform === "win32" &&
+      expect.some(function (m) {
+        return /\/symlink\//.test(m)
+      }))
+    return
+
   tap.test(pattern, function (t) {
     glob(pattern, function (er, matches) {
       if (er)
@@ -33,12 +40,7 @@ globs.forEach(function (pattern) {
   })
 
   tap.test(pattern + " sync", function (t) {
-    var matches = glob.sync(pattern).map(function (m) {
-        return m.replace(/\/+/g, "/").replace(/\/$/, "")
-      }).sort(alphasort).reduce(function (set, f) {
-        if (f !== set[set.length - 1]) set.push(f)
-        return set
-      }, []).sort(alphasort)
+    var matches = cleanResults(glob.sync(pattern))
 
     t.deepEqual(matches, expect, "should match shell")
     t.end()
@@ -56,6 +58,6 @@ function cleanResults (m) {
   }, []).sort(alphasort).map(function (f) {
     // de-windows
     return (process.platform !== 'win32') ? f
-           : f.replace(/^[a-zA-Z]:\\\\/, '/').replace(/\\/g, '/')
+           : f.replace(/^[a-zA-Z]:\\+/, '/').replace(/[\\\/]+/g, '/')
   })
 }
