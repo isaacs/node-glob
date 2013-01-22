@@ -22,7 +22,7 @@
 //
 //   else // not globstar
 //     for ENTRY in ENTRIES (not dotfiles, unless pattern[n] is dot)
-//       Test ENTRY against pattern[n+1]
+//       Test ENTRY against pattern[n]
 //       If fails, continue
 //       If passes, PROCESS(pattern[0..n] + item + pattern[n+1 .. $])
 //
