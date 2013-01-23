@@ -87,7 +87,6 @@ function Glob (pattern, options, cb) {
   if (typeof cb === "function") {
     this.on("error", cb)
     this.on("end", function (matches) {
-      // console.error("cb with matches", matches)
       cb(null, matches)
     })
   }
@@ -128,6 +127,7 @@ function Glob (pattern, options, cb) {
     pattern = "**/" + pattern
   }
 
+  this.strict = options.strict !== false
   this.dot = !!options.dot
   this.mark = !!options.mark
   this.sync = !!options.sync
@@ -136,7 +136,11 @@ function Glob (pattern, options, cb) {
   this.nosort = !!options.nosort
   this.nocase = !!options.nocase
   this.stat = !!options.stat
+
   this.debug = !!options.debug || !!options.globDebug
+  if (this.debug)
+    this.log = console.error
+
   this.silent = !!options.silent
 
   var mm = this.minimatch = new Minimatch(pattern, options)
@@ -166,6 +170,8 @@ function Glob (pattern, options, cb) {
   }
 }
 
+Glob.prototype.log = function () {}
+
 Glob.prototype._finish = function () {
   assert(this instanceof Glob)
 
@@ -174,7 +180,7 @@ Glob.prototype._finish = function () {
 
   for (var i = 0, l = this.matches.length; i < l; i ++) {
     var matches = this.matches[i]
-    if (this.debug) console.error("matches[%d] =", i, matches)
+    this.log("matches[%d] =", i, matches)
     // do like the shell, and spit out the literal glob
     if (!matches) {
       if (this.nonull) {
@@ -215,7 +221,7 @@ Glob.prototype._finish = function () {
     }, this)
   }
 
-  if (this.debug) console.error("emitting end", all)
+  this.log("emitting end", all)
 
   this.EOF = this.found = all
   this.emitMatch(this.EOF)
@@ -268,9 +274,9 @@ Glob.prototype._processEmitQueue = function (m) {
       this._processingEmitQueue = false
       break
     }
-    if (this.debug) {
-      console.error('emit!', m === this.EOF ? "end" : "match")
-    }
+
+    this.log('emit!', m === this.EOF ? "end" : "match")
+
     this.emit(m === this.EOF ? "end" : "match", m)
     this._processingEmitQueue = false
   }
@@ -356,11 +362,11 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
     if (process.platform === "win32")
       read = prefix = prefix.replace(/^[a-zA-Z]:|\\/g, "/")
 
-    if (this.debug)
-      console.error('absolute: ', prefix, this.root, pattern)
+    this.log('absolute: ', prefix, this.root, pattern)
   } else read = prefix
 
-  if (this.debug) console.error('readdir(%j)', read, this.cwd, this.root)
+  this.log('readdir(%j)', read, this.cwd, this.root)
+
   return this._readdir(read, function (er, entries) {
     if (er) {
       // not a directory!
@@ -464,7 +470,7 @@ Glob.prototype._stat = function (f, cb) {
   } else if (this.changedCwd) {
     abs = path.resolve(this.cwd, f)
   }
-  if (this.debug) console.error('stat', [this.cwd, f, '=', abs])
+  this.log('stat', [this.cwd, f, '=', abs])
   if (f.length > this.maxLength) {
     var er = new Error("Path name too long")
     er.code = "ENAMETOOLONG"
@@ -497,7 +503,8 @@ Glob.prototype._afterStat = function (f, abs, cb, er, stat) {
   assert(this instanceof Glob)
 
   if (abs.slice(-1) === "/" && stat && !stat.isDirectory()) {
-    console.error("should be ENOTDIR, fake it")
+    this.log("should be ENOTDIR, fake it")
+
     er = new Error("ENOTDIR, not a directory '" + abs + "'")
     er.path = abs
     er.code = "ENOTDIR"
@@ -524,7 +531,7 @@ Glob.prototype._readdir = function (f, cb) {
     abs = path.resolve(this.cwd, f)
   }
 
-  if (this.debug) console.error('readdir', [this.cwd, f, abs])
+  this.log('readdir', [this.cwd, f, abs])
   if (f.length > this.maxLength) {
     var er = new Error("Path name too long")
     er.code = "ENAMETOOLONG"
@@ -545,7 +552,7 @@ Glob.prototype._readdir = function (f, cb) {
       , er = new Error((c ? "Not a directory" : "Not found") + ": " + f)
       er.path = f
       er.code = code
-      if (this.debug) console.error(f, er)
+      this.log(f, er)
       if (this.sync) return cb.call(this, er)
       return process.nextTick(cb.bind(this, er))
     }
