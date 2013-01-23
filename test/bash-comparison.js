@@ -58,6 +58,6 @@ function cleanResults (m) {
   }, []).sort(alphasort).map(function (f) {
     // de-windows
     return (process.platform !== 'win32') ? f
-           : f.replace(/^[a-zA-Z]:\\+/, '/').replace(/[\\\/]+/g, '/')
+           : f.replace(/^[a-zA-Z]:[\/\\]+/, '/').replace(/[\\\/]+/g, '/')
   })
 }

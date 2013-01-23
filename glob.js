@@ -111,6 +111,8 @@ function Glob (pattern, options, cb) {
 
   this.root = options.root || path.resolve(this.cwd, "/")
   this.root = path.resolve(this.root)
+  if (process.platform === "win32")
+    this.root = this.root.replace(/\\/g, "/")
 
   this.nomount = !!options.nomount
 
@@ -349,7 +351,11 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
   var read
   if (prefix === null) read = "."
   else if (isAbsolute(prefix) || isAbsolute(pattern.join("/"))) {
-    read = prefix = path.resolve("/", prefix)
+    read = prefix = path.resolve(path.join("/", prefix))
+
+    if (process.platform === "win32")
+      read = prefix = prefix.replace(/^[a-zA-Z]:|\\/g, "/")
+
     if (this.debug)
       console.error('absolute: ', prefix, this.root, pattern)
   } else read = prefix
