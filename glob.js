@@ -357,7 +357,9 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
   var read
   if (prefix === null) read = "."
   else if (isAbsolute(prefix) || isAbsolute(pattern.join("/"))) {
-    read = prefix = path.resolve(path.join("/", prefix))
+    if (process.platform !== "win32")
+      prefix = path.join("/", prefix)
+    read = prefix = path.resolve(prefix)
 
     if (process.platform === "win32")
       read = prefix = prefix.replace(/^[a-zA-Z]:|\\/g, "/")
