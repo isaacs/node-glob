@@ -57,7 +57,7 @@ See:
 
 Perform an asynchronous glob search.
 
-## glob.sync(pattern, [options]
+## glob.sync(pattern, [options])
 
 * `pattern` {String} Pattern to be matched
 * `options` {Object}
