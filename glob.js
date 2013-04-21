@@ -150,6 +150,10 @@ function Glob (pattern, options, cb) {
   this.error = null
   this.aborted = false
 
+  // list of all the patterns that ** has resolved do, so
+  // we can avoid visiting multiple times.
+  this._globstars = {}
+
   EE.call(this)
 
   // process each pattern in the minimatch set
@@ -396,6 +400,16 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
         s.push(pattern.slice(0, n).concat(e).concat(pattern.slice(n)))
       }, this)
 
+      s = s.filter(function (pattern) {
+        var key = gsKey(pattern)
+        var seen = !this._globstars[key]
+        this._globstars[key] = true
+        return seen
+      }, this)
+
+      if (!s.length)
+        return cb()
+
       // now asyncForEach over this
       var l = s.length
       , errState = null
@@ -469,6 +483,12 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
     }, this)
   })
 
+}
+
+function gsKey (pattern) {
+  return '**' + pattern.map(function (p) {
+    return (p === minimatch.GLOBSTAR) ? '**' : (''+p)
+  }).join('/')
 }
 
 Glob.prototype._stat = function (f, cb) {
