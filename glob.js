@@ -591,12 +591,17 @@ Glob.prototype._readdir = function (f, cb) {
     // but we don't have any idea what.  Need to read it, either way.
   }
 
-  if (this.sync) {
-    var er, entries
-    try {
-      entries = fs.readdirSync(abs)
-    } catch (e) {
-      er = e
+  var entries
+  if (Array.isArray(this.statCache[abs]))
+    entries = this.statCache[abs]
+  if (this.sync || entries) {
+    var er
+    if (!entries) {
+      try {
+        entries = fs.readdirSync(abs)
+      } catch (e) {
+        er = e
+      }
     }
     return this._afterReaddir(f, abs, cb, er, entries)
   }
