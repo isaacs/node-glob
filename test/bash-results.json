@@ -300,6 +300,7 @@
     "./test/pause-resume.js",
     "./test/root-nomount.js",
     "./test/root.js",
+    "./test/stat.js",
     "./test/zz-cleanup.js",
     "/tmp/glob-test/asdf",
     "/tmp/glob-test/bar",
