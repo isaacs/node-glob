@@ -14,7 +14,7 @@
   "dependencies": {
     "minimatch": "~0.2.11",
     "graceful-fs": "~1.2.0",
-    "inherits": "1"
+    "inherits": "2"
   },
   "devDependencies": {
     "tap": "~0.4.0",
