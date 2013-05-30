@@ -376,7 +376,7 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
   if (prefix === null) read = "."
   else if (isAbsolute(prefix) || isAbsolute(pattern.join("/"))) {
     if (!prefix || !isAbsolute(prefix)) {
-		prefix = ["/", prefix].join('/')
+      prefix = "/" + prefix
     }
     read = prefix
 
