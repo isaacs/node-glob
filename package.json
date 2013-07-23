@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "minimatch": "~0.2.11",
-    "graceful-fs": "~2.0.0",
     "inherits": "2"
   },
   "devDependencies": {
