@@ -98,6 +98,7 @@ function Glob (pattern, options, cb) {
 
   options = options || {}
 
+  this._endEmitted = false
   this.EOF = {}
   this._emitQueue = []
 
@@ -309,6 +310,11 @@ Glob.prototype._processEmitQueue = function (m) {
     }
 
     this.log('emit!', m === this.EOF ? "end" : "match")
+
+    if (m === this.EOF)
+      this._endEmitted = true
+    else
+      assert(!this._endEmitted)
 
     this.emit(m === this.EOF ? "end" : "match", m)
     this._processingEmitQueue = false
