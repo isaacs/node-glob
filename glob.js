@@ -58,6 +58,20 @@ function glob (pattern, options, cb) {
   return g.sync ? g.found : g
 }
 
+function markMap (m) {
+  var sc = this.cache[m]
+  if (!sc)
+    return m
+  var isDir = (Array.isArray(sc) || sc === 2)
+  if (isDir && m.slice(-1) !== "/") {
+    return m + "/"
+  }
+  if (!isDir && m.slice(-1) === "/") {
+    return m.replace(/\/+$/, "")
+  }
+  return m
+}
+
 glob.fnmatch = deprecated
 
 function deprecated () {
@@ -216,19 +230,7 @@ Glob.prototype._finish = function () {
 
   if (this.mark) {
     // at *some* point we statted all of these
-    all = all.map(function (m) {
-      var sc = this.cache[m]
-      if (!sc)
-        return m
-      var isDir = (Array.isArray(sc) || sc === 2)
-      if (isDir && m.slice(-1) !== "/") {
-        return m + "/"
-      }
-      if (!isDir && m.slice(-1) === "/") {
-        return m.replace(/\/+$/, "")
-      }
-      return m
-    }, this)
+    all = all.map(markMap, this)
   }
 
   this.log("emitting end", all)
@@ -295,7 +297,10 @@ Glob.prototype._processEmitQueue = function (m) {
     }
 
     this.log('emit!', m === this.EOF ? "end" : "match")
-
+    if(m !== this.EOF && this.mark) {
+      m = markMap.call(this, m)
+    }
+      
     this.emit(m === this.EOF ? "end" : "match", m)
     this._processingEmitQueue = false
   }
@@ -355,6 +360,7 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
 
           this.matches[index] = this.matches[index] || {}
           this.matches[index][prefix] = true
+
           this.emitMatch(prefix)
         }
         return cb()
@@ -471,6 +477,7 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
 
         this.matches[index] = this.matches[index] || {}
         this.matches[index][e] = true
+
         this.emitMatch(e)
       }, this)
       return cb.call(this)
