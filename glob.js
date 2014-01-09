@@ -99,6 +99,7 @@ function Glob (pattern, options, cb) {
   options = options || {}
 
   this._endEmitted = false
+  this._endPushed = false
   this.EOF = {}
   this._emitQueue = []
 
@@ -276,6 +277,11 @@ Glob.prototype._mark = function (p) {
 }
 
 Glob.prototype._pushMatch = function(m, index) {
+  if (m === this.EOF)
+    this._endPushed = true
+  else
+    assert(!this._endPushed)
+
   if (this.mark && m !== this.EOF)
     m = this._mark(m)
 
