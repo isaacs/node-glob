@@ -219,12 +219,10 @@ Glob.prototype._finish = function () {
     all = all.map(this._mark, this)
   }
 
-  setTimeout(function() {
-    this.log("emitting end", all)
+  this.log("emitting end", all)
 
-    this.EOF = this.found = all
-    this.emitMatch(this.EOF)
-  }.bind(this), 1000)
+  this.EOF = this.found = all
+  this.emitMatch(this.EOF)
 }
 
 function alphasorti (a, b) {
@@ -282,35 +280,62 @@ Glob.prototype.resume = function () {
 }
 
 Glob.prototype.emitMatch = function (m) {
-  console.error('emitMatch', m)
-  if (!this.stat || this.statCache[m] || m === this.EOF) {
-    this._emitQueue.push(m)
-    this._processEmitQueue()
-  } else {
-    this._stat(m, function(exists, isDir) {
-      if (exists) {
-        this._emitQueue.push(m)
-        this._processEmitQueue()
-      }
-    })
-  }
+  this.log('emitMatch', m)
+  this._emitQueue.push(m)
+  this._processEmitQueue()
 }
 
 Glob.prototype._processEmitQueue = function (m) {
+  this.log("pEQ paused=%j processing=%j m=%j", this.paused,
+           this._processingEmitQueue, m)
+  var done = false
   while (!this._processingEmitQueue &&
          !this.paused) {
     this._processingEmitQueue = true
     var m = this._emitQueue.shift()
+    this.log(">processEmitQueue", m === this.EOF ? ":EOF:" : m)
     if (!m) {
+      this.log(">processEmitQueue, falsey m")
       this._processingEmitQueue = false
       break
     }
 
-    this.log('emit!', m === this.EOF ? "end" : "match")
+    if (m === this.EOF || !(this.mark && !this.stat)) {
+      this.log("peq: unmarked, or eof")
+      next.call(this, 0, false)
+    } else if (this.statCache[m]) {
+      var sc = this.statCache[m]
+      var exists
+      if (sc)
+        exists = sc.isDirectory() ? 2 : 1
+      this.log("peq: stat cached")
+      next.call(this, exists, exists === 2)
+    } else {
+      this.log("peq: _stat, then next")
+      this._stat(m, next)
+    }
 
-    this.emit(m === this.EOF ? "end" : "match", m)
-    this._processingEmitQueue = false
+    function next(exists, isDir) {
+      this.log("next", m, exists, isDir)
+      var ev = m === this.EOF ? "end" : "match"
+      if (exists) {
+        // Doesn't mean it necessarily doesn't exist, it's possible
+        // we just didn't check because we don't care that much, or
+        // this is EOF anyway.
+        if (isDir && !m.match(/\/$/)) {
+          m = m + "/"
+        } else if (!isDir && m.match(/\/$/)) {
+          m = m.replace(/\/+$/, "")
+        }
+      }
+      this.log("emit", ev, m)
+      this.emit(ev, m)
+      this._processingEmitQueue = false
+      if (done && m !== this.EOF && !this.paused)
+        this._processEmitQueue()
+    }
   }
+  done = true
 }
 
 Glob.prototype._process = function (pattern, depth, index, cb_) {

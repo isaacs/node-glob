@@ -3,11 +3,12 @@ var glob = require('../')
 process.chdir(__dirname)
 
 // expose timing issues
+var lag = 5
 glob.Glob.prototype._stat = function(o) { return function(f, cb) {
   var args = arguments
   setTimeout(function() {
     o.call(this, f, cb)
-  }.bind(this), 5)
+  }.bind(this), lag += 5)
 }}(glob.Glob.prototype._stat)
 
 
