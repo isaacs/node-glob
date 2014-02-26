@@ -98,9 +98,6 @@ function Glob (pattern, options, cb) {
 
   options = options || {}
 
-  this._endEmitted = false
-  this._endPushed = false
-  this._pendingPush = 0
   this.EOF = {}
   this._emitQueue = []
 
@@ -217,12 +214,17 @@ Glob.prototype._finish = function () {
     all = all.sort(this.nocase ? alphasorti : alphasort)
   }
 
-  this.log("emitting end", all)
+  if (this.mark) {
+    // at *some* point we statted all of these
+    all = all.map(this._mark, this)
+  }
 
-  this.EOF = this.found = all
-  console.error('EMIT MATCH EOF')
-  this._pendingPush++
-  this.emitMatch(this.EOF, -1)
+  setTimeout(function() {
+    this.log("emitting end", all)
+
+    this.EOF = this.found = all
+    this.emitMatch(this.EOF)
+  }.bind(this), 1000)
 }
 
 function alphasorti (a, b) {
@@ -233,6 +235,27 @@ function alphasorti (a, b) {
 
 function alphasort (a, b) {
   return a > b ? 1 : a < b ? -1 : 0
+}
+
+Glob.prototype._mark = function (p) {
+  var c = this.cache[p]
+  var m = p
+  if (c) {
+    var isDir = c === 2 || Array.isArray(c)
+    var slash = p.slice(-1) === '/'
+
+    if (isDir && !slash)
+      m += '/'
+    else if (!isDir && slash)
+      m = m.slice(0, -1)
+
+    if (m !== p) {
+      this.statCache[m] = this.statCache[p]
+      this.cache[m] = this.cache[p]
+    }
+  }
+
+  return m
 }
 
 Glob.prototype.abort = function () {
@@ -258,70 +281,16 @@ Glob.prototype.resume = function () {
   //process.nextTick(this.emit.bind(this, "resume"))
 }
 
-Glob.prototype._mark = function (p) {
-  var c = this.cache[p]
-  var m = p
-  if (c) {
-    var isDir = c === 2 || Array.isArray(c)
-    var slash = p.slice(-1) === '/'
-
-    if (isDir && !slash)
-      m += '/'
-    else if (!isDir && slash)
-      m = m.slice(0, -1)
-
-    if (m !== p) {
-      this.statCache[m] = this.statCache[p]
-      this.cache[m] = this.cache[p]
-    }
-  }
-
-  return m
-}
-
-Glob.prototype._pushMatch = function(m, index) {
-  if (m === this.EOF)
-    this._endPushed = true
-
-  if (this.mark && m !== this.EOF)
-    m = this._mark(m)
-
-  if (m !== this.EOF) {
-    this.matches[index] = this.matches[index] || {}
-    this.matches[index][m] = true
-  } else if (this._pendingPush > 0) {
-    // we'll get back here once the pending dings
-    console.error('_pendingPush=%d, do EOF later', this._pendingPush,
-                  this._emitQueue)
-    return
-  }
-
-
-  this._emitQueue.push(m)
-  this._processEmitQueue()
-}
-
-Glob.prototype.emitMatch = function (m, index) {
-  console.error('emitMatch', m===this.EOF ?"EOF":m, this._pendingPush,
-                this._emitQueue)
-  assert(!this._endPushed)
-  if ((!this.stat && !this.mark) || this.statCache[m] || m === this.EOF) {
-    console.error('emitMatch, immediate, decrement pendingPush', this._pendingPush)
-    this._pendingPush--
-    this._pushMatch(m, index)
+Glob.prototype.emitMatch = function (m) {
+  console.error('emitMatch', m)
+  if (!this.stat || this.statCache[m] || m === this.EOF) {
+    this._emitQueue.push(m)
+    this._processEmitQueue()
   } else {
-    console.error('emitMatch, need stat', this._pendingPush)
     this._stat(m, function(exists, isDir) {
-      this._pendingPush--
-      console.error('emitMatch, stat cb', this._pendingPush, this._endPushed)
       if (exists) {
-        console.error("it exists, pushMatch", m, index)
-        this._pushMatch(m, index)
-      }
-
-      if (this._endPushed && this._pendingPush === 0) {
-        console.error("nothing pending, push EOF")
-        this._pushMatch(this.EOF, -1)
+        this._emitQueue.push(m)
+        this._processEmitQueue()
       }
     })
   }
@@ -337,17 +306,7 @@ Glob.prototype._processEmitQueue = function (m) {
       break
     }
 
-    console.error('emit!', m === this.EOF ? "end" : "match", m)
-
-    if (m === this.EOF) {
-      console.error("EOF", this._emitQueue)
-      this._endEmitted = true
-    } else {
-      if (this._endEmitted) {
-        console.error("end emitting more than once?", m)
-      }
-      assert(!this._endEmitted)
-    }
+    this.log('emit!', m === this.EOF ? "end" : "match")
 
     this.emit(m === this.EOF ? "end" : "match", m)
     this._processingEmitQueue = false
@@ -391,7 +350,6 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
     // if not, then this is rather simple
     case pattern.length:
       prefix = pattern.join("/")
-      this._pendingPush++
       this._stat(prefix, function (exists, isDir) {
         // either it's there, or it isn't.
         // nothing more to do, either way.
@@ -407,10 +365,9 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
           if (process.platform === "win32")
             prefix = prefix.replace(/\\/g, "/")
 
-          console.error('EMIT MATCH 391', this._pendingPush)
-          this.emitMatch(prefix, index)
-        } else {
-          this._pendingPush--
+          this.matches[index] = this.matches[index] || {}
+          this.matches[index][prefix] = true
+          this.emitMatch(prefix)
         }
         return cb()
       })
@@ -524,9 +481,9 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
         if (process.platform === "win32")
           e = e.replace(/\\/g, "/")
 
-        console.error('EMIT MATCH 506')
-        this._pendingPush++
-        this.emitMatch(e, index)
+        this.matches[index] = this.matches[index] || {}
+        this.matches[index][e] = true
+        this.emitMatch(e)
       }, this)
       return cb.call(this)
     }
