@@ -21,7 +21,8 @@
     "rimraf": "1"
   },
   "scripts": {
-    "test": "tap test/*.js"
+    "test": "tap test/*.js",
+    "test-regen": "TEST_REGEN=1 node test/00-setup.js"
   },
   "license": "BSD"
 }
