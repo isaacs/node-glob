@@ -76,6 +76,7 @@ function globSync (pattern, options) {
   return glob(pattern, options)
 }
 
+this._processingEmitQueue = false
 
 glob.Glob = Glob
 inherits(Glob, EE)
@@ -101,6 +102,9 @@ function Glob (pattern, options, cb) {
   this._endEmitted = false
   this.EOF = {}
   this._emitQueue = []
+
+  this.paused = false
+  this._processingEmitQueue = false
 
   this.maxDepth = options.maxDepth || 1000
   this.maxLength = options.maxLength || Infinity
@@ -215,10 +219,15 @@ Glob.prototype._finish = function () {
     all = all.sort(this.nocase ? alphasorti : alphasort)
   }
 
+  if (this.mark) {
+    // at *some* point we statted all of these
+    all = all.map(this._mark, this)
+  }
+
   this.log("emitting end", all)
 
   this.EOF = this.found = all
-  this.emitMatch(this.EOF, -1)
+  this.emitMatch(this.EOF)
 }
 
 function alphasorti (a, b) {
@@ -229,6 +238,27 @@ function alphasorti (a, b) {
 
 function alphasort (a, b) {
   return a > b ? 1 : a < b ? -1 : 0
+}
+
+Glob.prototype._mark = function (p) {
+  var c = this.cache[p]
+  var m = p
+  if (c) {
+    var isDir = c === 2 || Array.isArray(c)
+    var slash = p.slice(-1) === '/'
+
+    if (isDir && !slash)
+      m += '/'
+    else if (!isDir && slash)
+      m = m.slice(0, -1)
+
+    if (m !== p) {
+      this.statCache[m] = this.statCache[p]
+      this.cache[m] = this.cache[p]
+    }
+  }
+
+  return m
 }
 
 Glob.prototype.abort = function () {
@@ -254,71 +284,69 @@ Glob.prototype.resume = function () {
   //process.nextTick(this.emit.bind(this, "resume"))
 }
 
-Glob.prototype._mark = function (p) {
-  var c = this.cache[p]
-  var m = p
-  if (c) {
-    var isDir = c === 2 || Array.isArray(c)
-    var slash = p.slice(-1) === '/'
-
-    if (isDir && !slash)
-      m += '/'
-    else if (!isDir && slash)
-      m = m.slice(0, -1)
-
-    if (m !== p) {
-      this.statCache[m] = this.statCache[p]
-      this.cache[m] = this.cache[p]
-    }
-  }
-
-  return m
-}
-
-Glob.prototype._pushMatch = function(m, index) {
-  if (this.mark && m !== this.EOF)
-    m = this._mark(m)
-
-  if (m !== this.EOF) {
-    this.matches[index] = this.matches[index] || {}
-    this.matches[index][m] = true
-  }
-
+Glob.prototype.emitMatch = function (m) {
+  this.log('emitMatch', m)
   this._emitQueue.push(m)
   this._processEmitQueue()
 }
 
-Glob.prototype.emitMatch = function (m, index) {
-  if ((!this.stat && !this.mark) || this.statCache[m] || m === this.EOF) {
-    this._pushMatch(m, index)
-  } else {
-    this._stat(m, function(exists, isDir) {
-      if (exists)
-        this._pushMatch(m, index)
-    })
-  }
-}
-
 Glob.prototype._processEmitQueue = function (m) {
+  this.log("pEQ paused=%j processing=%j m=%j", this.paused,
+           this._processingEmitQueue, m)
+  var done = false
   while (!this._processingEmitQueue &&
          !this.paused) {
     this._processingEmitQueue = true
     var m = this._emitQueue.shift()
+    this.log(">processEmitQueue", m === this.EOF ? ":EOF:" : m)
     if (!m) {
+      this.log(">processEmitQueue, falsey m")
       this._processingEmitQueue = false
       break
     }
 
-    this.log('emit!', m === this.EOF ? "end" : "match")
+    if (m === this.EOF || !(this.mark && !this.stat)) {
+      this.log("peq: unmarked, or eof")
+      next.call(this, 0, false)
+    } else if (this.statCache[m]) {
+      var sc = this.statCache[m]
+      var exists
+      if (sc)
+        exists = sc.isDirectory() ? 2 : 1
+      this.log("peq: stat cached")
+      next.call(this, exists, exists === 2)
+    } else {
+      this.log("peq: _stat, then next")
+      this._stat(m, next)
+    }
 
-    if (m === this.EOF)
-      this._endEmitted = true
-    else
+    function next(exists, isDir) {
+      this.log("next", m, exists, isDir)
+      var ev = m === this.EOF ? "end" : "match"
+
+      // "end" can only happen once.
       assert(!this._endEmitted)
+      if (ev === "end")
+        this._endEmitted = true
 
-    this.emit(m === this.EOF ? "end" : "match", m)
-    this._processingEmitQueue = false
+      if (exists) {
+        // Doesn't mean it necessarily doesn't exist, it's possible
+        // we just didn't check because we don't care that much, or
+        // this is EOF anyway.
+        if (isDir && !m.match(/\/$/)) {
+          m = m + "/"
+        } else if (!isDir && m.match(/\/$/)) {
+          m = m.replace(/\/+$/, "")
+        }
+      }
+      this.log("emit", ev, m)
+      this.emit(ev, m)
+      this._processingEmitQueue = false
+      if (done && m !== this.EOF && !this.paused)
+        this._processEmitQueue()
+    }
   }
+  done = true
 }
 
 Glob.prototype._process = function (pattern, depth, index, cb_) {
@@ -373,7 +401,9 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
           if (process.platform === "win32")
             prefix = prefix.replace(/\\/g, "/")
 
-          this.emitMatch(prefix, index)
+          this.matches[index] = this.matches[index] || {}
+          this.matches[index][prefix] = true
+          this.emitMatch(prefix)
         }
         return cb()
       })
@@ -487,7 +517,9 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
         if (process.platform === "win32")
           e = e.replace(/\\/g, "/")
 
-        this.emitMatch(e, index)
+        this.matches[index] = this.matches[index] || {}
+        this.matches[index][e] = true
+        this.emitMatch(e)
       }, this)
       return cb.call(this)
     }
