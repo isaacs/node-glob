@@ -305,21 +305,6 @@ Glob.prototype._processEmitQueue = function (m) {
       break
     }
 
-    if (m === this.EOF || !(this.mark && !this.stat)) {
-      this.log("peq: unmarked, or eof")
-      next.call(this, 0, false)
-    } else if (this.statCache[m]) {
-      var sc = this.statCache[m]
-      var exists
-      if (sc)
-        exists = sc.isDirectory() ? 2 : 1
-      this.log("peq: stat cached")
-      next.call(this, exists, exists === 2)
-    } else {
-      this.log("peq: _stat, then next")
-      this._stat(m, next)
-    }
-
     function next(exists, isDir) {
       this.log("next", m, exists, isDir)
       var ev = m === this.EOF ? "end" : "match"
@@ -344,6 +329,21 @@ Glob.prototype._processEmitQueue = function (m) {
       this._processingEmitQueue = false
       if (done && m !== this.EOF && !this.paused)
         this._processEmitQueue()
+    }
+
+    if (m === this.EOF || !(this.mark && !this.stat)) {
+      this.log("peq: unmarked, or eof")
+      next.call(this, 0, false)
+    } else if (this.statCache[m]) {
+      var sc = this.statCache[m]
+      var exists
+      if (sc)
+        exists = sc.isDirectory() ? 2 : 1
+      this.log("peq: stat cached")
+      next.call(this, exists, exists === 2)
+    } else {
+      this.log("peq: _stat, then next")
+      this._stat(m, next)
     }
   }
   done = true
