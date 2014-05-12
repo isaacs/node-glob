@@ -226,23 +226,8 @@ Though windows uses either `/` or `\` as its path separator, only `/`
 characters are used by this glob implementation.  You must use
 forward-slashes **only** in glob expressions.  Back-slashes will always
 be interpreted as escape characters, not path separators.
-
-Results from absolute patterns such as `/foo/*` are mounted onto the
-root setting using `path.join`.  On windows, this will by default result
-in `/foo/*` matching `C:\foo\bar.txt`.
-
-## Race Conditions
-
-Glob searching, by its very nature, is susceptible to race conditions,
-since it relies on directory walking and such.
-
-As a result, it is possible that a file that exists when glob looks for
-it may have been deleted or modified by the time it returns the result.
-
-As part of its internal implementation, this program caches all stat
-and readdir calls that it makes, in order to cut down on system
-overhead.  However, this also makes it even more susceptible to races,
-especially if the cache or statCache objects are reused between glob
+5
+re reused between glob
 calls.
 
 Users are thus advised not to use a glob result as a guarantee of
