@@ -12,8 +12,8 @@
     "node": "*"
   },
   "dependencies": {
-    "minimatch": "~0.2.11",
-    "inherits": "2"
+    "inherits": "2",
+    "minimatch": "^0.3.0"
   },
   "devDependencies": {
     "tap": "~0.4.0",
