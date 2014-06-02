@@ -44,6 +44,7 @@ var fs = require("fs")
 , path = require("path")
 , isDir = {}
 , assert = require("assert").ok
+, once = require("once")
 
 function glob (pattern, options, cb) {
   if (typeof options === "function") cb = options, options = {}
@@ -91,14 +92,11 @@ function Glob (pattern, options, cb) {
   }
 
   if (typeof cb === "function") {
-    var matched = function matched (matches) {
+    cb = once(cb)
+    this.on("error", cb)
+    this.on("end", function (matches) {
       cb(null, matches)
-    }
-    this.once("error", function (err) {
-      this.removeListener("end", matched)
-      cb(err)
-    }.bind(this))
-    this.once("end", matched)
+    })
   }
 
   options = options || {}
