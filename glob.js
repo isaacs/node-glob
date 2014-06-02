@@ -180,6 +180,10 @@ function Glob (pattern, options, cb) {
   // Keep them as a list so we can fill in when nonull is set.
   this.matches = new Array(n)
 
+  if (this.minimatch.set.length === 0) {
+    return process.nextTick(this._finish.bind(this))
+  }
+
   this.minimatch.set.forEach(iterator.bind(this))
   function iterator (pattern, i, set) {
     this._process(pattern, 0, i, function (er) {
