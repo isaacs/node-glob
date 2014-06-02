@@ -149,6 +149,10 @@ function Glob (pattern, options, cb) {
   this.stat = !!options.stat
 
   this.debug = !!options.debug || !!options.globDebug
+
+  if (/\bglob\b/.test(process.env.NODE_DEBUG || ''))
+    this.debug = true
+
   if (this.debug)
     this.log = console.error
 
