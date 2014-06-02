@@ -91,10 +91,14 @@ function Glob (pattern, options, cb) {
   }
 
   if (typeof cb === "function") {
-    this.on("error", cb)
-    this.on("end", function (matches) {
+    var matched = function matched (matches) {
       cb(null, matches)
-    })
+    }
+    this.once("error", function (err) {
+      this.removeListener("end", matched)
+      cb(err)
+    }.bind(this))
+    this.once("end", matched)
   }
 
   options = options || {}
