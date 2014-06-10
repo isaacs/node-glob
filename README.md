@@ -67,6 +67,23 @@ Perform an asynchronous glob search.
 
 Perform a synchronous glob search.
 
+## glob.promise(patter, [options])
+
+* `pattern` {String} Pattern to be matched
+* `options` {Object}
+* return: {!Object<Function>} a promise
+
+```jacascript
+var glob = require('glob').promise;
+
+glob(pattern, options)
+  .then(handleMatch)
+  .catch(handleError)
+  .progress(handleEachMatchAsFound);
+```
+
+Performs an asynchronous glob search and returns a promise. The promise is powered [Q](https://github.com/kriskowal/q).
+
 ## Class: glob.Glob
 
 Create a Glob object by instanting the `glob.Glob` class.

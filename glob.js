@@ -45,6 +45,7 @@ var fs = require("fs")
 , isDir = {}
 , assert = require("assert").ok
 , once = require("once")
+, Q = require('q');
 
 function glob (pattern, options, cb) {
   if (typeof options === "function") cb = options, options = {}
@@ -75,6 +76,18 @@ function globSync (pattern, options) {
   options = options || {}
   options.sync = true
   return glob(pattern, options)
+}
+
+glob.promise = globPromise;
+function globPromise(pattern, options) {
+  var deferred = Q.defer(),
+      g = glob(pattern, options);
+
+  g.on('match', deferred.notify);
+  g.on('error', deferred.reject);
+  g.on('end', deferred.resolve);
+
+  return deferred.promise;
 }
 
 this._processingEmitQueue = false
