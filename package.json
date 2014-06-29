@@ -11,6 +11,9 @@
   "engines": {
     "node": "*"
   },
+  "optionalDependencies": {
+    "graceful-fs": "^3.0.2"
+  },
   "dependencies": {
     "inherits": "2",
     "minimatch": "^0.3.0",
