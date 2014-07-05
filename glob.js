@@ -503,12 +503,20 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
     // It will only match dot entries if it starts with a dot, or if
     // dot is set.  Stuff like @(.foo|.bar) isn't allowed.
     var pn = pattern[n]
+    var negate = !!this.minimatch.negate;
     var rawGlob = pattern[n]._glob
     , dotOk = this.dot || rawGlob.charAt(0) === "."
 
     entries = entries.filter(function (e) {
-      return (e.charAt(0) !== "." || dotOk) &&
-             e.match(pattern[n])
+      if (e.charAt(0) !== "." || dotOk) {
+        if (negate && n === 0) {
+          return !e.match(pattern[n]);
+        } else {
+          return e.match(pattern[n]);
+        }
+      }
+
+      return null;
     })
 
     // If n === pattern.length - 1, then there's no need for the extra stat
