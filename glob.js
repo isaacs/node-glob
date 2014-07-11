@@ -331,34 +331,34 @@ Glob.prototype._processEmitQueue = function (m) {
       this.log("peq: _stat, then next")
       this._stat(m, next)
     }
-
-    function next(exists, isDir) {
-      this.log("next", m, exists, isDir)
-      var ev = m === this.EOF ? "end" : "match"
-
-      // "end" can only happen once.
-      assert(!this._endEmitted)
-      if (ev === "end")
-        this._endEmitted = true
-
-      if (exists) {
-        // Doesn't mean it necessarily doesn't exist, it's possible
-        // we just didn't check because we don't care that much, or
-        // this is EOF anyway.
-        if (isDir && !m.match(/\/$/)) {
-          m = m + "/"
-        } else if (!isDir && m.match(/\/$/)) {
-          m = m.replace(/\/+$/, "")
-        }
-      }
-      this.log("emit", ev, m)
-      this.emit(ev, m)
-      this._processingEmitQueue = false
-      if (done && m !== this.EOF && !this.paused)
-        this._processEmitQueue()
-    }
   }
   done = true
+
+  function next(exists, isDir) {
+    this.log("next", m, exists, isDir)
+    var ev = m === this.EOF ? "end" : "match"
+
+    // "end" can only happen once.
+    assert(!this._endEmitted)
+    if (ev === "end")
+      this._endEmitted = true
+
+    if (exists) {
+      // Doesn't mean it necessarily doesn't exist, it's possible
+      // we just didn't check because we don't care that much, or
+      // this is EOF anyway.
+      if (isDir && !m.match(/\/$/)) {
+        m = m + "/"
+      } else if (!isDir && m.match(/\/$/)) {
+        m = m.replace(/\/+$/, "")
+      }
+    }
+    this.log("emit", ev, m)
+    this.emit(ev, m)
+    this._processingEmitQueue = false
+    if (done && m !== this.EOF && !this.paused)
+      this._processEmitQueue()
+  }
 }
 
 Glob.prototype._process = function (pattern, depth, index, cb_) {
