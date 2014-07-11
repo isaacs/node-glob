@@ -45,6 +45,18 @@ globs.forEach(function (pattern) {
     t.deepEqual(matches, expect, "should match shell")
     t.end()
   })
+
+  tap.test(pattern + " promise", function (t) {
+    glob.promise(pattern).then(function(matches) {
+      matches = cleanResults(matches);
+
+      t.deepEqual(matches, expect, "should match shell");
+      t.end();
+
+    }, function(error) {
+      throw error;
+    });
+  });
 })
 
 function cleanResults (m) {
