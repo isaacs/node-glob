@@ -332,7 +332,7 @@ Glob.prototype._processEmitQueue = function (m) {
       this._stat(m, next)
     }
 
-    function next(exists, isDir) {
+    var next = function(exists, isDir) {
       this.log("next", m, exists, isDir)
       var ev = m === this.EOF ? "end" : "match"
 
