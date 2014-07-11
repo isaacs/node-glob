@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "inherits": "2",
-    "minimatch": "^0.3.0",
+    "minimatch": "^0.4.0",
     "once": "^1.3.0"
   },
   "devDependencies": {
