@@ -363,15 +363,16 @@ Glob.prototype._processEmitQueue = function (m) {
   }
 }
 
-Glob.prototype._process = function (pattern, depth, index, cb_) {
+function wrapProcessCb (pattern, cb_) {
   assert(this instanceof Glob)
-
+  assert(!cb_.__wrappedGlobProcessCb)
   var cb = function cb (er, res) {
     assert(this instanceof Glob)
     if (this.paused) {
       if (!this._processQueue) {
         this._processQueue = []
         this.once("resume", function () {
+          assert(this instanceof Glob)
           var q = this._processQueue
           this._processQueue = null
           q.forEach(function (cb) { cb() })
@@ -382,6 +383,15 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
       cb_.call(this, er, res)
     }
   }.bind(this)
+
+  cb.__wrappedGlobProcessCb = true
+  return cb
+}
+
+Glob.prototype._process = function (pattern, depth, index, cb) {
+  assert(this instanceof Glob)
+
+  cb = wrapProcessCb.call(this, pattern, cb)
 
   if (this.aborted) return cb()
 
@@ -399,28 +409,7 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
   switch (n) {
     // if not, then this is rather simple
     case pattern.length:
-      prefix = pattern.join("/")
-      this._stat(prefix, function (exists, isDir) {
-        // either it's there, or it isn't.
-        // nothing more to do, either way.
-        if (exists) {
-          if (prefix && isAbsolute(prefix) && !this.nomount) {
-            if (prefix.charAt(0) === "/") {
-              prefix = path.join(this.root, prefix)
-            } else {
-              prefix = path.resolve(this.root, prefix)
-            }
-          }
-
-          if (process.platform === "win32")
-            prefix = prefix.replace(/\\/g, "/")
-
-          this.matches[index] = this.matches[index] || {}
-          this.matches[index][prefix] = true
-          this.emitMatch(prefix)
-        }
-        return cb()
-      })
+      this._simpleProcess(pattern.join('/'), index, cb)
       return
 
     case 0:
@@ -446,10 +435,6 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
       prefix = "/" + prefix
     }
     read = prefix
-
-    // if (process.platform === "win32")
-    //   read = prefix = prefix.replace(/^[a-zA-Z]:|\\/g, "/")
-
     this.log('absolute: ', prefix, this.root, pattern, read)
   } else {
     read = prefix
@@ -461,45 +446,13 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
   return this._readdir(read, function (er, entries) {
     if (er) {
       // not a directory!
-      // this means that, whatever else comes after this, it can never match
+      // whatever else comes after this, it can never match
       return cb()
     }
 
     // globstar is special
     if (pattern[n] === minimatch.GLOBSTAR) {
-      // test without the globstar, and with every child both below
-      // and replacing the globstar.
-      var s = [ pattern.slice(0, n).concat(pattern.slice(n + 1)) ]
-      entries.forEach(function (e) {
-        if (e.charAt(0) === "." && !this.dot) return
-        // instead of the globstar
-        s.push(pattern.slice(0, n).concat(e).concat(pattern.slice(n + 1)))
-        // below the globstar
-        s.push(pattern.slice(0, n).concat(e).concat(pattern.slice(n)))
-      }, this)
-
-      s = s.filter(function (pattern) {
-        var key = gsKey(pattern)
-        var seen = !this._globstars[key]
-        this._globstars[key] = true
-        return seen
-      }, this)
-
-      if (!s.length)
-        return cb()
-
-      // now asyncForEach over this
-      var l = s.length
-      , errState = null
-      s.forEach(function (gsPattern) {
-        this._process(gsPattern, depth + 1, index, function (er) {
-          if (errState) return
-          if (er) return cb(errState = er)
-          if (--l <= 0) return cb()
-        })
-      }, this)
-
-      return
+      return this._globstarProcess(pattern, n, entries, depth, index, cb)
     }
 
     // not a globstar
@@ -563,6 +516,68 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
     }, this)
   })
 
+}
+
+Glob.prototype._globstarProcess = function (pattern, n, entries, depth, index, cb) {
+  assert(this instanceof Glob)
+
+  // test without the globstar, and with every child both below
+  // and replacing the globstar.
+  var s = [ pattern.slice(0, n).concat(pattern.slice(n + 1)) ]
+  entries.forEach(function (e) {
+    if (e.charAt(0) === "." && !this.dot) return
+    // instead of the globstar
+    s.push(pattern.slice(0, n).concat(e).concat(pattern.slice(n + 1)))
+    // below the globstar
+    s.push(pattern.slice(0, n).concat(e).concat(pattern.slice(n)))
+  }, this)
+
+  s = s.filter(function (pattern) {
+    var key = gsKey(pattern)
+    var seen = !this._globstars[key]
+    this._globstars[key] = true
+    return seen
+  }, this)
+
+  if (!s.length)
+    return cb()
+
+  // now asyncForEach over this
+  var l = s.length
+  , errState = null
+  s.forEach(function (gsPattern) {
+    this._process(gsPattern, depth + 1, index, function (er) {
+      if (errState) return
+      if (er) return cb(errState = er)
+      if (--l <= 0) return cb()
+    })
+  }, this)
+}
+
+Glob.prototype._simpleProcess = function (prefix, index, cb) {
+  assert(this instanceof Glob)
+  this._stat(prefix, function (exists, isDir) {
+    assert(this instanceof Glob)
+    // either it's there, or it isn't.
+    // nothing more to do, either way.
+    if (exists) {
+      if (prefix && isAbsolute(prefix) && !this.nomount) {
+        if (prefix.charAt(0) === "/") {
+          prefix = path.join(this.root, prefix)
+        } else {
+          prefix = path.resolve(this.root, prefix)
+        }
+      }
+
+      if (process.platform === "win32")
+        prefix = prefix.replace(/\\/g, "/")
+
+      this.matches[index] = this.matches[index] || {}
+      this.matches[index][prefix] = true
+      this.emitMatch(prefix)
+    }
+    return cb()
+  })
 }
 
 function gsKey (pattern) {
