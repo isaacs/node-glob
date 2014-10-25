@@ -12,13 +12,17 @@
 // readdir(PREFIX) as ENTRIES
 //   If fails, END
 //   If pattern[n] is GLOBSTAR
+//     set SEEN=[]
 //     // handle the case where the globstar match is empty
 //     // by pruning it out, and testing the resulting pattern
 //     PROCESS(pattern[0..n] + pattern[n+1 .. $])
 //     // handle other cases.
 //     for ENTRY in ENTRIES (not dotfiles)
 //       // attach globstar + tail onto the entry
-//       PROCESS(pattern[0..n] + ENTRY + pattern[n .. $])
+//       get REALPATH of ENTRY
+//       if REALPATH not in SEEN
+//         add REALPATH to SEEN
+//         PROCESS(pattern[0..n] + ENTRY + pattern[n .. $])
 //
 //   else // not globstar
 //     for ENTRY in ENTRIES (not dotfiles, unless pattern[n] is dot)
@@ -453,6 +457,7 @@ Glob.prototype._process = function (pattern, depth, index, cb_) {
 
   this.log('readdir(%j)', read, this.cwd, this.root)
 
+  // TODO: Need to realpath these if the pattern[n] is globstar
   return this._readdir(read, function (er, entries) {
     if (er) {
       // not a directory!
