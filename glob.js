@@ -112,7 +112,6 @@ function Glob (pattern, options, cb) {
   this.paused = false
   this._processingEmitQueue = false
 
-  this.maxDepth = options.maxDepth || 1000
   this.maxLength = options.maxLength || Infinity
   this.cache = options.cache || {}
   this.statCache = options.statCache || {}
@@ -192,7 +191,7 @@ function Glob (pattern, options, cb) {
 
   this.minimatch.set.forEach(iterator.bind(this))
   function iterator (pattern, i, set) {
-    this._process(pattern, 0, i, function (er) {
+    this._process(pattern, i, function (er) {
       if (er) this.emit("error", er)
       if (-- n <= 0) this._finish()
     })
@@ -388,14 +387,13 @@ function wrapProcessCb (pattern, cb_) {
   return cb
 }
 
-Glob.prototype._process = function (pattern, depth, index, cb) {
+Glob.prototype._process = function (pattern, index, cb) {
   assert(this instanceof Glob)
+  assert(typeof cb === 'function')
 
   cb = wrapProcessCb.call(this, pattern, cb)
 
   if (this.aborted) return cb()
-
-  if (depth > this.maxDepth) return cb()
 
   // Get the first [n] parts of pattern that are all strings.
   var n = 0
@@ -452,7 +450,7 @@ Glob.prototype._process = function (pattern, depth, index, cb) {
 
     // globstar is special
     if (pattern[n] === minimatch.GLOBSTAR) {
-      return this._globstarProcess(pattern, n, entries, depth, index, cb)
+      return this._globstarProcess(pattern, n, entries, index, cb)
     }
 
     // not a globstar
@@ -508,7 +506,7 @@ Glob.prototype._process = function (pattern, depth, index, cb) {
     if (l === 0) return cb() // no matches possible
     entries.forEach(function (e) {
       var p = pattern.slice(0, n).concat(e).concat(pattern.slice(n + 1))
-      this._process(p, depth + 1, index, function (er) {
+      this._process(p, index, function (er) {
         if (errState) return
         if (er) return cb(errState = er)
         if (--l === 0) return cb.call(this)
@@ -518,18 +516,20 @@ Glob.prototype._process = function (pattern, depth, index, cb) {
 
 }
 
-Glob.prototype._globstarProcess = function (pattern, n, entries, depth, index, cb) {
+Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
   assert(this instanceof Glob)
+
+  var gsPrefix = pattern.slice(0, n)
 
   // test without the globstar, and with every child both below
   // and replacing the globstar.
-  var s = [ pattern.slice(0, n).concat(pattern.slice(n + 1)) ]
+  var s = [ gsPrefix.concat(pattern.slice(n + 1)) ]
   entries.forEach(function (e) {
     if (e.charAt(0) === "." && !this.dot) return
     // instead of the globstar
-    s.push(pattern.slice(0, n).concat(e).concat(pattern.slice(n + 1)))
+    s.push(gsPrefix.concat(e).concat(pattern.slice(n + 1)))
     // below the globstar
-    s.push(pattern.slice(0, n).concat(e).concat(pattern.slice(n)))
+    s.push(gsPrefix.concat(e).concat(pattern.slice(n)))
   }, this)
 
   s = s.filter(function (pattern) {
@@ -546,7 +546,7 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, depth, index, c
   var l = s.length
   , errState = null
   s.forEach(function (gsPattern) {
-    this._process(gsPattern, depth + 1, index, function (er) {
+    this._process(gsPattern, index, function (er) {
       if (errState) return
       if (er) return cb(errState = er)
       if (--l <= 0) return cb()
