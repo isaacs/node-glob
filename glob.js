@@ -191,7 +191,7 @@ function Glob (pattern, options, cb) {
 
   this.minimatch.set.forEach(iterator.bind(this))
   function iterator (pattern, i, set) {
-    this._process(pattern, i, function (er) {
+    this._process(pattern, i, null, function (er) {
       if (er) this.emit("error", er)
       if (-- n <= 0) this._finish()
     })
@@ -387,7 +387,7 @@ function wrapProcessCb (pattern, cb_) {
   return cb
 }
 
-Glob.prototype._process = function (pattern, index, cb) {
+Glob.prototype._process = function (pattern, index, gsStart, cb) {
   assert(this instanceof Glob)
   assert(typeof cb === 'function')
 
@@ -450,7 +450,7 @@ Glob.prototype._process = function (pattern, index, cb) {
 
     // globstar is special
     if (pattern[n] === minimatch.GLOBSTAR) {
-      return this._globstarProcess(pattern, n, entries, index, cb)
+      return this._globstarProcess(pattern, n, entries, index, gsStart, cb)
     }
 
     // not a globstar
@@ -506,7 +506,7 @@ Glob.prototype._process = function (pattern, index, cb) {
     if (l === 0) return cb() // no matches possible
     entries.forEach(function (e) {
       var p = pattern.slice(0, n).concat(e).concat(pattern.slice(n + 1))
-      this._process(p, index, function (er) {
+      this._process(p, index, gsStart, function (er) {
         if (errState) return
         if (er) return cb(errState = er)
         if (--l === 0) return cb.call(this)
@@ -516,10 +516,13 @@ Glob.prototype._process = function (pattern, index, cb) {
 
 }
 
-Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
+Glob.prototype._globstarProcess = function (pattern, n, entries, index, gsStart, cb) {
   assert(this instanceof Glob)
+  assert(typeof cb === 'function')
 
   var gsPrefix = pattern.slice(0, n)
+  if (!gsStart)
+    gsStart = gsPrefix
 
   // test without the globstar, and with every child both below
   // and replacing the globstar.
@@ -546,7 +549,7 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
   var l = s.length
   , errState = null
   s.forEach(function (gsPattern) {
-    this._process(gsPattern, index, function (er) {
+    this._process(gsPattern, index, gsStart, function (er) {
       if (errState) return
       if (er) return cb(errState = er)
       if (--l <= 0) return cb()
