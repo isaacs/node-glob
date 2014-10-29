@@ -527,107 +527,34 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, index, gsStart,
   // test without the globstar, and with every child both below
   // and replacing the globstar.
   var s = [ gsPrefix.concat(pattern.slice(n + 1)) ]
-
-
-  // realpath all the entries, prune any that are already
-  // visited on this globstar traversal
-  this._realpathPrune(gsStart, gsPrefix, entries, function (er, entries) {
-    if (er)
-      return cb(er)
-
-    assert(this instanceof Glob)
-
-    entries.forEach(function (e) {
-      if (e.charAt(0) === "." && !this.dot) return
-      // instead of the globstar
-      s.push(gsPrefix.concat(e).concat(pattern.slice(n + 1)))
-      // below the globstar
-      s.push(gsPrefix.concat(e).concat(pattern.slice(n)))
-    }, this)
-
-    s = s.filter(function (pattern) {
-      assert(this instanceof Glob)
-      var key = gsKey(pattern)
-      var seen = !this._globstars[key]
-      this._globstars[key] = true
-      return seen
-    }, this)
-
-    if (!s.length)
-      return cb()
-
-    // now asyncForEach over this
-    var l = s.length
-    , errState = null
-    s.forEach(function (gsPattern) {
-      assert(this instanceof Glob)
-      this._process(gsPattern, index, gsStart, function (er) {
-        if (errState) return
-        if (er) return cb(errState = er)
-        if (--l <= 0) return cb()
-      })
-    }, this)
-  }.bind(this))
-}
-
-Glob.prototype._realpathPrune = function (gsStart, gsPrefix, entries, cb) {
-  assert(this instanceof Glob)
-  assert(typeof cb === 'function')
-
-  if (entries.length === 0) return cb(null, entries)
-
-  if (!this._gsPruneSeen)
-    this._gsPruneSeen = {}
-
-  if (!this._gsPruneSeen[gsStart])
-    this._gsPruneSeen[gsStart] = {}
-
-  var seen = this._gsPruneSeen[gsStart]
-  var error = null
-  var len = entries.length
-
-  entries.forEach(function (entry, i) {
-    this._realpath(gsPrefix.concat(entry).join("/"), then(entry, i))
+  entries.forEach(function (e) {
+    if (e.charAt(0) === "." && !this.dot) return
+    // instead of the globstar
+    s.push(gsPrefix.concat(e).concat(pattern.slice(n + 1)))
+    // below the globstar
+    s.push(gsPrefix.concat(e).concat(pattern.slice(n)))
   }, this)
 
-  function then (entry, i) { return function (er, real) {
-    if (er) {
-      error = er
-    } else {
-      if (seen[real]) {
-        entries[i] = false
-      } else {
-        seen[real] = true
-      }
-    }
+  s = s.filter(function (pattern) {
+    var key = gsKey(pattern)
+    var seen = !this._globstars[key]
+    this._globstars[key] = true
+    return seen
+  }, this)
 
-    if (--len === 0)
-      done()
-  }}
+  if (!s.length)
+    return cb()
 
-  function done () {
-    entries = entries.filter(function (entry) {
-      return entry
+  // now asyncForEach over this
+  var l = s.length
+  , errState = null
+  s.forEach(function (gsPattern) {
+    this._process(gsPattern, index, gsStart, function (er) {
+      if (errState) return
+      if (er) return cb(errState = er)
+      if (--l <= 0) return cb()
     })
-    return cb(error, entries)
-  }
-}
-
-Glob.prototype._realpath = function (path, cb) {
-  assert(this instanceof Glob)
-
-  if (!this._realpathCache)
-    this._realpathCache = {}
-
-  if (this.sync) {
-    try {
-      cb(null, fs.realpathSync(path, this._realpathCache))
-    } catch (er) {
-      cb(er)
-    }
-  } else {
-    fs.realpath(path, this._realpathCache, cb)
-  }
+  }, this)
 }
 
 Glob.prototype._simpleProcess = function (prefix, index, cb) {
