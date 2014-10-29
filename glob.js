@@ -86,6 +86,10 @@ function Glob (pattern, options, cb) {
     return new Glob(pattern, options, cb)
   }
 
+  if (!pattern) {
+    throw new Error("must provide pattern")
+  }
+
   if (typeof options === "function") {
     cb = options
     options = null
@@ -121,16 +125,25 @@ function Glob (pattern, options, cb) {
     this.changedCwd = path.resolve(options.cwd) !== cwd
   }
 
+  // Split up UNC paths into [root, tail]
+  if (process.platform === "win32") {
+    var winPathData = splitWinPath(pattern)
+      , drive = winPathData[0]  // \\host\share if UNC, drive letter otherwise
+      , pathSep = winPathData[1]
+      , tail = winPathData[2]   // remainder\of\path
+      , isUnc = winPathData[3]
+    if (isUnc) {
+      options.root = drive
+      pattern = pathSep + tail
+    }
+  }
+
   this.root = options.root || path.resolve(this.cwd, "/")
   this.root = path.resolve(this.root)
   if (process.platform === "win32")
     this.root = this.root.replace(/\\/g, "/")
 
   this.nomount = !!options.nomount
-
-  if (!pattern) {
-    throw new Error("must provide pattern")
-  }
 
   // base-matching: just use globstar for that.
   if (options.matchBase && -1 === pattern.indexOf("/")) {
@@ -729,18 +742,28 @@ var isAbsolute = process.platform === "win32" ? absWin : absUnix
 
 function absWin (p) {
   if (absUnix(p)) return true
-  // pull off the device/UNC bit from a windows path.
-  // from node's lib/path.js
-  var splitDeviceRe =
-      /^([a-zA-Z]:|[\\\/]{2}[^\\\/]+[\\\/]+[^\\\/]+)?([\\\/])?([\s\S]*?)$/
-    , result = splitDeviceRe.exec(p)
-    , device = result[1] || ''
-    , isUnc = device && device.charAt(1) !== ':'
-    , isAbsolute = !!result[2] || isUnc // UNC paths are always absolute
+  var pathData = splitWinPath(p)
+    , pathSep = pathData[1]
+    , isUnc = pathData[3]
+    , isAbsolute = !!pathSep || isUnc // UNC paths are always absolute
 
   return isAbsolute
 }
 
 function absUnix (p) {
   return p.charAt(0) === "/" || p === ""
+}
+
+function splitWinPath (p) {
+  // pull off the device/UNC bit from a windows path.
+  // from node's lib/path.js
+  var splitDeviceRe =
+      /^([a-zA-Z]:|[\\\/]{2}[^\\\/]+[\\\/]+[^\\\/]+)?([\\\/])?([\s\S]*?)$/
+    , result = splitDeviceRe.exec(p)
+    , device = result[1] || ''
+    , pathSep = result[2] || ''
+    , tail = result[3] || ''
+    , isUnc = device && device.charAt(1) !== ':'
+
+  return [device, pathSep, tail, isUnc]
 }
