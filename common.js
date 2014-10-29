@@ -15,18 +15,27 @@ var path = require("path")
 var minimatch = require("minimatch")
 var Minimatch = minimatch.Minimatch
 
-function absWin (p) {
-  if (absUnix(p)) return true
+function WinPath (p) {
+  if (!(this instanceof WinPath))
+    return new WinPath(p)
+
   // pull off the device/UNC bit from a windows path.
   // from node's lib/path.js
   var splitDeviceRe =
       /^([a-zA-Z]:|[\\\/]{2}[^\\\/]+[\\\/]+[^\\\/]+)?([\\\/])?([\s\S]*?)$/
   var result = splitDeviceRe.exec(p)
-  var device = result[1] || ''
-  var isUnc = device && device.charAt(1) !== ':'
-  var isAbsolute = !!result[2] || isUnc // UNC paths are always absolute
+  this.device = result[1] || ''
+  this.sep = result[2] || ''
+  this.tail = result[3] || ''
+  this.isUnc = this.device && this.device.charAt(1) !== ':'
+  this.isAbsolute = !!this.sep || this.isUnc // UNC paths are always absolute
+}
 
-  return isAbsolute
+function absWin (p) {
+  if (absUnix(p)) return true
+
+  var winPath = new WinPath(p)
+  return winPath.isAbsolute
 }
 
 function absUnix (p) {
@@ -83,6 +92,15 @@ function setopts (self, pattern, options) {
   else {
     self.cwd = options.cwd
     self.changedCwd = path.resolve(options.cwd) !== cwd
+  }
+
+  // split off root if path is UNC
+  if (process.platform === "win32") {
+    var winPath = new WinPath(pattern)
+    if (winPath.isUnc) {
+      options.root = winPath.device
+      pattern = winPath.sep + winPath.tail
+    }
   }
 
   self.root = options.root || path.resolve(self.cwd, "/")
