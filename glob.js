@@ -1,16 +1,16 @@
 // Approach:
 //
 // 1. Get the minimatch set
-// 2. For each pattern in the set, PROCESS(pattern)
+// 2. For each pattern in the set, PROCESS(pattern, false)
 // 3. Store matches per-set, then uniq them
 //
-// PROCESS(pattern)
+// PROCESS(pattern, inGlobStar)
 // Get the first [n] items from pattern that are all strings
 // Join these together.  This is PREFIX.
 //   If there is no more remaining, then stat(PREFIX) and
 //   add to matches if it succeeds.  END.
 //
-// If pattern[n] is GLOBSTAR and PREFIX is symlink and points to dir
+// If inGlobStar and PREFIX is symlink and points to dir
 //   set ENTRIES = []
 // else readdir(PREFIX) as ENTRIES
 //   If fail, END
@@ -19,11 +19,12 @@
 //   If pattern[n] is GLOBSTAR
 //     // handle the case where the globstar match is empty
 //     // by pruning it out, and testing the resulting pattern
-//     PROCESS(pattern[0..n] + pattern[n+1 .. $])
+//     PROCESS(pattern[0..n] + pattern[n+1 .. $], false)
 //     // handle other cases.
 //     for ENTRY in ENTRIES (not dotfiles)
 //       // attach globstar + tail onto the entry
-//       PROCESS(pattern[0..n] + ENTRY + pattern[n .. $])
+//       // Mark that this entry is a globstar match
+//       PROCESS(pattern[0..n] + ENTRY + pattern[n .. $], true)
 //
 //   else // not globstar
 //     for ENTRY in ENTRIES (not dotfiles, unless pattern[n] is dot)
@@ -51,6 +52,9 @@ var fs = require("graceful-fs")
 , assert = require("assert").ok
 , once = require("once")
 
+Object.defineProperty(minimatch.GLOBSTAR, 'toString', {
+  value: function () { return '**' }
+})
 var readdir = maybeSync('readdir')
 var stat = maybeSync('stat')
 var lstat = maybeSync('lstat')
@@ -196,7 +200,7 @@ function Glob (pattern, options, cb) {
 
   this.minimatch.set.forEach(iterator.bind(this))
   function iterator (pattern, i, set) {
-    this._process(pattern, i, function (er) {
+    this._process(pattern, i, false, function (er) {
       if (er) this.emit("error", er)
       if (-- n <= 0) this._finish()
     })
@@ -392,7 +396,7 @@ function wrapProcessCb (pattern, cb_) {
   return cb
 }
 
-Glob.prototype._process = function (pattern, index, cb) {
+Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
   assert(this instanceof Glob)
   assert(typeof cb === 'function')
 
@@ -447,20 +451,23 @@ Glob.prototype._process = function (pattern, index, cb) {
 
   var isGlobStar = pattern[n] === minimatch.GLOBSTAR
 
-  if (isGlobStar) {
+  if (inGlobStar) {
     var abs = this._makeAbs(read)
     // bash 4.3 behavior
     // need to check to see if the prefix dir is a symlink
     // pointing to a dir.  If so, we just set entries to [],
     // so we communicate directory-ness, but don't read it.
-    lstat(this.sync, read, function (er, st) {
+    lstat(this.sync, abs, function (er, st) {
+      console.error('lstat', abs, er)
       if (er) {
         return this._afterReaddir(read, abs, processEntries.bind(this), er)
       }
       if (st.isSymbolicLink()) {
-        stat(this.sync, read, function (er, st) {
+        stat(this.sync, abs, function (er, st) {
+          console.error('stat', abs, er)
           // If it points to something missing, then that's fine.
           if (st && st.isDirectory()) {
+            console.error('stat', read, 'is dir, nerf', pattern.slice(0, n + 1).join('/'))
             return this._afterReaddir(read, abs, processEntries.bind(this), null, [], true)
           } else {
             er = new Error('not a dir')
@@ -487,16 +494,16 @@ Glob.prototype._process = function (pattern, index, cb) {
       return cb()
     }
 
+    // Note: the entries here may be bogus.  Since we don't want future
+    // readdir calls to come up empty (if they're NOT matching on a
+    // globstar) we need to nerf this in the cache but leave it marked
+    // as a directory.
+    if (globstarNerf) {
+      assert.equal(entries.length, 0)
+      this.cache[read] = 'DIR'
+    }
     // globstar is special
     if (isGlobStar) {
-      // Note: the entries here may be bogus.  Since we don't want future
-      // readdir calls to come up empty (if they're NOT matching on a
-      // globstar) we need to nerf this in the cache but leave it marked
-      // as a directory.
-      if (globstarNerf) {
-        assert.equal(entries.length, 0)
-        this.cache[read] = 'DIR'
-      }
       return this._globstarProcess(pattern, n, entries, index, cb)
     }
 
@@ -553,7 +560,7 @@ Glob.prototype._process = function (pattern, index, cb) {
     if (l === 0) return cb() // no matches possible
     entries.forEach(function (e) {
       var p = pattern.slice(0, n).concat(e).concat(pattern.slice(n + 1))
-      this._process(p, index, function (er) {
+      this._process(p, index, false, function (er) {
         if (errState) return
         if (er) return cb(errState = er)
         if (--l === 0) return cb.call(this)
@@ -570,7 +577,8 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
 
   // test without the globstar, and with every child both below
   // and replacing the globstar.
-  var s = [ gsPrefix.concat(pattern.slice(n + 1)) ]
+  var noGlobstar = gsPrefix.concat(pattern.slice(n + 1))
+  var s = [ noGlobstar ]
   entries.forEach(function (e) {
     if (e.charAt(0) === "." && !this.dot) return
     // instead of the globstar
@@ -579,12 +587,12 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
     s.push(gsPrefix.concat(e).concat(pattern.slice(n)))
   }, this)
 
-  s = s.filter(function (pattern) {
-    var key = gsKey(pattern)
-    var seen = !this._globstars[key]
-    this._globstars[key] = true
-    return seen
-  }, this)
+  //s = s.filter(function (pattern) {
+  //  var key = gsKey(pattern)
+  //  var seen = !this._globstars[key]
+  //  this._globstars[key] = true
+  //  return seen
+  //}, this)
 
   if (!s.length)
     return cb()
@@ -592,8 +600,14 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
   // now asyncForEach over this
   var l = s.length
   , errState = null
-  s.forEach(function (gsPattern) {
-    this._process(gsPattern, index, function (er) {
+  s.forEach(function (gsPattern, i) {
+    // the first one isn't inGlobStar, because it's the one where we
+    // edited OUT the globstar
+    var inGlobStar = (gsPattern !== noGlobstar)
+    if (inGlobStar) {
+      console.error('inGlobStar', gsPattern.slice(0, n+1).join('/'))
+    }
+    this._process(gsPattern, index, inGlobStar, function (er) {
       if (errState) return
       if (er) return cb(errState = er)
       if (--l <= 0) return cb()
@@ -721,11 +735,6 @@ Glob.prototype._readdir = function (f, cb) {
   this.log('readdir', [this.cwd, f, abs])
   if (this.cache.hasOwnProperty(f)) {
     var c = this.cache[f]
-    if (Array.isArray(c)) {
-      if (this.sync) return cb.call(this, null, c)
-      return process.nextTick(cb.bind(this, null, c))
-    }
-
     if (!c || c === 'FILE') {
       // either ENOENT or ENOTDIR
       var code = c ? "ENOTDIR" : "ENOENT"
@@ -743,24 +752,12 @@ Glob.prototype._readdir = function (f, cb) {
   }
 
   readdir(this.sync, abs, this._afterReaddir.bind(this, f, abs, cb))
-
-  // if (this.sync) {
-  //   var er, entries
-  //   try {
-  //     entries = fs.readdirSync(abs)
-  //   } catch (e) {
-  //     er = e
-  //   }
-  //   return this._afterReaddir(f, abs, cb, er, entries)
-  // }
-
-  // fs.readdir(abs, this._afterReaddir.bind(this, f, abs, cb))
 }
 
 Glob.prototype._afterReaddir = function (f, abs, cb, er, entries) {
   assert(this instanceof Glob)
   if (entries && !er) {
-    this.cache[f] = entries
+    this.cache[f] = 'DIR'
     // if we haven't asked to stat everything for suresies, then just
     // assume that everything in there exists, so we can avoid
     // having to stat it a second time.  This also gets us one step
