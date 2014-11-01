@@ -587,12 +587,16 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
     s.push(gsPrefix.concat(e).concat(pattern.slice(n)))
   }, this)
 
-  //s = s.filter(function (pattern) {
-  //  var key = gsKey(pattern)
-  //  var seen = !this._globstars[key]
-  //  this._globstars[key] = true
-  //  return seen
-  //}, this)
+  // XXX This bit apparently is needed for globstar-match and stat
+  // tests, or else we emit too many match events.  However, it makes
+  // bash-comparison fail, which is a big deal.
+  // So... figure that out.
+  s = s.filter(function (pattern) {
+    var key = gsKey(pattern)
+    var seen = !this._globstars[key]
+    this._globstars[key] = true
+    return seen
+  }, this)
 
   if (!s.length)
     return cb()
@@ -605,7 +609,7 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
     // edited OUT the globstar
     var inGlobStar = (gsPattern !== noGlobstar)
     if (inGlobStar) {
-      console.error('inGlobStar', gsPattern.slice(0, n+1).join('/'))
+      console.error('inGlobStar', gsPattern.slice(0, n+2).join('/'), n)
     }
     this._process(gsPattern, index, inGlobStar, function (er) {
       if (errState) return

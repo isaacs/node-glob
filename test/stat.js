@@ -16,8 +16,8 @@ test('stat all the things', function(t) {
     stats = stats.sort()
     matches = matches.sort()
     eof = eof.sort()
-    t.same(stats, matches)
-    t.same(eof, matches)
+    t.same(stats, matches, "stats match matches")
+    t.same(eof, matches, "eof matches matches")
     var cache = Object.keys(this.statCache)
     t.same(cache.map(function (f) {
       return path.relative(__dirname, f).replace(/\\/g, '/')
