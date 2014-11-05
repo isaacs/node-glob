@@ -16,12 +16,12 @@ test('stat all the things', function(t) {
     stats = stats.sort()
     matches = matches.sort()
     eof = eof.sort()
-    t.same(stats, matches, "stats match matches")
-    t.same(eof, matches, "eof matches matches")
+    t.same(stats, eof, "stats match eof")
+    t.same(matches, eof, "matches matches eof")
     var cache = Object.keys(this.statCache)
     t.same(cache.map(function (f) {
       return path.relative(__dirname, f).replace(/\\/g, '/')
-    }).sort(), matches)
+    }).sort(), eof, "cache matches eof")
 
     cache.forEach(function(c) {
       t.equal(typeof this.statCache[c], 'object')

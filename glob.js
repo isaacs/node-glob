@@ -458,16 +458,13 @@ Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
     // pointing to a dir.  If so, we just set entries to [],
     // so we communicate directory-ness, but don't read it.
     lstat(this.sync, abs, function (er, st) {
-      console.error('lstat', abs, er)
       if (er) {
         return this._afterReaddir(read, abs, processEntries.bind(this), er)
       }
       if (st.isSymbolicLink()) {
         stat(this.sync, abs, function (er, st) {
-          console.error('stat', abs, er)
           // If it points to something missing, then that's fine.
           if (st && st.isDirectory()) {
-            console.error('stat', read, 'is dir, nerf', pattern.slice(0, n + 1).join('/'))
             return this._afterReaddir(read, abs, processEntries.bind(this), null, [], true)
           } else {
             er = new Error('not a dir')
@@ -504,7 +501,7 @@ Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
     }
     // globstar is special
     if (isGlobStar) {
-      return this._globstarProcess(pattern, n, entries, index, cb)
+      return this._globstarProcess(pattern, n, entries, index, inGlobStar, cb)
     }
 
     // not a globstar
@@ -546,8 +543,12 @@ Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
           e = e.replace(/\\/g, "/")
 
         this.matches[index] = this.matches[index] || {}
+        var emit
+        if (!this.matches[index][e])
+          emit = true
         this.matches[index][e] = true
-        this.emitMatch(e)
+        if (emit)
+          this.emitMatch(e)
       }, this)
       return cb.call(this)
     }
@@ -570,7 +571,7 @@ Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
 
 }
 
-Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
+Glob.prototype._globstarProcess = function (pattern, n, entries, index, inGlobStar, cb) {
   assert(this instanceof Glob)
 
   var gsPrefix = pattern.slice(0, n)
@@ -587,20 +588,6 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
     s.push(gsPrefix.concat(e).concat(pattern.slice(n)))
   }, this)
 
-  // XXX This bit apparently is needed for globstar-match and stat
-  // tests, or else we emit too many match events.  However, it makes
-  // bash-comparison fail, which is a big deal.
-  // So... figure that out.
-  s = s.filter(function (pattern) {
-    var key = gsKey(pattern)
-    var seen = !this._globstars[key]
-    this._globstars[key] = true
-    return seen
-  }, this)
-
-  if (!s.length)
-    return cb()
-
   // now asyncForEach over this
   var l = s.length
   , errState = null
@@ -608,9 +595,6 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
     // the first one isn't inGlobStar, because it's the one where we
     // edited OUT the globstar
     var inGlobStar = (gsPattern !== noGlobstar)
-    if (inGlobStar) {
-      console.error('inGlobStar', gsPattern.slice(0, n+2).join('/'), n)
-    }
     this._process(gsPattern, index, inGlobStar, function (er) {
       if (errState) return
       if (er) return cb(errState = er)
@@ -621,7 +605,7 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
 
 Glob.prototype._simpleProcess = function (prefix, index, cb) {
   assert(this instanceof Glob)
-  this._stat(prefix, function (exists, isDir) {
+  this._stat(prefix, function simpleProcessStatCB (exists, isDir) {
     assert(this instanceof Glob)
     // either it's there, or it isn't.
     // nothing more to do, either way.
@@ -638,17 +622,15 @@ Glob.prototype._simpleProcess = function (prefix, index, cb) {
         prefix = prefix.replace(/\\/g, "/")
 
       this.matches[index] = this.matches[index] || {}
+      var emit
+      if (!this.matches[index][prefix])
+        emit = true
       this.matches[index][prefix] = true
-      this.emitMatch(prefix)
+      if (emit)
+        this.emitMatch(prefix)
     }
     return cb()
   })
-}
-
-function gsKey (pattern) {
-  return '**' + pattern.map(function (p) {
-    return (p === minimatch.GLOBSTAR) ? '**' : (''+p)
-  }).join('/')
 }
 
 Glob.prototype._stat = function (f, cb) {
