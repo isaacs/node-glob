@@ -1,28 +1,30 @@
 // Approach:
 //
 // 1. Get the minimatch set
-// 2. For each pattern in the set, PROCESS(pattern)
+// 2. For each pattern in the set, PROCESS(pattern, false)
 // 3. Store matches per-set, then uniq them
 //
-// PROCESS(pattern)
+// PROCESS(pattern, inGlobStar)
 // Get the first [n] items from pattern that are all strings
 // Join these together.  This is PREFIX.
 //   If there is no more remaining, then stat(PREFIX) and
 //   add to matches if it succeeds.  END.
-// readdir(PREFIX) as ENTRIES
-//   If fails, END
+//
+// If inGlobStar and PREFIX is symlink and points to dir
+//   set ENTRIES = []
+// else readdir(PREFIX) as ENTRIES
+//   If fail, END
+//
+// with ENTRIES
 //   If pattern[n] is GLOBSTAR
-//     set SEEN=[]
 //     // handle the case where the globstar match is empty
 //     // by pruning it out, and testing the resulting pattern
-//     PROCESS(pattern[0..n] + pattern[n+1 .. $])
+//     PROCESS(pattern[0..n] + pattern[n+1 .. $], false)
 //     // handle other cases.
 //     for ENTRY in ENTRIES (not dotfiles)
 //       // attach globstar + tail onto the entry
-//       get REALPATH of ENTRY
-//       if REALPATH not in SEEN
-//         add REALPATH to SEEN
-//         PROCESS(pattern[0..n] + ENTRY + pattern[n .. $])
+//       // Mark that this entry is a globstar match
+//       PROCESS(pattern[0..n] + ENTRY + pattern[n .. $], true)
 //
 //   else // not globstar
 //     for ENTRY in ENTRIES (not dotfiles, unless pattern[n] is dot)
@@ -49,6 +51,10 @@ var fs = require("graceful-fs")
 , isDir = {}
 , assert = require("assert").ok
 , once = require("once")
+
+var readdir = maybeSync('readdir')
+var stat = maybeSync('stat')
+var lstat = maybeSync('lstat')
 
 function glob (pattern, options, cb) {
   if (typeof options === "function") cb = options, options = {}
@@ -191,7 +197,7 @@ function Glob (pattern, options, cb) {
 
   this.minimatch.set.forEach(iterator.bind(this))
   function iterator (pattern, i, set) {
-    this._process(pattern, i, function (er) {
+    this._process(pattern, i, false, function (er) {
       if (er) this.emit("error", er)
       if (-- n <= 0) this._finish()
     })
@@ -257,7 +263,7 @@ Glob.prototype._mark = function (p) {
   var c = this.cache[p]
   var m = p
   if (c) {
-    var isDir = c === 2 || Array.isArray(c)
+    var isDir = c === 'DIR' || Array.isArray(c)
     var slash = p.slice(-1) === '/'
 
     if (isDir && !slash)
@@ -325,9 +331,9 @@ Glob.prototype._processEmitQueue = function (m) {
       var sc = this.statCache[m]
       var exists
       if (sc)
-        exists = sc.isDirectory() ? 2 : 1
+        exists = sc.isDirectory() ? 'DIR' : 'FILE'
       this.log("peq: stat cached")
-      next.call(this, exists, exists === 2)
+      next.call(this, exists, exists === 'DIR')
     } else {
       this.log("peq: _stat, then next")
       this._stat(m, next)
@@ -387,7 +393,7 @@ function wrapProcessCb (pattern, cb_) {
   return cb
 }
 
-Glob.prototype._process = function (pattern, index, cb) {
+Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
   assert(this instanceof Glob)
   assert(typeof cb === 'function')
 
@@ -440,17 +446,59 @@ Glob.prototype._process = function (pattern, index, cb) {
 
   this.log('readdir(%j)', read, this.cwd, this.root)
 
-  // TODO: Need to realpath these if the pattern[n] is globstar
-  return this._readdir(read, function (er, entries) {
+  var isGlobStar = pattern[n] === minimatch.GLOBSTAR
+
+  if (inGlobStar) {
+    var abs = this._makeAbs(read)
+    // bash 4.3 behavior
+    // need to check to see if the prefix dir is a symlink
+    // pointing to a dir.  If so, we just set entries to [],
+    // so we communicate directory-ness, but don't read it.
+    lstat(this.sync, abs, function (er, st) {
+      if (er) {
+        return this._afterReaddir(read, abs, processEntries.bind(this), er)
+      }
+      if (st.isSymbolicLink()) {
+        stat(this.sync, abs, function (er, st) {
+          // If it points to something missing, then that's fine.
+          if (st && st.isDirectory()) {
+            return this._afterReaddir(read, abs, processEntries.bind(this), null, [], true)
+          } else {
+            er = new Error('not a dir')
+            return this._afterReaddir(read, abs, processEntries.bind(this), er)
+          }
+        }.bind(this))
+      } else {
+        this._readdir(read, processEntries.bind(this))
+      }
+    }.bind(this))
+    return
+  } else {
+    return this._readdir(read, processEntries.bind(this))
+  }
+
+  throw new Error('should not get here')
+
+  function processEntries (er, entries, globstarNerf) {
+    assert(this instanceof Glob)
+
     if (er) {
       // not a directory!
       // whatever else comes after this, it can never match
       return cb()
     }
 
+    // Note: the entries here may be bogus.  Since we don't want future
+    // readdir calls to come up empty (if they're NOT matching on a
+    // globstar) we need to nerf this in the cache but leave it marked
+    // as a directory.
+    if (globstarNerf) {
+      assert.equal(entries.length, 0)
+      this.cache[read] = 'DIR'
+    }
     // globstar is special
-    if (pattern[n] === minimatch.GLOBSTAR) {
-      return this._globstarProcess(pattern, n, entries, index, cb)
+    if (isGlobStar) {
+      return this._globstarProcess(pattern, n, entries, index, inGlobStar, cb)
     }
 
     // not a globstar
@@ -492,8 +540,12 @@ Glob.prototype._process = function (pattern, index, cb) {
           e = e.replace(/\\/g, "/")
 
         this.matches[index] = this.matches[index] || {}
+        var emit
+        if (!this.matches[index][e])
+          emit = true
         this.matches[index][e] = true
-        this.emitMatch(e)
+        if (emit)
+          this.emitMatch(e)
       }, this)
       return cb.call(this)
     }
@@ -506,24 +558,25 @@ Glob.prototype._process = function (pattern, index, cb) {
     if (l === 0) return cb() // no matches possible
     entries.forEach(function (e) {
       var p = pattern.slice(0, n).concat(e).concat(pattern.slice(n + 1))
-      this._process(p, index, function (er) {
+      this._process(p, index, false, function (er) {
         if (errState) return
         if (er) return cb(errState = er)
         if (--l === 0) return cb.call(this)
       })
     }, this)
-  })
+  }
 
 }
 
-Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
+Glob.prototype._globstarProcess = function (pattern, n, entries, index, inGlobStar, cb) {
   assert(this instanceof Glob)
 
   var gsPrefix = pattern.slice(0, n)
 
   // test without the globstar, and with every child both below
   // and replacing the globstar.
-  var s = [ gsPrefix.concat(pattern.slice(n + 1)) ]
+  var noGlobstar = gsPrefix.concat(pattern.slice(n + 1))
+  var s = [ noGlobstar ]
   entries.forEach(function (e) {
     if (e.charAt(0) === "." && !this.dot) return
     // instead of the globstar
@@ -532,21 +585,14 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
     s.push(gsPrefix.concat(e).concat(pattern.slice(n)))
   }, this)
 
-  s = s.filter(function (pattern) {
-    var key = gsKey(pattern)
-    var seen = !this._globstars[key]
-    this._globstars[key] = true
-    return seen
-  }, this)
-
-  if (!s.length)
-    return cb()
-
   // now asyncForEach over this
   var l = s.length
   , errState = null
-  s.forEach(function (gsPattern) {
-    this._process(gsPattern, index, function (er) {
+  s.forEach(function (gsPattern, i) {
+    // the first one isn't inGlobStar, because it's the one where we
+    // edited OUT the globstar
+    var inGlobStar = (gsPattern !== noGlobstar)
+    this._process(gsPattern, index, inGlobStar, function (er) {
       if (errState) return
       if (er) return cb(errState = er)
       if (--l <= 0) return cb()
@@ -556,7 +602,7 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, index, cb) {
 
 Glob.prototype._simpleProcess = function (prefix, index, cb) {
   assert(this instanceof Glob)
-  this._stat(prefix, function (exists, isDir) {
+  this._stat(prefix, function simpleProcessStatCB (exists, isDir) {
     assert(this instanceof Glob)
     // either it's there, or it isn't.
     // nothing more to do, either way.
@@ -573,17 +619,15 @@ Glob.prototype._simpleProcess = function (prefix, index, cb) {
         prefix = prefix.replace(/\\/g, "/")
 
       this.matches[index] = this.matches[index] || {}
+      var emit
+      if (!this.matches[index][prefix])
+        emit = true
       this.matches[index][prefix] = true
-      this.emitMatch(prefix)
+      if (emit)
+        this.emitMatch(prefix)
     }
     return cb()
   })
-}
-
-function gsKey (pattern) {
-  return '**' + pattern.map(function (p) {
-    return (p === minimatch.GLOBSTAR) ? '**' : (''+p)
-  }).join('/')
 }
 
 Glob.prototype._stat = function (f, cb) {
@@ -606,22 +650,16 @@ Glob.prototype._stat = function (f, cb) {
 
   if (!this.stat && this.cache.hasOwnProperty(f)) {
     var exists = this.cache[f]
-    , isDir = exists && (Array.isArray(exists) || exists === 2)
+    , isDir = exists && (Array.isArray(exists) || exists === 'DIR')
     if (this.sync) return cb.call(this, !!exists, isDir)
     return process.nextTick(cb.bind(this, !!exists, isDir))
   }
 
-  var stat = this.statCache[abs]
-  if (this.sync || stat) {
-    var er
-    try {
-      stat = fs.statSync(abs)
-    } catch (e) {
-      er = e
-    }
-    this._afterStat(f, abs, cb, er, stat)
+  var st = this.statCache[abs]
+  if (st) {
+    this._afterStat(f, abs, cb, null, st)
   } else {
-    fs.stat(abs, this._afterStat.bind(this, f, abs, cb))
+    stat(this.sync, abs, this._afterStat.bind(this, f, abs, cb))
   }
 }
 
@@ -644,16 +682,15 @@ Glob.prototype._afterStat = function (f, abs, cb, er, stat) {
   if (er || !stat) {
     exists = false
   } else {
-    exists = stat.isDirectory() ? 2 : 1
+    exists = stat.isDirectory() ? 'DIR' : 'FILE'
     if (emit)
       this.emit('stat', f, stat)
   }
   this.cache[f] = this.cache[f] || exists
-  cb.call(this, !!exists, exists === 2)
+  cb.call(this, !!exists, exists === 'DIR')
 }
 
-Glob.prototype._readdir = function (f, cb) {
-  assert(this instanceof Glob)
+Glob.prototype._makeAbs = function (f) {
   var abs = f
   if (f.charAt(0) === "/") {
     abs = path.join(this.root, f)
@@ -662,6 +699,14 @@ Glob.prototype._readdir = function (f, cb) {
   } else if (this.changedCwd) {
     abs = path.resolve(this.cwd, f)
   }
+  return abs
+}
+
+Glob.prototype._readdir = function (f, cb) {
+  assert(this instanceof Glob)
+  assert(typeof cb === 'function')
+
+  var abs = this._makeAbs(f)
 
   if (f.length > this.maxLength) {
     var er = new Error("Path name too long")
@@ -673,12 +718,7 @@ Glob.prototype._readdir = function (f, cb) {
   this.log('readdir', [this.cwd, f, abs])
   if (this.cache.hasOwnProperty(f)) {
     var c = this.cache[f]
-    if (Array.isArray(c)) {
-      if (this.sync) return cb.call(this, null, c)
-      return process.nextTick(cb.bind(this, null, c))
-    }
-
-    if (!c || c === 1) {
+    if (!c || c === 'FILE') {
       // either ENOENT or ENOTDIR
       var code = c ? "ENOTDIR" : "ENOENT"
       , er = new Error((c ? "Not a directory" : "Not found") + ": " + f)
@@ -689,28 +729,18 @@ Glob.prototype._readdir = function (f, cb) {
       return process.nextTick(cb.bind(this, er))
     }
 
-    // at this point, c === 2, meaning it's a dir, but we haven't
+    // at this point, c === 'DIR', meaning it's a dir, but we haven't
     // had to read it yet, or c === true, meaning it's *something*
     // but we don't have any idea what.  Need to read it, either way.
   }
 
-  if (this.sync) {
-    var er, entries
-    try {
-      entries = fs.readdirSync(abs)
-    } catch (e) {
-      er = e
-    }
-    return this._afterReaddir(f, abs, cb, er, entries)
-  }
-
-  fs.readdir(abs, this._afterReaddir.bind(this, f, abs, cb))
+  readdir(this.sync, abs, this._afterReaddir.bind(this, f, abs, cb))
 }
 
 Glob.prototype._afterReaddir = function (f, abs, cb, er, entries) {
   assert(this instanceof Glob)
   if (entries && !er) {
-    this.cache[f] = entries
+    this.cache[f] = 'DIR'
     // if we haven't asked to stat everything for suresies, then just
     // assume that everything in there exists, so we can avoid
     // having to stat it a second time.  This also gets us one step
@@ -729,7 +759,7 @@ Glob.prototype._afterReaddir = function (f, abs, cb, er, entries) {
   // now handle errors, and cache the information
   if (er) switch (er.code) {
     case "ENOTDIR": // totally normal. means it *does* exist.
-      this.cache[f] = 1
+      this.cache[f] = 'FILE'
       return cb.call(this, er)
     case "ENOENT": // not terribly unusual
     case "ELOOP":
@@ -763,4 +793,21 @@ function absWin (p) {
 
 function absUnix (p) {
   return p.charAt(0) === "/" || p === ""
+}
+
+
+function maybeSync (method) {
+  return function (sync, arg, cb) {
+    var res, er
+    if (sync) {
+      try {
+        res = fs[method + 'Sync'].call(fs, arg)
+      } catch (e) {
+        er = e
+      }
+      cb(er, res)
+    } else {
+      fs[method](arg, cb)
+    }
+  }
 }
