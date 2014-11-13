@@ -13,4 +13,5 @@ node --prof -e '
   //console.log(glob.sync("**/*.txt").length);
   '
 mv v8.log ..
+cd ..
 node-tick-processor > profile.txt
