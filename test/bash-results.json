@@ -135,6 +135,7 @@
     "package.json",
     "prof.sh",
     "README.md",
+    "sync.js",
     "test"
   ],
   "test/a/!(symlink)/**": [

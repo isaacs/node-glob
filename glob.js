@@ -48,9 +48,9 @@ var fs = require("graceful-fs")
 , inherits = require("inherits")
 , EE = require("events").EventEmitter
 , path = require("path")
-, isDir = {}
 , assert = require("assert").ok
 , once = require("once")
+, globSync = require("./sync.js")
 
 var readdir = maybeSync('readdir')
 var stat = maybeSync('stat')
@@ -65,6 +65,9 @@ function glob (pattern, options, cb) {
     return
   }
 
+  if (options.sync)
+    return globSync(pattern, options)
+
   var g = new Glob(pattern, options, cb)
   return g.sync ? g.found : g
 }
@@ -76,30 +79,23 @@ function deprecated () {
 }
 
 glob.sync = globSync
-function globSync (pattern, options) {
-  if (typeof options === "number") {
-    deprecated()
-    return
-  }
-
-  options = options || {}
-  options.sync = true
-  return glob(pattern, options)
-}
-
-this._processingEmitQueue = false
+var GlobSync = globSync.GlobSync
 
 glob.Glob = Glob
 inherits(Glob, EE)
 function Glob (pattern, options, cb) {
-  if (!(this instanceof Glob)) {
-    return new Glob(pattern, options, cb)
-  }
-
   if (typeof options === "function") {
     cb = options
     options = null
   }
+
+  options = options || {}
+
+  if (options.sync)
+    return new GlobSync(pattern, options)
+
+  if (!(this instanceof Glob))
+    return new Glob(pattern, options, cb)
 
   if (typeof cb === "function") {
     cb = once(cb)
@@ -108,8 +104,6 @@ function Glob (pattern, options, cb) {
       cb(null, matches)
     })
   }
-
-  options = options || {}
 
   this._endEmitted = false
   this.EOF = {}
