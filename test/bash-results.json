@@ -125,6 +125,7 @@
     "/tmp/glob-test/quux",
     "/tmp/glob-test/qwer",
     "/tmp/glob-test/rewq",
+    "benchclean.sh",
     "benchmark.sh",
     "common.js",
     "CONTRIBUTING.md",
