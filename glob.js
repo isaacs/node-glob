@@ -51,6 +51,10 @@ var fs = require("graceful-fs")
 , assert = require("assert").ok
 , once = require("once")
 , globSync = require("./sync.js")
+, common = require("./common.js")
+, alphasort = common.alphasort
+, alphasorti = common.alphasorti
+, isAbsolute = common.isAbsolute
 
 var readdir = maybeSync('readdir')
 var stat = maybeSync('stat')
@@ -241,16 +245,6 @@ Glob.prototype._finish = function () {
 
   this.EOF = this.found = all
   this.emitMatch(this.EOF)
-}
-
-function alphasorti (a, b) {
-  a = a.toLowerCase()
-  b = b.toLowerCase()
-  return alphasort(a, b)
-}
-
-function alphasort (a, b) {
-  return a > b ? 1 : a < b ? -1 : 0
 }
 
 Glob.prototype._mark = function (p) {
@@ -768,27 +762,6 @@ Glob.prototype._afterReaddir = function (f, abs, cb, er, entries) {
       return cb.call(this, er)
   }
 }
-
-var isAbsolute = process.platform === "win32" ? absWin : absUnix
-
-function absWin (p) {
-  if (absUnix(p)) return true
-  // pull off the device/UNC bit from a windows path.
-  // from node's lib/path.js
-  var splitDeviceRe =
-      /^([a-zA-Z]:|[\\\/]{2}[^\\\/]+[\\\/]+[^\\\/]+)?([\\\/])?([\s\S]*?)$/
-    , result = splitDeviceRe.exec(p)
-    , device = result[1] || ''
-    , isUnc = device && device.charAt(1) !== ':'
-    , isAbsolute = !!result[2] || isUnc // UNC paths are always absolute
-
-  return isAbsolute
-}
-
-function absUnix (p) {
-  return p.charAt(0) === "/" || p === ""
-}
-
 
 function maybeSync (method) {
   return function (sync, arg, cb) {

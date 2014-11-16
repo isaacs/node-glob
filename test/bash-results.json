@@ -125,6 +125,7 @@
     "/tmp/glob-test/qwer",
     "/tmp/glob-test/rewq",
     "benchmark.sh",
+    "common.js",
     "CONTRIBUTING.md",
     "examples",
     "glob.js",

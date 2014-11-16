@@ -8,6 +8,10 @@ var fs = require("fs")
 , util = require("util")
 , path = require("path")
 , assert = require("assert")
+, common = require("./common.js")
+, alphasort = common.alphasort
+, alphasorti = common.alphasorti
+, isAbsolute = common.isAbsolute
 
 function ownProp (obj, field) {
   return Object.prototype.hasOwnProperty.call(obj, field)
@@ -438,13 +442,6 @@ GlobSync.prototype._stat = function (f) {
   return c
 }
 
-function notdirError (f) {
-  var er = new Error("ENOTDIR, not a directory '" + f + "'")
-  er.path = f
-  er.code = "ENOTDIR"
-  return er
-}
-
 GlobSync.prototype._mark = function (p) {
   var c = this.cache[p]
   var m = p
@@ -479,34 +476,3 @@ GlobSync.prototype._makeAbs = function (f) {
   }
   return abs
 }
-
-var isAbsolute = process.platform === "win32" ? absWin : absUnix
-
-function absWin (p) {
-  if (absUnix(p)) return true
-  // pull off the device/UNC bit from a windows path.
-  // from node's lib/path.js
-  var splitDeviceRe =
-      /^([a-zA-Z]:|[\\\/]{2}[^\\\/]+[\\\/]+[^\\\/]+)?([\\\/])?([\s\S]*?)$/
-    , result = splitDeviceRe.exec(p)
-    , device = result[1] || ''
-    , isUnc = device && device.charAt(1) !== ':'
-    , isAbsolute = !!result[2] || isUnc // UNC paths are always absolute
-
-  return isAbsolute
-}
-
-function absUnix (p) {
-  return p.charAt(0) === "/" || p === ""
-}
-
-function alphasorti (a, b) {
-  a = a.toLowerCase()
-  b = b.toLowerCase()
-  return alphasort(a, b)
-}
-
-function alphasort (a, b) {
-  return a > b ? 1 : a < b ? -1 : 0
-}
-
