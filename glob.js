@@ -38,23 +38,22 @@
 //   `true` for files, and [children,...] for directories, or `false` for
 //   things that don't exist.
 
-
-
 module.exports = glob
 
 var fs = require("graceful-fs")
-, minimatch = require("minimatch")
-, Minimatch = minimatch.Minimatch
-, inherits = require("inherits")
-, EE = require("events").EventEmitter
-, path = require("path")
-, assert = require("assert").ok
-, once = require("once")
-, globSync = require("./sync.js")
-, common = require("./common.js")
-, alphasort = common.alphasort
-, alphasorti = common.alphasorti
-, isAbsolute = common.isAbsolute
+var minimatch = require("minimatch")
+var Minimatch = minimatch.Minimatch
+var inherits = require("inherits")
+var EE = require("events").EventEmitter
+var path = require("path")
+var assert = require("assert")
+var globSync = require("./sync.js")
+var common = require("./common.js")
+var alphasort = common.alphasort
+var alphasorti = common.alphasorti
+var isAbsolute = common.isAbsolute
+
+var once = require("once")
 
 var readdir = maybeSync('readdir')
 var stat = maybeSync('stat')
@@ -208,7 +207,7 @@ Glob.prototype._finish = function () {
   assert(this instanceof Glob)
 
   var nou = this.nounique
-  , all = nou ? [] : {}
+  var all = nou ? [] : {}
 
   for (var i = 0, l = this.matches.length; i < l; i ++) {
     var matches = this.matches[i]
@@ -495,7 +494,7 @@ Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
     var pn = pattern[n]
     var negate = !!this.minimatch.negate;
     var rawGlob = pattern[n]._glob
-    , dotOk = this.dot || rawGlob.charAt(0) === "."
+    var dotOk = this.dot || rawGlob.charAt(0) === "."
 
     entries = entries.filter(function (e) {
       if (e.charAt(0) !== "." || dotOk) {
@@ -542,7 +541,7 @@ Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
     // now test all the remaining entries as stand-ins for that part
     // of the pattern.
     var l = entries.length
-    , errState = null
+    var errState = null
     if (l === 0) return cb() // no matches possible
     entries.forEach(function (e) {
       var p = pattern.slice(0, n).concat(e).concat(pattern.slice(n + 1))
@@ -575,7 +574,7 @@ Glob.prototype._globstarProcess = function (pattern, n, entries, index, inGlobSt
 
   // now asyncForEach over this
   var l = s.length
-  , errState = null
+  var errState = null
   s.forEach(function (gsPattern, i) {
     // the first one isn't inGlobStar, because it's the one where we
     // edited OUT the globstar
@@ -638,7 +637,7 @@ Glob.prototype._stat = function (f, cb) {
 
   if (!this.stat && this.cache.hasOwnProperty(f)) {
     var exists = this.cache[f]
-    , isDir = exists && (Array.isArray(exists) || exists === 'DIR')
+    var isDir = exists && (Array.isArray(exists) || exists === 'DIR')
     if (this.sync) return cb.call(this, !!exists, isDir)
     return process.nextTick(cb.bind(this, !!exists, isDir))
   }
@@ -709,7 +708,7 @@ Glob.prototype._readdir = function (f, cb) {
     if (!c || c === 'FILE') {
       // either ENOENT or ENOTDIR
       var code = c ? "ENOTDIR" : "ENOENT"
-      , er = new Error((c ? "Not a directory" : "Not found") + ": " + f)
+      var er = new Error((c ? "Not a directory" : "Not found") + ": " + f)
       er.path = f
       er.code = code
       this.log(f, er)

@@ -2,16 +2,16 @@ module.exports = globSync
 globSync.GlobSync = GlobSync
 
 var fs = require("fs")
-, minimatch = require("minimatch")
-, Minimatch = minimatch.Minimatch
-, Glob = require("./glob.js").Glob
-, util = require("util")
-, path = require("path")
-, assert = require("assert")
-, common = require("./common.js")
-, alphasort = common.alphasort
-, alphasorti = common.alphasorti
-, isAbsolute = common.isAbsolute
+var minimatch = require("minimatch")
+var Minimatch = minimatch.Minimatch
+var Glob = require("./glob.js").Glob
+var util = require("util")
+var path = require("path")
+var assert = require("assert")
+var common = require("./common.js")
+var alphasort = common.alphasort
+var alphasorti = common.alphasorti
+var isAbsolute = common.isAbsolute
 
 function ownProp (obj, field) {
   return Object.prototype.hasOwnProperty.call(obj, field)
@@ -85,7 +85,7 @@ GlobSync.prototype._finish = function () {
   assert(this instanceof GlobSync)
 
   var nou = this.nounique
-  , all = nou ? [] : Object.create(null)
+  var all = nou ? [] : Object.create(null)
 
   for (var i = 0, l = this.matches.length; i < l; i ++) {
     var matches = this.matches[i]
