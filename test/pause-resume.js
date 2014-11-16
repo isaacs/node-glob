@@ -1,3 +1,6 @@
+console.error("pause/resume temporarily removed")
+return
+
 // show that no match events happen while paused.
 var tap = require("tap")
 , child_process = require("child_process")

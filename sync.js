@@ -12,10 +12,8 @@ var common = require("./common.js")
 var alphasort = common.alphasort
 var alphasorti = common.alphasorti
 var isAbsolute = common.isAbsolute
-
-function ownProp (obj, field) {
-  return Object.prototype.hasOwnProperty.call(obj, field)
-}
+var setopts = common.setopts
+var ownProp = common.ownProp
 
 function globSync (pattern, options) {
   return new GlobSync(pattern, options).found
@@ -25,102 +23,22 @@ function GlobSync (pattern, options) {
   if (!pattern)
     throw new Error("must provide pattern")
 
-  if (!options)
-    options = { sync: true }
-  else
-    options.sync = true
-
   if (!(this instanceof GlobSync))
     return new GlobSync(pattern, options)
 
-  // base-matching: just use globstar for that.
-  if (options.matchBase && -1 === pattern.indexOf("/")) {
-    if (options.noglobstar) {
-      throw new Error("base matching requires globstar")
-    }
-    pattern = "**/" + pattern
-  }
+  setopts(this, pattern, options)
 
-  this.strict = options.strict !== false
-  this.dot = !!options.dot
-  this.mark = !!options.mark
-  this.sync = !!options.sync
-  this.nounique = !!options.nounique
-  this.nonull = !!options.nonull
-  this.nosort = !!options.nosort
-  this.nocase = !!options.nocase
-  this.stat = !!options.stat
-  this.maxLength = options.maxLength || Infinity
-  this.cache = options.cache || {}
-  this.statCache = options.statCache || {}
-
-  this.changedCwd = false
-  var cwd = process.cwd()
-  if (!ownProp(options, "cwd"))
-    this.cwd = cwd
-  else {
-    this.cwd = options.cwd
-    this.changedCwd = path.resolve(options.cwd) !== cwd
-  }
-
-  this.root = options.root || path.resolve(this.cwd, "/")
-  this.root = path.resolve(this.root)
-  if (process.platform === "win32")
-    this.root = this.root.replace(/\\/g, "/")
-
-  this.nomount = !!options.nomount
-
-  var mm = this.minimatch = new Minimatch(pattern, options)
-  this.options = mm.options
-
-  var n = mm.set.length
+  var n = this.minimatch.set.length
   this.matches = new Array(n)
   for (var i = 0; i < n; i ++) {
-    this._process(mm.set[i], i, false)
+    this._process(this.minimatch.set[i], i, false)
   }
   this._finish()
 }
 
 GlobSync.prototype._finish = function () {
   assert(this instanceof GlobSync)
-
-  var nou = this.nounique
-  var all = nou ? [] : Object.create(null)
-
-  for (var i = 0, l = this.matches.length; i < l; i ++) {
-    var matches = this.matches[i]
-    if (!matches) {
-      if (this.nonull) {
-        // do like the shell, and spit out the literal glob
-        var literal = this.minimatch.globSet[i]
-        if (nou)
-          all.push(literal)
-        else
-          all[literal] = true
-      }
-    } else {
-      // had matches
-      var m = Object.keys(matches)
-      if (nou)
-        all.push.apply(all, m)
-      else
-        m.forEach(function (m) {
-          all[m] = true
-        })
-    }
-  }
-
-  if (!nou)
-    all = Object.keys(all)
-
-  if (!this.nosort)
-    all = all.sort(this.nocase ? alphasorti : alphasort)
-
-  // at *some* point we statted all of these
-  if (this.mark)
-    all = all.map(this._mark, this)
-
-  this.found = all
+  common.finish(this)
 }
 
 
@@ -152,8 +70,7 @@ GlobSync.prototype._process = function (pattern, index, inGlobStar) {
       // pattern has some string bits in the front.
       // whatever it starts with, whether that's "absolute" like /foo/bar,
       // or "relative" like "../baz"
-      prefix = pattern.slice(0, n)
-      prefix = prefix.join("/")
+      prefix = pattern.slice(0, n).join("/")
       break
   }
 
@@ -161,7 +78,8 @@ GlobSync.prototype._process = function (pattern, index, inGlobStar) {
 
   // get the list of entries.
   var read
-  if (prefix === null) read = "."
+  if (prefix === null)
+    read = "."
   else if (isAbsolute(prefix) || isAbsolute(pattern.join("/"))) {
     if (!prefix || !isAbsolute(prefix))
       prefix = "/" + prefix
@@ -197,7 +115,7 @@ GlobSync.prototype._processReaddir = function (prefix, read, abs, remain, index,
     var e = entries[i]
     if (e.charAt(0) !== "." || dotOk) {
       var m
-      if (negate && n === 0) {
+      if (negate && !prefix) {
         m = !e.match(pn)
       } else {
         m = e.match(pn)
@@ -224,7 +142,7 @@ GlobSync.prototype._processReaddir = function (prefix, read, abs, remain, index,
     for (var i = 0; i < len; i ++) {
       var e = matchedEntries[i]
       if (prefix) {
-        if (prefix !== "/")
+        if (prefix.slice(-1) !== "/")
           e = prefix + "/" + e
         else
           e = prefix + e
@@ -244,11 +162,23 @@ GlobSync.prototype._processReaddir = function (prefix, read, abs, remain, index,
   remain.shift()
   for (var i = 0; i < len; i ++) {
     var e = matchedEntries[i]
-    var newPattern = [read, e].concat(remain)
-    this._process(newPattern, index, inGlobStar)
+    var newPattern
+    if (prefix)
+      newPattern = [prefix, e]
+    else
+      newPattern = [e]
+    this._process(newPattern.concat(remain), index, inGlobStar)
   }
 }
 
+
+GlobSync.prototype._emitMatch = function (index, e) {
+  if (!this.matches[index][e]) {
+    this.matches[index][e] = true
+    if (this.stat || this.mark)
+      this._stat(this._makeAbs(e))
+  }
+}
 
 
 GlobSync.prototype._readdirInGlobStar = function (abs) {
@@ -268,7 +198,7 @@ GlobSync.prototype._readdirInGlobStar = function (abs) {
       entries = []
   } else {
     // just normal readdir
-    entries = this._readdir(abs)
+    entries = this._readdir(abs, false)
   }
 
   return entries
@@ -290,12 +220,14 @@ GlobSync.prototype._readdir = function (abs, inGlobStar) {
   }
 
   try {
-    entries = fs.readdirSync(abs)
+    return this._readdirEntries(abs, fs.readdirSync(abs))
   } catch (er) {
     this._readdirError(abs, er)
     return null
   }
+}
 
+GlobSync.prototype._readdirEntries = function (abs, entries) {
   // if we haven't asked to stat everything, then just
   // assume that everything in there exists, so we can avoid
   // having to stat it a second time.
@@ -350,7 +282,8 @@ GlobSync.prototype._processGlobStar = function (prefix, read, abs, remain, index
   // test without the globstar, and with every child both below
   // and replacing the globstar.
   var remainWithoutGlobStar = remain.slice(1)
-  var noGlobStar = [read].concat(remainWithoutGlobStar)
+  var gspref = prefix ? [ prefix ] : []
+  var noGlobStar = gspref.concat(remainWithoutGlobStar)
 
   // the noGlobStar pattern exits the inGlobStar state
   this._process(noGlobStar, index, false)
@@ -362,8 +295,8 @@ GlobSync.prototype._processGlobStar = function (prefix, read, abs, remain, index
       continue
 
     // these two cases enter the inGlobStar state
-    var instead = [read, entries[i]].concat(remainWithoutGlobStar)
-    var below = [read, entries[i]].concat(remain)
+    var instead = gspref.concat(entries[i], remainWithoutGlobStar)
+    var below = gspref.concat(entries[i], remain)
 
     this._process(instead, index, true)
     this._process(below, index, true)
@@ -443,36 +376,9 @@ GlobSync.prototype._stat = function (f) {
 }
 
 GlobSync.prototype._mark = function (p) {
-  var c = this.cache[p]
-  var m = p
-  if (c) {
-    var isDir = c === 'DIR' || Array.isArray(c)
-    var slash = p.slice(-1) === '/'
-
-    if (isDir && !slash)
-      m += '/'
-    else if (!isDir && slash)
-      m = m.slice(0, -1)
-
-    if (m !== p) {
-      this.statCache[m] = this.statCache[p]
-      this.cache[m] = this.cache[p]
-    }
-  }
-
-  return m
+  common.mark(this, p)
 }
 
-
-// lotta situps...
 GlobSync.prototype._makeAbs = function (f) {
-  var abs = f
-  if (f.charAt(0) === "/") {
-    abs = path.join(this.root, f)
-  } else if (isAbsolute(f)) {
-    abs = f
-  } else if (this.changedCwd) {
-    abs = path.resolve(this.cwd, f)
-  }
-  return abs
+  return common.makeAbs(this, f)
 }

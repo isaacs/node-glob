@@ -83,6 +83,7 @@
     "./examples/g.js",
     "./examples/usr-local.js",
     "./node_modules/graceful-fs",
+    "./node_modules/inflight",
     "./node_modules/inherits",
     "./node_modules/minimatch",
     "./node_modules/mkdirp",
