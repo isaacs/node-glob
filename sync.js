@@ -198,9 +198,9 @@ GlobSync.prototype._processReaddir = function (prefix, read, abs, remain, index,
     if (e.charAt(0) !== "." || dotOk) {
       var m
       if (negate && n === 0) {
-        m = !e.match(pn);
+        m = !e.match(pn)
       } else {
-        m = e.match(pn);
+        m = e.match(pn)
       }
       if (m)
         matchedEntries.push(e)
