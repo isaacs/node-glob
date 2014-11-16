@@ -63,22 +63,11 @@ function glob (pattern, options, cb) {
   if (typeof options === "function") cb = options, options = {}
   if (!options) options = {}
 
-  if (typeof options === "number") {
-    deprecated()
-    return
-  }
-
   if (options.sync)
     return globSync(pattern, options)
 
   var g = new Glob(pattern, options, cb)
   return g.sync ? g.found : g
-}
-
-glob.fnmatch = deprecated
-
-function deprecated () {
-  throw new Error("glob's interface has changed. Please see the docs.")
 }
 
 glob.sync = globSync
