@@ -323,8 +323,14 @@ Glob.prototype._readdirInGlobStar = function (abs, cb) {
         return cb(null, stat === 'DIR' ? [] : null)
       })
     } else {
-      // just normal readdir
-      self._readdir(abs, false, cb)
+      self.statCache[abs] = lstat
+      if (lstat.isDirectory()) {
+        // just normal readdir
+        self._readdir(abs, false, cb)
+      } else {
+        self.cache[abs] = 'FILE'
+        return cb()
+      }
     }
   }
 }

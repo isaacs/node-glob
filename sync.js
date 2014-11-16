@@ -197,8 +197,13 @@ GlobSync.prototype._readdirInGlobStar = function (abs) {
     if (stat === 'DIR')
       entries = []
   } else {
-    // just normal readdir
-    entries = this._readdir(abs, false)
+    this.statCache[abs] = lstat
+    if (lstat.isDirectory()) {
+      // just normal readdir
+      entries = this._readdir(abs, false)
+    } else {
+      this.cache[abs] = 'FILE'
+    }
   }
 
   return entries
