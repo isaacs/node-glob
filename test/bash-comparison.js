@@ -33,7 +33,6 @@ globs.forEach(function (pattern) {
 
       // sort and unmark, just to match the shell results
       matches = cleanResults(matches)
-
       t.deepEqual(matches, expect, pattern)
       t.end()
     })

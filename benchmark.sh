@@ -1,8 +1,10 @@
 #!/bin/bash
 export CDPATH=
 
+tmp=${TMPDIR:-/tmp}
 bash make-benchmark-fixture.sh
-cd benchmark-fixture
+wd=$PWD
+cd $tmp/benchmark-fixture
 
 set -e
 
@@ -38,18 +40,18 @@ echo
 
 echo Node glob.sync timing:
 time node -e '
-  var glob=require("../");
-  console.log(glob.sync("**/*.txt").length);'
+  var glob=require(process.argv[1]);
+  console.log(glob.sync("**/*.txt").length);' "$wd"
 echo
 
 echo Node glob async timing:
 time node -e '
-  var glob=require("../");
+  var glob=require(process.argv[1]);
   glob("**/*.txt", function (er, files) {
     console.log(files.length)
-  })'
+  })' "$wd"
 echo
 
 echo Node glob with --prof
-cd ..
+cd $wd
 bash prof.sh

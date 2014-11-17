@@ -83,6 +83,7 @@
     "./examples/g.js",
     "./examples/usr-local.js",
     "./node_modules/graceful-fs",
+    "./node_modules/inflight",
     "./node_modules/inherits",
     "./node_modules/minimatch",
     "./node_modules/mkdirp",
@@ -124,7 +125,9 @@
     "/tmp/glob-test/quux",
     "/tmp/glob-test/qwer",
     "/tmp/glob-test/rewq",
+    "benchclean.sh",
     "benchmark.sh",
+    "common.js",
     "CONTRIBUTING.md",
     "examples",
     "glob.js",
@@ -135,6 +138,7 @@
     "package.json",
     "prof.sh",
     "README.md",
+    "sync.js",
     "test"
   ],
   "test/a/!(symlink)/**": [
