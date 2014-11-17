@@ -41,14 +41,6 @@ tap.test("use a Glob object, and pause/resume it", function (t) {
   , res = []
   , expect = bashResults[pattern]
 
-  g.on("pause", function () {
-    console.error("pause")
-  })
-
-  g.on("resume", function () {
-    console.error("resume")
-  })
-
   g.on("match", function (m) {
     t.notOk(g.paused, "must not be paused")
     globResults.push(m)
