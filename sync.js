@@ -16,12 +16,18 @@ var setopts = common.setopts
 var ownProp = common.ownProp
 
 function globSync (pattern, options) {
+  if (typeof options === 'function' || arguments.length === 3)
+    throw new TypeError('callback provided to sync glob')
+
   return new GlobSync(pattern, options).found
 }
 
 function GlobSync (pattern, options) {
   if (!pattern)
     throw new Error("must provide pattern")
+
+  if (typeof options === 'function' || arguments.length === 3)
+    throw new TypeError('callback provided to sync glob')
 
   if (!(this instanceof GlobSync))
     return new GlobSync(pattern, options)
