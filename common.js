@@ -124,8 +124,11 @@ function finish (self) {
     all = all.sort(self.nocase ? alphasorti : alphasort)
 
   // at *some* point we statted all of these
-  if (self.mark)
-    all = all.map(self._mark, self)
+  if (self.mark) {
+    for (var i = 0; i < all.length; i++) {
+      all[i] = self._mark(all[i])
+    }
+  }
 
   self.found = all
 }
