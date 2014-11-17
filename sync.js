@@ -387,7 +387,7 @@ GlobSync.prototype._stat = function (f) {
 }
 
 GlobSync.prototype._mark = function (p) {
-  common.mark(this, p)
+  return common.mark(this, p)
 }
 
 GlobSync.prototype._makeAbs = function (f) {

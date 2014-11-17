@@ -99,6 +99,7 @@
     "./test/empty-set.js",
     "./test/error-callback.js",
     "./test/globstar-match.js",
+    "./test/mark-sync.js",
     "./test/mark.js",
     "./test/negation-test.js",
     "./test/new-glob-optional-options.js",
