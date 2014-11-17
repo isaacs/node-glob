@@ -8,6 +8,11 @@
     "url": "git://github.com/isaacs/node-glob.git"
   },
   "main": "glob.js",
+  "files": [
+    "glob.js",
+    "sync.js",
+    "common.js"
+  ],
   "engines": {
     "node": "*"
   },
