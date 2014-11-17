@@ -109,6 +109,10 @@ function Glob (pattern, options, cb) {
   this._processing = 0
   this.matches = new Array(n)
 
+  this._emitQueue = []
+  this._processQueue = []
+  this.paused = false
+
   if (n === 0)
     return done()
 
@@ -143,11 +147,47 @@ Glob.prototype.abort = function () {
   this.emit("abort")
 }
 
+Glob.prototype.pause = function () {
+  if (!this.paused) {
+    this.paused = true
+    this.emit("pause")
+  }
+}
+
+Glob.prototype.resume = function () {
+  if (this.paused) {
+    this.emit("resume")
+    this.paused = false
+    if (this._emitQueue.length) {
+      var eq = this._emitQueue.slice(0)
+      this._emitQueue.length = 0
+      for (var i = 0; i < eq.length; i ++) {
+        var e = eq[i]
+        this._emitMatch(e[0], e[1])
+      }
+    }
+    if (this._processQueue.length) {
+      var pq = this._processQueue.slice(0)
+      this._processQueue.length = 0
+      for (var i = 0; i < pq.length; i ++) {
+        var p = pq[i]
+        this._processing--
+        this._process(p[0], p[1], p[2], p[3])
+      }
+    }
+  }
+}
+
 Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
   assert(this instanceof Glob)
   assert(typeof cb === 'function')
 
   this._processing++
+  if (this.paused) {
+    this._processQueue.push([pattern, index, inGlobStar, cb])
+    return
+  }
+
   //console.error("PROCESS %d", this._processing, pattern)
 
   if (this.aborted)
@@ -293,6 +333,10 @@ Glob.prototype._processReaddir2 = function (prefix, read, abs, remain, index, in
 
 Glob.prototype._emitMatch = function (index, e) {
   if (!this.matches[index][e]) {
+    if (this.paused) {
+      this._emitQueue.push([index, e])
+      return
+    }
     this.matches[index][e] = true
     if (!this.stat && !this.mark)
       return this.emit("match", e)

@@ -25,8 +25,8 @@
   },
   "scripts": {
     "prepublish": "npm run benchclean",
-    "test": "rm v8.log profile.txt; tap test/*.js",
-    "test-regen": "rm v8.log profile.txt; TEST_REGEN=1 node test/00-setup.js",
+    "test": "rm -f v8.log profile.txt; tap test/*.js",
+    "test-regen": "rm -f v8.log profile.txt; TEST_REGEN=1 node test/00-setup.js",
     "bench": "bash benchmark.sh",
     "prof": "bash prof.sh && cat profile.txt",
     "benchclean": "bash benchclean.sh"
