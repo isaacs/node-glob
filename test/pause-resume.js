@@ -1,3 +1,4 @@
+require("./global-leakage.js")
 // show that no match events happen while paused.
 var tap = require("tap")
 , child_process = require("child_process")

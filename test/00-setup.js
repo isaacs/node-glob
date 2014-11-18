@@ -1,6 +1,7 @@
 // just a little pre-run script to set up the fixtures.
 // zz-finish cleans it up
 
+require("./global-leakage.js")
 var mkdirp = require("mkdirp")
 var path = require("path")
 var i = 0

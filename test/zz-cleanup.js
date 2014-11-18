@@ -1,3 +1,4 @@
+require("./global-leakage.js")
 // remove the fixtures
 var tap = require("tap")
 , rimraf = require("rimraf")

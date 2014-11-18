@@ -1,3 +1,4 @@
+require("./global-leakage.js")
 // Negation test
 // Show that glob respect's minimatch's negate flag
 

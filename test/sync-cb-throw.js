@@ -1,3 +1,4 @@
+require("./global-leakage.js")
 var test = require('tap').test
 var g = require('../')
 test('sync throws if provided callback', function (t) {

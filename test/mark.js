@@ -1,3 +1,4 @@
+require("./global-leakage.js")
 var test = require("tap").test
 var glob = require('../')
 process.chdir(__dirname)

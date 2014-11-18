@@ -1,5 +1,6 @@
 // basic test
 // show that it does the same thing by default as the shell.
+require("./global-leakage.js")
 var tap = require("tap")
 , child_process = require("child_process")
 , bashResults = require("./bash-results.json")

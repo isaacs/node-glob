@@ -97,6 +97,7 @@
     "./test/cwd-test.js",
     "./test/empty-set.js",
     "./test/error-callback.js",
+    "./test/global-leakage.js",
     "./test/globstar-match.js",
     "./test/mark-sync.js",
     "./test/mark.js",

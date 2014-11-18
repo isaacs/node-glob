@@ -1,3 +1,4 @@
+require("./global-leakage.js")
 var glob = require('../')
 var test = require('tap').test
 var path = require('path')

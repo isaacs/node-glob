@@ -1,3 +1,4 @@
+require("./global-leakage.js")
 var tap = require("tap")
 
 var origCwd = process.cwd()

@@ -1,3 +1,4 @@
+require("./global-leakage.js")
 var Glob = require("../glob.js").Glob
 var test = require('tap').test
 

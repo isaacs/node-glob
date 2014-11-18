@@ -222,7 +222,7 @@ GlobSync.prototype._readdir = function (abs, inGlobStar) {
     return this._readdirInGlobStar(abs)
 
   if (ownProp(this.cache, abs)) {
-    c = this.cache[abs]
+    var c = this.cache[abs]
     if (!c || c === 'FILE')
       return null
 
