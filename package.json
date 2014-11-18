@@ -17,7 +17,6 @@
     "node": "*"
   },
   "dependencies": {
-    "graceful-fs": "^3.0.2",
     "inflight": "^1.0.4",
     "inherits": "2",
     "minimatch": "^1.0.0",
