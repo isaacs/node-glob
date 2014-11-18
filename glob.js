@@ -394,7 +394,7 @@ Glob.prototype._readdir = function (abs, inGlobStar, cb) {
     return this._readdirInGlobStar(abs, cb)
 
   if (ownProp(this.cache, abs)) {
-    c = this.cache[abs]
+    var c = this.cache[abs]
     if (!c || c === 'FILE')
       return cb()
 
