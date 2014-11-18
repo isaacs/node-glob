@@ -51,7 +51,6 @@ files.forEach(function (f) {
 if (process.platform !== "win32") {
   tap.test("symlinky", function (t) {
     var d = path.dirname(symlinkTo)
-    console.error("mkdirp", d)
     mkdirp(d, 0755, function (er) {
       t.ifError(er)
       fs.symlink(symlinkFrom, symlinkTo, "dir", function (er) {

@@ -16,7 +16,6 @@ t.test('.', function (t) {
 
 
 t.test('a', function (t) {
-  console.error("root=" + path.resolve('a'))
   glob('/b*/**', { globDebug: true, root: path.resolve('a') }, function (er, matches) {
     t.ifError(er)
     var wanted = [
