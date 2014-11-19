@@ -42,7 +42,7 @@ globs.forEach(function (pattern) {
   tap.test(pattern + " sync", function (t) {
     var matches = cleanResults(glob.sync(pattern))
 
-    t.deepEqual(matches, expect, "should match shell")
+    t.deepEqual(matches, expect, "should match shell (sync)")
     t.end()
   })
 })
