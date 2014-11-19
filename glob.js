@@ -348,8 +348,8 @@ Glob.prototype._emitMatch = function (index, e) {
       return this.emit("match", e)
 
     var self = this
-    this._stat(this._makeAbs(e), function (er, st) {
-      self.emit("stat", e)
+    this._stat(this._makeAbs(e), function (er, c, st) {
+      self.emit("stat", e, st)
       self.emit("match", e)
     })
   }
@@ -566,7 +566,7 @@ Glob.prototype._stat = function (f, cb) {
     if (stat === false)
       return cb(null, stat)
     else
-      return cb(null, stat.isDirectory() ? 'DIR' : 'FILE')
+      return cb(null, stat.isDirectory() ? 'DIR' : 'FILE', stat)
   }
 
   var self = this
@@ -588,9 +588,9 @@ Glob.prototype._stat2 = function (f, abs, er, stat, cb) {
   this.statCache[abs] = stat
 
   if (abs.slice(-1) === "/" && !stat.isDirectory())
-    return cb(null, false)
+    return cb(null, false, stat)
 
   var c = stat.isDirectory() ? 'DIR' : 'FILE'
   this.cache[f] = this.cache[f] || c
-  return cb(null, c)
+  return cb(null, c, stat)
 }
