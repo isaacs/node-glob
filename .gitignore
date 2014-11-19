@@ -1,6 +1,5 @@
 .*.swp
 test/a/
 node_modules/*
-benchmark-fixture
 v8.log
 profile.txt
