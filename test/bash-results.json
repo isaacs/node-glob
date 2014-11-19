@@ -163,5 +163,10 @@
     "test/a/cb",
     "test/a/cb/e",
     "test/a/cb/e/f"
+  ],
+  "test/a/symlink/a/**/*": [
+    "test/a/symlink/a/b",
+    "test/a/symlink/a/b/c",
+    "test/a/symlink/a/b/c/a"
   ]
 }
