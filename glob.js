@@ -367,30 +367,26 @@ Glob.prototype._readdirInGlobStar = function (abs, cb) {
     if (er)
       return cb()
 
-    if (lstat.isSymbolicLink()) {
-      //console.error('SYMLINK %j', abs)
-      self._stat(abs, function (er, stat) {
-        return cb(null, stat === 'DIR' ? [] : null)
-      })
-    } else {
-      self.statCache[abs] = lstat
-      if (lstat.isDirectory()) {
-        // just normal readdir
-        self._readdir(abs, false, cb)
-      } else {
-        self.cache[abs] = 'FILE'
-        return cb()
-      }
-    }
+    var isSym = lstat.isSymbolicLink()
+    self.symlinks[abs] = isSym
+
+    // If it's not a symlink or a dir, then it's definitely a regular file.
+    // don't bother doing a readdir in that case.
+    if (!isSym && !lstat.isDirectory()) {
+      self.cache[abs] = 'FILE'
+      cb()
+    } else
+      self._readdir(abs, false, cb)
   }
 }
 
 Glob.prototype._readdir = function (abs, inGlobStar, cb) {
   cb = inflight("readdir\0"+abs+"\0"+inGlobStar, cb)
-  if (!cb) return
+  if (!cb)
+    return
 
   //console.error("RD %j %j", +inGlobStar, abs)
-  if (inGlobStar)
+  if (inGlobStar && !ownProp(this.symlinks, abs))
     return this._readdirInGlobStar(abs, cb)
 
   if (ownProp(this.cache, abs)) {
@@ -458,7 +454,6 @@ Glob.prototype._readdirError = function (f, er, cb) {
 }
 
 Glob.prototype._processGlobStar = function (prefix, read, abs, remain, index, inGlobStar, cb) {
-
   var self = this
   this._readdir(abs, inGlobStar, function (er, entries) {
     self._processGlobStar2(prefix, read, abs, remain, index, inGlobStar, entries, cb)
@@ -483,7 +478,13 @@ Glob.prototype._processGlobStar2 = function (prefix, read, abs, remain, index, i
   // the noGlobStar pattern exits the inGlobStar state
   this._process(noGlobStar, index, false, cb)
 
+  var isSym = this.symlinks[abs]
   var len = entries.length
+
+  // If it's a symlink, and we're in a globstar, then stop
+  if (isSym && inGlobStar)
+    return cb()
+
   for (var i = 0; i < len; i++) {
     var e = entries[i]
     if (e.charAt(0) === "." && !this.dot)
@@ -491,9 +492,9 @@ Glob.prototype._processGlobStar2 = function (prefix, read, abs, remain, index, i
 
     // these two cases enter the inGlobStar state
     var instead = gspref.concat(entries[i], remainWithoutGlobStar)
-    var below = gspref.concat(entries[i], remain)
-
     this._process(instead, index, true, cb)
+
+    var below = gspref.concat(entries[i], remain)
     this._process(below, index, true, cb)
   }
 

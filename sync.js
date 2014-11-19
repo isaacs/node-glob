@@ -198,19 +198,15 @@ GlobSync.prototype._readdirInGlobStar = function (abs) {
     return null
   }
 
-  if (lstat.isSymbolicLink()) {
-    stat = this._stat(abs)
-    if (stat === 'DIR')
-      entries = []
-  } else {
-    this.statCache[abs] = lstat
-    if (lstat.isDirectory()) {
-      // just normal readdir
-      entries = this._readdir(abs, false)
-    } else {
-      this.cache[abs] = 'FILE'
-    }
-  }
+  var isSym = lstat.isSymbolicLink()
+  this.symlinks[abs] = isSym
+
+  // If it's not a symlink or a dir, then it's definitely a regular file.
+  // don't bother doing a readdir in that case.
+  if (!isSym && !lstat.isDirectory())
+    this.cache[abs] = 'FILE'
+  else
+    entries = this._readdir(abs, false)
 
   return entries
 }
@@ -218,7 +214,7 @@ GlobSync.prototype._readdirInGlobStar = function (abs) {
 GlobSync.prototype._readdir = function (abs, inGlobStar) {
   var entries
 
-  if (inGlobStar)
+  if (inGlobStar && !ownProp(this.symlinks, abs))
     return this._readdirInGlobStar(abs)
 
   if (ownProp(this.cache, abs)) {
@@ -300,6 +296,12 @@ GlobSync.prototype._processGlobStar = function (prefix, read, abs, remain, index
   this._process(noGlobStar, index, false)
 
   var len = entries.length
+  var isSym = this.symlinks[abs]
+
+  // If it's a symlink, and we're in a globstar, then stop
+  if (isSym && inGlobStar)
+    return
+
   for (var i = 0; i < len; i++) {
     var e = entries[i]
     if (e.charAt(0) === "." && !this.dot)
@@ -307,9 +309,9 @@ GlobSync.prototype._processGlobStar = function (prefix, read, abs, remain, index
 
     // these two cases enter the inGlobStar state
     var instead = gspref.concat(entries[i], remainWithoutGlobStar)
-    var below = gspref.concat(entries[i], remain)
-
     this._process(instead, index, true)
+
+    var below = gspref.concat(entries[i], remain)
     this._process(below, index, true)
   }
 }
