@@ -104,6 +104,7 @@
     "./test/negation-test.js",
     "./test/new-glob-optional-options.js",
     "./test/nocase-nomagic.js",
+    "./test/nodir.js",
     "./test/pause-resume.js",
     "./test/readme-issue.js",
     "./test/root-nomount.js",

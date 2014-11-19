@@ -343,6 +343,13 @@ Glob.prototype._emitMatch = function (index, e) {
       this._emitQueue.push([index, e])
       return
     }
+
+    if (this.nodir) {
+      var c = this.cache[this._makeAbs(e)]
+      if (c === 'DIR' || Array.isArray(c))
+        return
+    }
+
     this.matches[index][e] = true
     if (!this.stat && !this.mark)
       return this.emit("match", e)

@@ -180,6 +180,12 @@ GlobSync.prototype._processReaddir = function (prefix, read, abs, remain, index,
 
 GlobSync.prototype._emitMatch = function (index, e) {
   if (!this.matches[index][e]) {
+    if (this.nodir) {
+      var c = this.cache[this._makeAbs(e)]
+      if (c === 'DIR' || Array.isArray(c))
+        return
+    }
+
     this.matches[index][e] = true
     if (this.stat || this.mark)
       this._stat(this._makeAbs(e))

@@ -60,6 +60,9 @@ function setopts (self, pattern, options) {
   self.strict = options.strict !== false
   self.dot = !!options.dot
   self.mark = !!options.mark
+  self.nodir = !!options.nodir
+  if (self.nodir)
+    self.mark = true
   self.sync = !!options.sync
   self.nounique = !!options.nounique
   self.nonull = !!options.nonull
@@ -128,6 +131,11 @@ function finish (self) {
   if (self.mark) {
     for (var i = 0; i < all.length; i++) {
       all[i] = self._mark(all[i])
+    }
+    if (self.nodir) {
+      all = all.filter(function (e) {
+        return !(/\/$/.test(e))
+      })
     }
   }
 
