@@ -23,21 +23,79 @@ glob("**/*.js", options, function (er, files) {
 })
 ```
 
-## Features
+## Glob Primer
 
-Please see the [minimatch
-documentation](https://github.com/isaacs/minimatch) for more details.
+"Globs" are the patterns you type when you do stuff like `ls *.js` on
+the command line, or put `build/*` in a `.gitignore` file.
 
-Supports these glob features:
+Before parsing the path part patterns, braced sections are expanded
+into a set.  Braced sections start with `{` and end with `}`, with any
+number of comma-delimited sections within.  Braced sections may contain
+slash characters, so `a{/b/c,bcd}` would expand into `a/b/c` and `abc`.
 
-* Brace Expansion
-* Extended glob matching
-* "Globstar" `**` matching
+The following characters have special magic meaning when used in a
+path portion:
 
-See:
+* `*` Matches 0 or more characters in a sinle path portion
+* `?` Matches 1 character
+* `[...]` Matches a range of characters, similar to a RegExp range.
+  If the first character of the range is `!` or `^` then it matches
+  any character not in the range.
+* `!(pattern|pattern|pattern)` Matches anything that does not match
+  any of the patterns provided.
+* `?(pattern|pattern|pattern)` Matches zero or one occurrence of the
+  patterns provided.
+* `+(pattern|pattern|pattern)` Matches one or more occurrences of the
+  patterns provided.
+* `*(a|b|c)` Matches zero or more occurrences of the patterns provided
+* `@(pattern|pat*|pat?erN)` Matches exactly one of the patterns
+  provided
+* `**` If a "globstar" is alone in a path portion, then it matches
+  zero or more directories and subdirectories searching for matches.
+  It does not crawl symlinked directories.
+
+### Dots
+
+If a file or directory path portion has a `.` as the first character,
+then it will not match any glob pattern unless that pattern's
+corresponding path part also has a `.` as its first character.
+
+For example, the pattern `a/.*/c` would match the file at `a/.b/c`.
+However the pattern `a/*/c` would not, because `*` does not start with
+a dot character.
+
+You can make glob treat dots as normal characters by setting
+`dot:true` in the options.
+
+### Basename Matching
+
+If you set `matchBase:true` in the options, and the pattern has no
+slashes in it, then it will seek for any file anywhere in the tree
+with a matching basename.  For example, `*.js` would match
+`test/simple/basic.js`.
+
+### Negation
+
+The intent for negation would be for a pattern starting with `!` to
+match everything that *doesn't* match the supplied pattern.  However,
+the implementation is weird, and for the time being, this should be
+avoided.  The behavior will change or be deprecated in version 5.
+
+### Empty Sets
+
+If no matching files are found, then an empty array is returned.  This
+differs from the shell, where the pattern itself is returned.  For
+example:
+
+    $ echo a*s*d*f
+    a*s*d*f
+
+To get the bash-style behavior, set the `nonull:true` in the options.
+
+### See Also:
 
 * `man sh`
-* `man bash`
+* `man bash` (Search for "Pattern Matching")
 * `man 3 fnmatch`
 * `man 5 gitignore`
 * [minimatch documentation](https://github.com/isaacs/minimatch)
@@ -87,8 +145,6 @@ be immediately available on the `g.found` member.
 
 * `minimatch` The minimatch object that the glob uses.
 * `options` The options object passed in.
-* `error` The error encountered.  When an error is encountered, the
-  glob object is in an undefined state, and should be discarded.
 * `aborted` Boolean which is set to true when calling `abort()`.  There
   is no way at this time to continue a glob search after aborting, but
   you can re-use the statCache to avoid having to duplicate syscalls.
@@ -98,8 +154,8 @@ be immediately available on the `g.found` member.
   values:
   * `false` - Path does not exist
   * `true` - Path exists
-  * `1` - Path exists, and is not a directory
-  * `2` - Path exists, and is a directory
+  * `'DIR'` - Path exists, and is not a directory
+  * `'FILE'` - Path exists, and is a directory
   * `[file, entries, ...]` - Path exists, is a directory, and the
     array value is the results of `fs.readdir`
 
@@ -116,7 +172,9 @@ be immediately available on the `g.found` member.
 
 ### Methods
 
-* `abort` Stop the search.
+* `pause` Temporarily stop the search
+* `resume` Resume the search
+* `abort` Stop the search forever
 
 ### Options
 
@@ -194,9 +252,12 @@ start of a line, or set the `nocomment` flag to suppress this behavior.
 
 The double-star character `**` is supported by default, unless the
 `noglobstar` flag is set.  This is supported in the manner of bsdglob
-and bash 4.1, where `**` only has special significance if it is the only
+and bash 4.3, where `**` only has special significance if it is the only
 thing in a path part.  That is, `a/**/b` will match `a/x/y/b`, but
 `a/**b` will not.
+
+Note that symlinked directories will not ever be crawled as part of a
+`**` match.  This prevents infinite loops and duplicates and the like.
 
 If an escaped pattern has no matches, and the `nonull` flag is set,
 then glob returns the pattern as-provided, rather than
