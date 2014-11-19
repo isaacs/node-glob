@@ -2,6 +2,7 @@ require("./global-leakage.js")
 var glob = require('../')
 var test = require('tap').test
 var path = require('path')
+var Stats = require('fs').Stats
 
 test('stat all the things', function(t) {
   var g = new glob.Glob('a/*abc*/**', { stat: true, cwd: __dirname })
@@ -10,8 +11,9 @@ test('stat all the things', function(t) {
     matches.push(m)
   })
   var stats = []
-  g.on('stat', function(m) {
+  g.on('stat', function(m, st) {
     stats.push(m)
+    t.ok(st instanceof Stats)
   })
   g.on('end', function(eof) {
     stats = stats.sort()
