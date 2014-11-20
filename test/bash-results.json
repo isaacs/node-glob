@@ -100,6 +100,7 @@
     "./test/error-callback.js",
     "./test/global-leakage.js",
     "./test/globstar-match.js",
+    "./test/has-magic.js",
     "./test/mark-sync.js",
     "./test/mark.js",
     "./test/negation-test.js",

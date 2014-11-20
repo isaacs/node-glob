@@ -34,6 +34,9 @@ function GlobSync (pattern, options) {
 
   setopts(this, pattern, options)
 
+  if (this.noprocess)
+    return this
+
   var n = this.minimatch.set.length
   this.matches = new Array(n)
   for (var i = 0; i < n; i ++) {

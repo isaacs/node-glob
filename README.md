@@ -100,6 +100,17 @@ To get the bash-style behavior, set the `nonull:true` in the options.
 * `man 5 gitignore`
 * [minimatch documentation](https://github.com/isaacs/minimatch)
 
+## glob.hasMagic(patter, [options])
+
+Returns `true` if there are any special characters in the pattern, and
+`false` otherwise.
+
+Note that the options affect the results.  If `noext:true` is set in
+the options object, then `+(a|b)` will not be considered a magic
+pattern.  If the pattern has a brace expansion, like `a/{b/c,x/y}`
+then that is considered magical, unless `nobrace:true` is set in the
+options.
+
 ## glob(pattern, [options], cb)
 
 * `pattern` {String} Pattern to be matched

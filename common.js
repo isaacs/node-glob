@@ -69,6 +69,8 @@ function setopts (self, pattern, options) {
   self.nosort = !!options.nosort
   self.nocase = !!options.nocase
   self.stat = !!options.stat
+  self.noprocess = !!options.noprocess
+
   self.maxLength = options.maxLength || Infinity
   self.cache = options.cache || Object.create(null)
   self.statCache = options.statCache || Object.create(null)

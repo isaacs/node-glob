@@ -55,6 +55,7 @@ var isAbsolute = common.isAbsolute
 var setopts = common.setopts
 var ownProp = common.ownProp
 var inflight = require("inflight")
+var util = require("util")
 
 var once = require("once")
 
@@ -73,6 +74,26 @@ function glob (pattern, options, cb) {
 
 glob.sync = globSync
 var GlobSync = glob.GlobSync = globSync.GlobSync
+
+// old api surface
+glob.glob = glob
+
+glob.hasMagic = function (pattern, options_) {
+  var options = util._extend({}, options_)
+  options.noprocess = true
+
+  var g = new Glob(pattern, options)
+  var set = g.minimatch.set
+  if (set.length > 1)
+    return true
+
+  for (var j = 0; j < set[0].length; j++) {
+    if (typeof set[0][j] !== 'string')
+      return true
+  }
+
+  return false
+}
 
 glob.Glob = Glob
 inherits(Glob, EE)
@@ -118,6 +139,9 @@ function Glob (pattern, options, cb) {
   this._emitQueue = []
   this._processQueue = []
   this.paused = false
+
+  if (this.noprocess)
+    return this
 
   if (n === 0)
     return done()
