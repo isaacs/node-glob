@@ -169,6 +169,10 @@ be immediately available on the `g.found` member.
   * `'FILE'` - Path exists, and is a directory
   * `[file, entries, ...]` - Path exists, is a directory, and the
     array value is the results of `fs.readdir`
+* `statCache` Cache of `fs.stat` results, to prevent statting the same
+  path multiple times.
+* `symlinks` A record of which paths are symbolic links, which is
+  relevant in resolving `**` patterns.
 
 ### Events
 
@@ -195,7 +199,14 @@ or have glob-specific ramifications.
 
 All options are false by default, unless otherwise noted.
 
-All options are added to the glob object, as well.
+All options are added to the Glob object, as well.
+
+If you are running many `glob` operations, you can pass a Glob object
+as the `options` argument to a subsequent operation to shortcut some
+`stat` and `readdir` calls.  At the very least, you may pass in shared
+`symlinks`, `statCache`, and `cache` options, so that parallel glob
+operations will be sped up by sharing information about the
+filesystem.
 
 * `cwd` The current working directory in which to search.  Defaults
   to `process.cwd()`.
@@ -213,36 +224,50 @@ All options are added to the glob object, as well.
 * `nosort` Don't sort the results.
 * `stat` Set to true to stat *all* results.  This reduces performance
   somewhat, and is completely unnecessary, unless `readdir` is presumed
-  to be an untrustworthy indicator of file existence.  It will cause
-  ELOOP to be triggered one level sooner in the case of cyclical
-  symbolic links.
-* `silent` When an unusual error is encountered
-  when attempting to read a directory, a warning will be printed to
-  stderr.  Set the `silent` option to true to suppress these warnings.
-* `strict` When an unusual error is encountered
-  when attempting to read a directory, the process will just continue on
-  in search of other matches.  Set the `strict` option to raise an error
-  in these cases.
+  to be an untrustworthy indicator of file existence.
+* `silent` When an unusual error is encountered when attempting to
+  read a directory, a warning will be printed to stderr.  Set the
+  `silent` option to true to suppress these warnings.
+* `strict` When an unusual error is encountered when attempting to
+  read a directory, the process will just continue on in search of
+  other matches.  Set the `strict` option to raise an error in these
+  cases.
 * `cache` See `cache` property above.  Pass in a previously generated
   cache object to save some fs calls.
 * `statCache` A cache of results of filesystem information, to prevent
-  unnecessary stat calls.  While it should not normally be necessary to
-  set this, you may pass the statCache from one glob() call to the
+  unnecessary stat calls.  While it should not normally be necessary
+  to set this, you may pass the statCache from one glob() call to the
   options object of another, if you know that the filesystem will not
   change between calls.  (See "Race Conditions" below.)
+* `symlinks` A cache of known symbolic links.  You may pass in a
+  previously generated `symlinks` object to save `lstat` calls when
+  resolving `**` matches.
 * `sync` Perform a synchronous glob search.
 * `nounique` In some cases, brace-expanded patterns can result in the
   same file showing up multiple times in the result set.  By default,
-  this implementation prevents duplicates in the result set.
-  Set this flag to disable that behavior.
+  this implementation prevents duplicates in the result set.  Set this
+  flag to disable that behavior.
 * `nonull` Set to never return an empty set, instead returning a set
   containing the pattern itself.  This is the default in glob(3).
-* `nocase` Perform a case-insensitive match.  Note that case-insensitive
-  filesystems will sometimes result in glob returning results that are
-  case-insensitively matched anyway, since readdir and stat will not
-  raise an error.
+* `nocase` Perform a case-insensitive match.  Note that
+  case-insensitive filesystems will sometimes result in glob returning
+  results that are case-insensitively matched anyway, since readdir
+  and stat will not raise an error.
 * `debug` Set to enable debug logging in minimatch and glob.
-* `globDebug` Set to enable debug logging in glob, but not minimatch.
+* `nobrace` Do not expand `{a,b}` and `{1..3}` brace sets.
+* `noglobstar` Do not match `**` against multiple filenames.  (Ie,
+  treat it as a normal `*` instead.)
+* `noext` Do not match `+(a|b)` "extglob" patterns.
+* `nocase` Perform a case-insensitive match.  Note: on
+  case-insensitive filesystems, non-magic patterns will match by
+  default, since `stat` and `readdir` will not raise errors.
+* `matchBase` Perform a basename-only match if the pattern does not
+  contain any slash characters.  That is, `*.js` would be treated as
+  equivalent to `**/*.js`, matching all js files in all directories.
+* `nonegate` Suppress `negate` behavior.  (See below.)
+* `nocomment` Suppress `comment` behavior.  (See below.)
+* `nonull` Return the pattern when no matches are found.
+* `nodir` Do not match directories, only files.
 
 ## Comparisons to other fnmatch/glob implementations
 
@@ -267,8 +292,9 @@ and bash 4.3, where `**` only has special significance if it is the only
 thing in a path part.  That is, `a/**/b` will match `a/x/y/b`, but
 `a/**b` will not.
 
-Note that symlinked directories will not ever be crawled as part of a
-`**` match.  This prevents infinite loops and duplicates and the like.
+Note that symlinked directories are not crawled as part of a `**`,
+though their contents may match against subsequent portions of the
+pattern.  This prevents infinite loops and duplicates and the like.
 
 If an escaped pattern has no matches, and the `nonull` flag is set,
 then glob returns the pattern as-provided, rather than
