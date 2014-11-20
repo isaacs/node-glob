@@ -135,6 +135,9 @@ function Glob (pattern, options, cb) {
 
 Glob.prototype._finish = function () {
   assert(this instanceof Glob)
+  if (this.aborted)
+    return
+
   //console.error('FINISH', this.matches)
   common.finish(this)
   this.emit("end", this.found)
@@ -188,6 +191,9 @@ Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
   assert(this instanceof Glob)
   assert(typeof cb === 'function')
 
+  if (this.aborted)
+    return
+
   this._processing++
   if (this.paused) {
     this._processQueue.push([pattern, index, inGlobStar, cb])
@@ -195,9 +201,6 @@ Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
   }
 
   //console.error("PROCESS %d", this._processing, pattern)
-
-  if (this.aborted)
-    return cb()
 
   // Get the first [n] parts of pattern that are all strings.
   var n = 0
@@ -338,6 +341,9 @@ Glob.prototype._processReaddir2 = function (prefix, read, abs, remain, index, in
 }
 
 Glob.prototype._emitMatch = function (index, e) {
+  if (this.aborted)
+    return
+
   if (!this.matches[index][e]) {
     if (this.paused) {
       this._emitQueue.push([index, e])
@@ -363,6 +369,9 @@ Glob.prototype._emitMatch = function (index, e) {
 }
 
 Glob.prototype._readdirInGlobStar = function (abs, cb) {
+  if (this.aborted)
+    return
+
   var lstatkey = "lstat\0" + abs
   var self = this
   var lstatcb = inflight(lstatkey, lstatcb_)
@@ -388,6 +397,9 @@ Glob.prototype._readdirInGlobStar = function (abs, cb) {
 }
 
 Glob.prototype._readdir = function (abs, inGlobStar, cb) {
+  if (this.aborted)
+    return
+
   cb = inflight("readdir\0"+abs+"\0"+inGlobStar, cb)
   if (!cb)
     return
@@ -419,6 +431,9 @@ function readdirCb (self, abs, cb) {
 }
 
 Glob.prototype._readdirEntries = function (abs, entries, cb) {
+  if (this.aborted)
+    return
+
   // if we haven't asked to stat everything, then just
   // assume that everything in there exists, so we can avoid
   // having to stat it a second time.
@@ -438,6 +453,9 @@ Glob.prototype._readdirEntries = function (abs, entries, cb) {
 }
 
 Glob.prototype._readdirError = function (f, er, cb) {
+  if (this.aborted)
+    return
+
   // handle errors, and cache the information
   switch (er.code) {
     case "ENOTDIR": // totally normal. means it *does* exist.

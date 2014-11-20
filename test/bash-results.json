@@ -92,6 +92,7 @@
     "./node_modules/tick",
     "./test/00-setup.js",
     "./test/a",
+    "./test/abort.js",
     "./test/bash-comparison.js",
     "./test/bash-results.json",
     "./test/cwd-test.js",
