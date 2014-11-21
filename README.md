@@ -100,7 +100,7 @@ To get the bash-style behavior, set the `nonull:true` in the options.
 * `man 5 gitignore`
 * [minimatch documentation](https://github.com/isaacs/minimatch)
 
-## glob.hasMagic(patter, [options])
+## glob.hasMagic(pattern, [options])
 
 Returns `true` if there are any special characters in the pattern, and
 `false` otherwise.
