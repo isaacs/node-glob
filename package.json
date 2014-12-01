@@ -19,7 +19,7 @@
   "dependencies": {
     "inflight": "^1.0.4",
     "inherits": "2",
-    "minimatch": "^1.0.0",
+    "minimatch": "^2.0.0",
     "once": "^1.3.0"
   },
   "devDependencies": {
