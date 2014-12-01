@@ -8,7 +8,7 @@ var fs = require('fs')
 var matches = []
 
 test('get globstar matches', function(t) {
-  var pattern = 'a/**/[gh]'
+  var pattern = 'a/*/[gh]'
   var g = new Glob(pattern, { cwd: __dirname })
   g.on('match', function(m) {
     matches.push(m)
@@ -52,7 +52,7 @@ test('shuffle fs.readdir', function (t) {
 })
 
 test('same match events with shuffled readdir', function (t) {
-  var pattern = 'a/**/[gh]'
+  var pattern = 'a/*/[gh]'
   var g = new Glob(pattern, { cwd: __dirname })
   var shuffleMatches = []
   g.on('match', function(m) {
