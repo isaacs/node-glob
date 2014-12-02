@@ -7,6 +7,7 @@ exports.finish = finish
 exports.mark = mark
 exports.isIgnored = isIgnored
 exports.childrenIgnored = childrenIgnored
+exports.WinPath = WinPath;
 
 function ownProp (obj, field) {
   return Object.prototype.hasOwnProperty.call(obj, field)
@@ -16,6 +17,22 @@ var path = require("path")
 var minimatch = require("minimatch")
 var isAbsolute = require("path-is-absolute")
 var Minimatch = minimatch.Minimatch
+
+function WinPath (p) {
+  if (!(this instanceof WinPath))
+    return new WinPath(p)
+
+  // pull off the device/UNC bit from a windows path.
+  // from node's lib/path.js
+  var splitDeviceRe =
+      /^([a-zA-Z]:|[\\\/]{2}[^\\\/]+[\\\/]+[^\\\/]+)?([\\\/])?([\s\S]*?)$/
+  var result = splitDeviceRe.exec(p)
+  this.device = result[1] || ''
+  this.sep = result[2] || ''
+  this.tail = result[3] || ''
+  this.isUnc = !!this.device && this.device.charAt(1) !== ':'
+  this.isAbsolute = !!this.sep || this.isUnc // UNC paths are always absolute
+}
 
 function alphasorti (a, b) {
   return a.toLowerCase().localeCompare(b.toLowerCase())
@@ -64,6 +81,12 @@ function setopts (self, pattern, options) {
 
   self.silent = !!options.silent
   self.pattern = pattern
+
+  self.platform = options.platform || process.platform
+  self.isAbsolute = isAbsolute[self.platform] || isAbsolute
+  self.resolve = (path[self.platform] || path).resolve
+  self.sep = (path[self.platform] || path).sep;
+
   self.strict = options.strict !== false
   self.realpath = !!options.realpath
   self.realpathCache = options.realpathCache || Object.create(null)
@@ -94,12 +117,20 @@ function setopts (self, pattern, options) {
     self.cwd = cwd
   else {
     self.cwd = options.cwd
-    self.changedCwd = path.resolve(options.cwd) !== cwd
+    self.changedCwd = self.resolve(options.cwd) !== cwd
   }
 
-  self.root = options.root || path.resolve(self.cwd, "/")
-  self.root = path.resolve(self.root)
-  if (process.platform === "win32")
+  if (self.platform === "win32") {
+    var winPath = new WinPath(pattern)
+    if (winPath.isAbsolute) {
+      options.root = winPath.device
+      pattern = winPath.sep + winPath.tail
+    }
+  }
+
+  self.root = options.root || self.resolve(self.cwd, "/")
+  self.root = self.resolve(self.root)
+  if (self.platform === "win32")
     self.root = self.root.replace(/\\/g, "/")
 
   self.nomount = !!options.nomount
@@ -194,12 +225,12 @@ function makeAbs (self, f) {
   var abs = f
   if (f.charAt(0) === '/') {
     abs = path.join(self.root, f)
-  } else if (isAbsolute(f) || f === '') {
+  } else if (self.isAbsolute(f) || f === '') {
     abs = f
   } else if (self.changedCwd) {
-    abs = path.resolve(self.cwd, f)
+    abs = self.resolve(self.cwd, f)
   } else {
-    abs = path.resolve(f)
+    abs = self.resolve(f)
   }
   return abs
 }
