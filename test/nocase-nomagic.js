@@ -1,4 +1,5 @@
 require("./global-leakage.js")
+var fixWindowsPaths = require('./fix-windows-paths');
 var fs = require('fs')
 var test = require('tap').test;
 var glob = require('../');
@@ -77,21 +78,17 @@ test('nocase, nomagic', function(t) {
                '/tMp/a',
                '/tmp/A',
                '/tmp/a' ]
-  if(process.platform.match(/^win/)) {
-    want = want.map(function(p) {
-      return 'C:' + p
-    })
-  }
+
   glob('/tmp/a', { nocase: true }, function(er, res) {
     if (er)
       throw er
-    t.same(res.sort(), want)
+    t.same(res.sort().map(fixWindowsPaths), want)
     if (--n === 0) t.end()
   })
   glob('/tmp/A', { nocase: true }, function(er, res) {
     if (er)
       throw er
-    t.same(res.sort(), want)
+    t.same(res.sort().map(fixWindowsPaths), want)
     if (--n === 0) t.end()
   })
 })
@@ -105,21 +102,16 @@ test('nocase, with some magic', function(t) {
                '/tMp/A',
                '/tMp/a',
                '/tmp/A',
-               '/tmp/a' ]
-  if(process.platform.match(/^win/)) {
-    want = want.map(function(p) {
-      return 'C:' + p
-    })
-  }
+               '/tmp/a' ];
 
   glob('/tmp/*', { nocase: true }, function(er, res) {
     if (er)
       throw er
-    t.same(res.sort(), want)
+    t.same(res.sort().map(fixWindowsPaths), want)
   })
   glob('/tmp/*', { nocase: true }, function(er, res) {
     if (er)
       throw er
-    t.same(res.sort(), want)
+    t.same(res.sort().map(fixWindowsPaths), want)
   })
 })
