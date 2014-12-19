@@ -84,3 +84,20 @@ test("mark=false, / on pattern", function (t) {
   t.same(results, expect)
   t.end()
 })
+
+var cwd = process.cwd().replace(/[\/\\]+$/, '').replace(/\\/g, '/')
+;[true,false].forEach(function (mark) {
+  ;[true,false].forEach(function (slash) {
+    test("cwd mark:" + mark + " slash:" + slash, function (t) {
+      var pattern = cwd + (slash ? '/' : '')
+      var results = glob.sync(pattern, {mark:mark})
+      t.equal(results.length, 1)
+      var res = results[0].replace(/\\/g, '/')
+      if (slash || mark)
+        t.equal(res, cwd + '/')
+      else
+        t.equal(res.indexOf(cwd), 0)
+      t.end()
+    })
+  })
+})

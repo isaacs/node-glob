@@ -117,3 +117,21 @@ test("mark=false, / on pattern", function (t) {
     t.similar(m, /\/$/)
   })
 })
+
+var cwd = process.cwd().replace(/[\/\\]+$/, '').replace(/\\/g, '/')
+;[true,false].forEach(function (mark) {
+  ;[true,false].forEach(function (slash) {
+    test("cwd mark:" + mark + " slash:" + slash, function (t) {
+      var pattern = cwd + (slash ? '/' : '')
+      glob(pattern, {mark:mark}, function (er, results) {
+        t.equal(results.length, 1)
+        var res = results[0].replace(/\\/g, '/')
+        if (slash || mark)
+          t.equal(res, cwd + '/')
+        else
+          t.equal(res.indexOf(cwd), 0)
+        t.end()
+      })
+    })
+  })
+})
