@@ -11,11 +11,11 @@ test('mock fs', function(t) {
 
   function fakeStat(path) {
     var ret
-    switch (path.toLowerCase()) {
+    switch (path.toLowerCase().replace(/\\/g, '/')) {
       case '/tmp': case '/tmp/': case 'c:\\tmp': case 'c:\\tmp\\':
         ret = { isDirectory: function() { return true } }
         break
-      case '/tmp/a': case 'c:\\tmp\\a':
+      case '/tmp/a': case 'c:/tmp/a':
         ret = { isDirectory: function() { return false } }
         break
     }
@@ -39,11 +39,11 @@ test('mock fs', function(t) {
 
   function fakeReaddir(path) {
     var ret
-    switch (path.toLowerCase()) {
-      case '/tmp': case '/tmp/': case 'c:\\tmp': case 'c:\\tmp\\':
+    switch (path.toLowerCase().replace(/\\/g, '/')) {
+      case '/tmp': case '/tmp/': case 'c:/tmp': case 'c:/tmp/':
         ret = [ 'a', 'A' ]
         break
-      case '/': case 'c:\\':
+      case '/': case 'c:/':
         ret = ['tmp', 'tMp', 'tMP', 'TMP']
     }
     return ret
@@ -85,12 +85,16 @@ test('nocase, nomagic', function(t) {
   glob('/tmp/a', { nocase: true }, function(er, res) {
     if (er)
       throw er
+    if (process.platform.match(/^win/))
+      res = res.map(function (r) { return r.replace(/\\/g, '/') })
     t.same(res.sort(), want)
     if (--n === 0) t.end()
   })
   glob('/tmp/A', { nocase: true }, function(er, res) {
     if (er)
       throw er
+    if (process.platform.match(/^win/))
+      res = res.map(function (r) { return r.replace(/\\/g, '/') })
     t.same(res.sort(), want)
     if (--n === 0) t.end()
   })
@@ -115,11 +119,15 @@ test('nocase, with some magic', function(t) {
   glob('/tmp/*', { nocase: true }, function(er, res) {
     if (er)
       throw er
+    if (process.platform.match(/^win/))
+      res = res.map(function (r) { return r.replace(/\\/g, '/') })
     t.same(res.sort(), want)
   })
   glob('/tmp/*', { nocase: true }, function(er, res) {
     if (er)
       throw er
+    if (process.platform.match(/^win/))
+      res = res.map(function (r) { return r.replace(/\\/g, '/') })
     t.same(res.sort(), want)
   })
 })
