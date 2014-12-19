@@ -55,9 +55,9 @@ function cleanResults (m) {
   }).sort(alphasort).reduce(function (set, f) {
     if (f !== set[set.length - 1]) set.push(f)
     return set
-  }, []).sort(alphasort).map(function (f) {
+  }, []).map(function (f) {
     // de-windows
     return (process.platform !== 'win32') ? f
            : f.replace(/^[a-zA-Z]:[\/\\]+/, '/').replace(/[\\\/]+/g, '/')
-  })
+  }).sort(alphasort)
 }
