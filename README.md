@@ -159,8 +159,6 @@ be immediately available on the `g.found` member.
 * `aborted` Boolean which is set to true when calling `abort()`.  There
   is no way at this time to continue a glob search after aborting, but
   you can re-use the statCache to avoid having to duplicate syscalls.
-* `statCache` Collection of all the stat results the glob search
-  performed.
 * `cache` Convenience object.  Each field has the following possible
   values:
   * `false` - Path does not exist
@@ -169,8 +167,8 @@ be immediately available on the `g.found` member.
   * `'FILE'` - Path exists, and is a directory
   * `[file, entries, ...]` - Path exists, is a directory, and the
     array value is the results of `fs.readdir`
-* `statCache` Cache of `fs.stat` results, to prevent statting the same
-  path multiple times.
+* `statCache` Collection of all `fs.stat` results the glob search
+  performed. Helps prevent statting the same path multiple times.
 * `symlinks` A record of which paths are symbolic links, which is
   relevant in resolving `**` patterns.
 
