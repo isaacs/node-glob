@@ -22,12 +22,12 @@ test('get globstar matches', function(t) {
 })
 
 test('shuffle fs.readdir', function (t) {
-  // Not an ideal shuffle, but ok enough for this purpose
+  // just reverse them, since shuffle is non-deterministic
   function shuffle(entries) {
     return entries.sort(rand)
   }
   function rand(a, b) {
-    return Math.random() - 0.5
+    return a > b ? -1 : 1
   }
 
   fs.readdir = function (orig) { return function (path, cb) {
