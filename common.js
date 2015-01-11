@@ -6,6 +6,7 @@ exports.ownProp = ownProp
 exports.makeAbs = makeAbs
 exports.finish = finish
 exports.mark = mark
+exports.isIgnored = isIgnored
 
 function ownProp (obj, field) {
   return Object.prototype.hasOwnProperty.call(obj, field)
@@ -41,6 +42,29 @@ function alphasort (a, b) {
   return a.localeCompare(b)
 }
 
+function ignoreMap (self, options) {
+  self.ignore = options.ignore || []
+
+  if (!Array.isArray(self.ignore))
+    self.ignore = [self.ignore]
+
+  if (self.ignore.length) {
+    self.ignore = self.ignore.map(function (pattern) {
+      var endsWithGlobStar = pattern.slice(-3) === '/**'
+      var endsWithStar = pattern.slice(-2) === '/*'
+      var m = { matcher: new Minimatch(pattern) }
+
+      //Using indexOf to match 'a' in case of patterns like a/**/**
+      if (endsWithGlobStar)
+        m.gmatcher = new Minimatch(pattern.slice(0, pattern.indexOf('/**')))
+
+      if (endsWithStar)
+        m.smatcher = new Minimatch(pattern.slice(0, -2))
+
+      return m
+    })
+  }
+}
 
 function setopts (self, pattern, options) {
   if (!options)
@@ -73,6 +97,8 @@ function setopts (self, pattern, options) {
   self.cache = options.cache || Object.create(null)
   self.statCache = options.statCache || Object.create(null)
   self.symlinks = options.symlinks || Object.create(null)
+
+  ignoreMap(self, options)
 
   self.changedCwd = false
   var cwd = process.cwd()
@@ -139,6 +165,11 @@ function finish (self) {
     }
   }
 
+  if (self.ignore.length)
+    all = all.filter(function(m) {
+      return !isIgnored(self, m)
+    })
+
   self.found = all
 }
 
@@ -166,7 +197,7 @@ function mark (self, p) {
 // lotta situps...
 function makeAbs (self, f) {
   var abs = f
-  if (f.charAt(0) === "/") {
+  if (f.charAt(0) === '/') {
     abs = path.join(self.root, f)
   } else if (exports.isAbsolute(f)) {
     abs = f
@@ -174,4 +205,25 @@ function makeAbs (self, f) {
     abs = path.resolve(self.cwd, f)
   }
   return abs
+}
+
+function endsWithStar(item, path) {
+  return (item.gmatcher && item.gmatcher.match(path)) ||
+           (item.smatcher && item.smatcher.match(path))
+}
+
+// Return true, if pattern ends with globstar '**' or a single star '*', for the accompanying parent directory.
+// Ex:- If node_modules/** is the pattern, add 'node_modules' to ignore list along with it's contents
+function isIgnored (self, path, checktrailingStar) {
+  if (!self.ignore.length)
+    return false
+
+  if (checktrailingStar)
+    return self.ignore.some(function(item) {
+      return endsWithStar(item, path)
+    })
+  else
+    return self.ignore.some(function(item) {
+      return item.matcher.match(path) || endsWithStar(item, path)
+    })
 }
