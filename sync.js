@@ -10,6 +10,7 @@ var path = require('path')
 var assert = require('assert')
 var common = require('./common.js')
 var alphasort = common.alphasort
+var alphasorti = common.alphasorti
 var isAbsolute = common.isAbsolute
 var setopts = common.setopts
 var ownProp = common.ownProp
@@ -235,7 +236,7 @@ GlobSync.prototype._readdir = function (abs, inGlobStar) {
   }
 
   try {
-    return this._readdirEntries(abs, fs.readdirSync(abs).sort(alphasort))
+    return this._readdirEntries(abs, fs.readdirSync(abs))
   } catch (er) {
     this._readdirError(abs, er)
     return null

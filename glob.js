@@ -50,6 +50,7 @@ var assert = require('assert')
 var globSync = require('./sync.js')
 var common = require('./common.js')
 var alphasort = common.alphasort
+var alphasorti = common.alphasorti
 var isAbsolute = common.isAbsolute
 var setopts = common.setopts
 var ownProp = common.ownProp
@@ -449,7 +450,7 @@ function readdirCb (self, abs, cb) {
     if (er)
       self._readdirError(abs, er, cb)
     else
-      self._readdirEntries(abs, entries.sort(alphasort), cb)
+      self._readdirEntries(abs, entries, cb)
   }
 }
 
