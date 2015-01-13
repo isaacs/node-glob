@@ -74,6 +74,11 @@ if (process.platform !== "win32") {
   })
 })
 
+tap.test('remove npm-debug.log file, if present', function (t) {
+  rimraf.sync(path.resolve(__dirname, '..', 'npm-debug.log'))
+  t.end()
+})
+
 
 // generate the bash pattern test-fixtures if possible
 if (process.platform === "win32" || !process.env.TEST_REGEN) {
