@@ -25,7 +25,7 @@
   "devDependencies": {
     "mkdirp": "0",
     "rimraf": "^2.2.8",
-    "tap": "~0.4.0",
+    "tap": "^0.5.0",
     "tick": "0.0.6"
   },
   "scripts": {
