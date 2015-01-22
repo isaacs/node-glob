@@ -14,6 +14,7 @@ var alphasorti = common.alphasorti
 var isAbsolute = common.isAbsolute
 var setopts = common.setopts
 var ownProp = common.ownProp
+var isIgnored = common.isIgnored
 
 function globSync (pattern, options) {
   if (typeof options === 'function' || arguments.length === 3)
@@ -98,12 +99,17 @@ GlobSync.prototype._process = function (pattern, index, inGlobStar) {
 
   var abs = this._makeAbs(read)
 
+  //if ignored, skip processing
+  if(isIgnored(this, read, true))
+    return
+
   var isGlobStar = remain[0] === minimatch.GLOBSTAR
   if (isGlobStar)
     this._processGlobStar(prefix, read, abs, remain, index, inGlobStar)
   else
     this._processReaddir(prefix, read, abs, remain, index, inGlobStar)
 }
+
 
 GlobSync.prototype._processReaddir = function (prefix, read, abs, remain, index, inGlobStar) {
   var entries = this._readdir(abs, inGlobStar)
