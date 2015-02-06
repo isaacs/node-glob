@@ -348,11 +348,11 @@ GlobSync.prototype._processSimple = function (prefix, index) {
     }
   }
 
-  if (prefixStat !== "DIR" && prefix.slice(-1) === "/")
-    return
-
   if (process.platform === 'win32')
     prefix = prefix.replace(/\\/g, '/')
+
+  if (prefixStat !== "DIR" && prefix.slice(-1) === "/")
+    return
 
   // Mark this as a match
   this.matches[index][prefix] = true
