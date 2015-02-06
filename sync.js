@@ -328,13 +328,14 @@ GlobSync.prototype._processGlobStar = function (prefix, read, abs, remain, index
 GlobSync.prototype._processSimple = function (prefix, index) {
   // XXX review this.  Shouldn't it be doing the mounting etc
   // before doing stat?  kinda weird?
-  var exists = this._stat(prefix)
+  var prefixStat = this._stat(prefix)
 
   if (!this.matches[index])
     this.matches[index] = Object.create(null)
 
-  // If it doesn't exist, then just mark the lack of results
-  if (!exists)
+  // If it doesn't exist or isn't a file or dir, then just
+  // mark the lack of results
+  if (!prefixStat)
     return
 
   if (prefix && isAbsolute(prefix) && !this.nomount) {
@@ -348,6 +349,9 @@ GlobSync.prototype._processSimple = function (prefix, index) {
     }
   }
 
+  if (prefixStat !== "DIR" && prefix.slice(-1) === "/")
+    return
+
   if (process.platform === 'win32')
     prefix = prefix.replace(/\\/g, '/')
 
@@ -360,8 +364,8 @@ GlobSync.prototype._stat = function (f) {
   var abs = f
   if (f.charAt(0) === '/')
     abs = path.join(this.root, f)
-  else if (this.changedCwd)
-    abs = path.resolve(this.cwd, f)
+  else
+    abs = path.join(this.cwd, f)
 
 
   if (f.length > this.maxLength)
@@ -384,16 +388,14 @@ GlobSync.prototype._stat = function (f) {
   var stat = this.statCache[abs]
   if (!stat) {
     try {
-      stat = fs.statSync(abs)
+      // path.resolve trims off the trailing slash if it's present
+      stat = fs.statSync(path.resolve(abs))
     } catch (er) {
       return false
     }
   }
 
   this.statCache[abs] = stat
-
-  if (abs.slice(-1) === '/' && !stat.isDirectory())
-    return false
 
   var c = stat.isDirectory() ? 'DIR' : 'FILE'
   this.cache[f] = this.cache[f] || c
