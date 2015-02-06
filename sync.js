@@ -333,8 +333,7 @@ GlobSync.prototype._processSimple = function (prefix, index) {
   if (!this.matches[index])
     this.matches[index] = Object.create(null)
 
-  // If it doesn't exist or isn't a file or dir, then just
-  // mark the lack of results
+  // If it doesn't exist, then just mark the lack of results
   if (!prefixStat)
     return
 
@@ -377,14 +376,9 @@ GlobSync.prototype._stat = function (f) {
     if (Array.isArray(c))
       c = 'DIR'
 
-    // It exists, but not how we need it
-    if (abs.slice(-1) === '/' && c !== 'DIR')
-      return false
-
     return c
   }
 
-  var exists
   var stat = this.statCache[abs]
   if (!stat) {
     try {
