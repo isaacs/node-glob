@@ -113,6 +113,7 @@
     "./test/root.js",
     "./test/stat.js",
     "./test/sync-cb-throw.js",
+    "./test/windows-tests.js",
     "./test/zz-cleanup.js",
     "/tmp/glob-test/asdf",
     "/tmp/glob-test/bar",
