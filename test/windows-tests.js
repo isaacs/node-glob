@@ -23,3 +23,11 @@ test('glob doesn\'t choke on UNC paths', function(t) {
     t.end()
   })
 })
+
+test('can match abs paths on Windows with nocase', function(t) {
+  var testPath = path.resolve(__dirname, "a")
+  glob(testPath, {nocase: true}, function (err, match) {
+    t.same(match, [testPath])
+    t.end()
+  })
+})
