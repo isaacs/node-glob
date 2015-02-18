@@ -7,6 +7,7 @@ exports.makeAbs = makeAbs
 exports.finish = finish
 exports.mark = mark
 exports.isIgnored = isIgnored
+exports.childrenIgnored = childrenIgnored
 
 function ownProp (obj, field) {
   return Object.prototype.hasOwnProperty.call(obj, field)
@@ -42,26 +43,27 @@ function alphasort (a, b) {
   return a.localeCompare(b)
 }
 
-function ignoreMap (self, options) {
+function setupIgnores (self, options) {
   self.ignore = options.ignore || []
 
   if (!Array.isArray(self.ignore))
     self.ignore = [self.ignore]
 
   if (self.ignore.length) {
-    self.ignore = self.ignore.map(function (pattern) {
-      if (pattern.indexOf('!') >= 0 )
-        throw new Error("Negations are not allowed in ignore")
+    self.ignore = self.ignore.map(ignoreMap)
+  }
+}
 
-      var endsWithGlobStar = pattern.slice(-3) === '/**'
-      var endsWithStar = pattern.slice(-2) === '/*'
-      var m = { matcher: new Minimatch(pattern) }
+function ignoreMap (pattern) {
+  var gmatcher = null
+  if (pattern.slice(-3) === '/**') {
+    var gpattern = pattern.replace(/(\/\*\*)+$/, '')
+    gmatcher = new Minimatch(gpattern, { nonegate: true })
+  }
 
-      if (endsWithGlobStar)
-        m.gmatcher = new Minimatch(pattern.slice(0, pattern.replace(/(\/\*\*)+$/, '').length))
-
-      return m
-    })
+  return {
+    matcher: new Minimatch(pattern, { nonegate: true }),
+    gmatcher: gmatcher
   }
 }
 
@@ -97,7 +99,7 @@ function setopts (self, pattern, options) {
   self.statCache = options.statCache || Object.create(null)
   self.symlinks = options.symlinks || Object.create(null)
 
-  ignoreMap(self, options)
+  setupIgnores(self, options)
 
   self.changedCwd = false
   var cwd = process.cwd()
@@ -209,16 +211,20 @@ function makeAbs (self, f) {
 
 // Return true, if pattern ends with globstar '**', for the accompanying parent directory.
 // Ex:- If node_modules/** is the pattern, add 'node_modules' to ignore list along with it's contents
-function isIgnored (self, path, checktrailingStar) {
+function isIgnored (self, path) {
   if (!self.ignore.length)
     return false
 
-  if (checktrailingStar)
-    return self.ignore.some(function(item) {
-      return !!(item.gmatcher && item.gmatcher.match(path))
-    })
-  else
-    return self.ignore.some(function(item) {
-      return item.matcher.match(path) || !!(item.gmatcher && item.gmatcher.match(path))
-    })
+  return self.ignore.some(function(item) {
+    return item.matcher.match(path) || !!(item.gmatcher && item.gmatcher.match(path))
+  })
+}
+
+function childrenIgnored (self, path) {
+  if (!self.ignore.length)
+    return false
+
+  return self.ignore.some(function(item) {
+    return !!(item.gmatcher && item.gmatcher.match(path))
+  })
 }

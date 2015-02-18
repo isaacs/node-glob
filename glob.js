@@ -56,7 +56,7 @@ var setopts = common.setopts
 var ownProp = common.ownProp
 var inflight = require('inflight')
 var util = require('util')
-var isIgnored = common.isIgnored
+var childrenIgnored = common.childrenIgnored
 
 var once = require('once')
 
@@ -272,7 +272,7 @@ Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
   var abs = this._makeAbs(read)
 
   //if ignored, skip _processing
-  if (isIgnored(this, read, true))
+  if (childrenIgnored(this, read))
     return cb()
 
   var isGlobStar = remain[0] === minimatch.GLOBSTAR
