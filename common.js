@@ -50,19 +50,21 @@ function setupIgnores (self, options) {
     self.ignore = [self.ignore]
 
   if (self.ignore.length) {
-    self.ignore = self.ignore.map(ignoreMap)
+    self.ignore = self.ignore.map(function (pattern) {
+      return ignoreMap(pattern, options)
+    })
   }
 }
 
-function ignoreMap (pattern) {
+function ignoreMap (pattern, options) {
   var gmatcher = null
   if (pattern.slice(-3) === '/**') {
     var gpattern = pattern.replace(/(\/\*\*)+$/, '')
-    gmatcher = new Minimatch(gpattern, { nonegate: true })
+    gmatcher = new Minimatch(gpattern, options)
   }
 
   return {
-    matcher: new Minimatch(pattern, { nonegate: true }),
+    matcher: new Minimatch(pattern, options),
     gmatcher: gmatcher
   }
 }
