@@ -5,7 +5,7 @@ require('./global-leakage.js')
 var glob = require('../glob.js')
 var test = require('tap').test
 
-// [pattern, ignore, expect, cwd]
+// [pattern, ignore, expect, opt|cwd]
 var cases = [
   [ '*', null, ['abcdef', 'abcfed', 'b', 'bc', 'c', 'cb', 'symlink'], 'a'],
   [ '*', 'b', ['abcdef', 'abcfed', 'bc', 'c', 'cb', 'symlink'], 'a'],
@@ -30,7 +30,9 @@ var cases = [
   [ '**', ['abc{def,fed}/*'], ['', 'abcdef', 'abcdef/g/h', 'abcfed', 'abcfed/g/h', 'b', 'b/c', 'b/c/d', 'bc', 'bc/e', 'bc/e/f', 'c', 'c/d', 'c/d/c', 'c/d/c/b', 'cb', 'cb/e', 'cb/e/f', 'symlink', 'symlink/a', 'symlink/a/b', 'symlink/a/b/c'], 'a'],
   [ 'c/**', ['c/*'], ['c', 'c/d/c', 'c/d/c/b'], 'a'],
   [ 'a/c/**', ['a/c/*'], ['a/c', 'a/c/d/c', 'a/c/d/c/b']],
-  [ 'a/c/**', ['a/c/**', 'a/c/*', 'a/c/*/c'], []]
+  [ 'a/c/**', ['a/c/**', 'a/c/*', 'a/c/*/c'], []],
+  [ 'a/.*', ['a/*'], [], { dot: true }],
+  [ 'a/.*', ['a/**'], [], { dot: true }]
 ]
 
 process.chdir(__dirname)
@@ -39,14 +41,15 @@ cases.forEach(function (c, i) {
   var pattern = c[0]
   var ignore = c[1]
   var expect = c[2].sort()
-  var cwd = c[3]
-  var name = i + ' ' + pattern + ' ' + JSON.stringify(ignore)
-  if (cwd)
-    name += ' cwd=' + cwd
+  var opt = c[3] || {}
+  if (typeof opt === 'string')
+    opt = { cwd: opt }
 
-  var opt = { ignore: ignore }
-  if (cwd)
-    opt.cwd = cwd
+  var name = i + ' ' + pattern + ' ' + JSON.stringify(ignore)
+  if (Object.keys(opt).length)
+    name += ' opt=' + JSON.stringify(opt)
+
+  opt.ignore = ignore
 
   test(name, function (t) {
     glob(pattern, opt, function (er, res) {
