@@ -95,6 +95,7 @@
     "./test/abort.js",
     "./test/bash-comparison.js",
     "./test/bash-results.json",
+    "./test/broken-symlink.js",
     "./test/cwd-test.js",
     "./test/empty-set.js",
     "./test/error-callback.js",
