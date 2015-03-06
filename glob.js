@@ -416,7 +416,9 @@ Glob.prototype._readdirInGlobStar = function (abs, cb) {
 
     // If it's not a symlink or a dir, then it's definitely a regular file.
     // don't bother doing a readdir in that case.
-    if (!isSym && !lstat.isDirectory()) {
+    // If it's a symlink with followSymlinks toggled true and not a dir,
+    // treat as file
+    if ((!isSym || this.followSymlinks) && !lstat.isDirectory()) {
       self.cache[abs] = 'FILE'
       cb()
     } else
@@ -534,8 +536,9 @@ Glob.prototype._processGlobStar2 = function (prefix, read, abs, remain, index, i
   var isSym = this.symlinks[abs]
   var len = entries.length
 
-  // If it's a symlink, and we're in a globstar, then stop
-  if (isSym && inGlobStar)
+  // If it's a symlink, we're in a globstar,
+  // and we did not specify realpath, then stop
+  if (isSym && inGlobStar && !this.realpath)
     return cb()
 
   for (var i = 0; i < len; i++) {

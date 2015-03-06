@@ -242,6 +242,8 @@ filesystem.
 * `symlinks` A cache of known symbolic links.  You may pass in a
   previously generated `symlinks` object to save `lstat` calls when
   resolving `**` matches.
+* `realpath` Set to true to follow all symlinks with `**` and `*` matchers.
+  By default symlinks are not followed by `*` or `**`.
 * `sync` Perform a synchronous glob search.
 * `nounique` In some cases, brace-expanded patterns can result in the
   same file showing up multiple times in the result set.  By default,

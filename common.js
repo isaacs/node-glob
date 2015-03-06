@@ -98,6 +98,7 @@ function setopts (self, pattern, options) {
   self.cache = options.cache || Object.create(null)
   self.statCache = options.statCache || Object.create(null)
   self.symlinks = options.symlinks || Object.create(null)
+  self.realpath = !!options.realpath
 
   setupIgnores(self, options)
 
