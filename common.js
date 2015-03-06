@@ -58,11 +58,11 @@ function ignoreMap (pattern) {
   var gmatcher = null
   if (pattern.slice(-3) === '/**') {
     var gpattern = pattern.replace(/(\/\*\*)+$/, '')
-    gmatcher = new Minimatch(gpattern, { nonegate: true })
+    gmatcher = new Minimatch(gpattern)
   }
 
   return {
-    matcher: new Minimatch(pattern, { nonegate: true }),
+    matcher: new Minimatch(pattern),
     gmatcher: gmatcher
   }
 }
@@ -120,8 +120,33 @@ function setopts (self, pattern, options) {
 
   self.nomount = !!options.nomount
 
+  // disable comments and negation unless the user explicitly
+  // passes in false as the option.
+  options.nonegate = options.nonegate === false ? false : true
+  options.nocomment = options.nocomment === false ? false : true
+  deprecationWarning(options)
+
   self.minimatch = new Minimatch(pattern, options)
   self.options = self.minimatch.options
+}
+
+// TODO(isaacs): remove entirely in v6
+// exported to reset in tests
+exports.deprecationWarned
+function deprecationWarning(options) {
+  if (!options.nonegate || !options.nocomment) {
+    if (process.noDeprecation !== true && !exports.deprecationWarned) {
+      var msg = 'glob WARNING: comments and negation will be disabled in v6'
+      if (process.throwDeprecation)
+        throw new Error(msg)
+      else if (process.traceDeprecation)
+        console.trace(msg)
+      else
+        console.error(msg)
+
+      exports.deprecationWarned = true
+    }
+  }
 }
 
 function finish (self) {

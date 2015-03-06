@@ -79,7 +79,8 @@ with a matching basename.  For example, `*.js` would match
 The intent for negation would be for a pattern starting with `!` to
 match everything that *doesn't* match the supplied pattern.  However,
 the implementation is weird, and for the time being, this should be
-avoided.  The behavior will change or be deprecated in version 5.
+avoided.  The behavior is deprecated in version 5, and will be removed
+entirely in version 6.
 
 ### Empty Sets
 
@@ -263,8 +264,6 @@ the filesystem.
 * `matchBase` Perform a basename-only match if the pattern does not
   contain any slash characters.  That is, `*.js` would be treated as
   equivalent to `**/*.js`, matching all js files in all directories.
-* `nonegate` Suppress `negate` behavior.  (See below.)
-* `nocomment` Suppress `comment` behavior.  (See below.)
 * `nonull` Return the pattern when no matches are found.
 * `nodir` Do not match directories, only files.  (Note: to match
   *only* directories, simply put a `/` at the end of the pattern.)
@@ -276,23 +275,16 @@ the filesystem.
   In the case of a symlink that cannot be resolved, the full absolute
   path to the matched entry is returned (though it will usually be a
   broken symlink)
+* `nonegate` Suppress deprecated `negate` behavior.  (See below.)
+  Default=true
+* `nocomment` Suppress deprecated `comment` behavior.  (See below.)
+  Default=true
 
 ## Comparisons to other fnmatch/glob implementations
 
 While strict compliance with the existing standards is a worthwhile
 goal, some discrepancies exist between node-glob and other
 implementations, and are intentional.
-
-If the pattern starts with a `!` character, then it is negated.  Set the
-`nonegate` flag to suppress this behavior, and treat leading `!`
-characters normally.  This is perhaps relevant if you wish to start the
-pattern with a negative extglob pattern like `!(a|B)`.  Multiple `!`
-characters at the start of a pattern will negate the pattern multiple
-times.
-
-If a pattern starts with `#`, then it is treated as a comment, and
-will not match anything.  Use `\#` to match a literal `#` at the
-start of a line, or set the `nocomment` flag to suppress this behavior.
 
 The double-star character `**` is supported by default, unless the
 `noglobstar` flag is set.  This is supported in the manner of bsdglob
@@ -316,6 +308,25 @@ other interpretation of the glob pattern.  Thus, a pattern like
 `+(a|{b),c)}`, which would not be valid in bash or zsh, is expanded
 **first** into the set of `+(a|b)` and `+(a|c)`, and those patterns are
 checked for validity.  Since those two are valid, matching proceeds.
+
+### Comments and Negation
+
+**Note**: In version 5 of this module, negation and comments are
+**disabled** by default.  You can explicitly set `nonegate:false` or
+`nocomment:false` to re-enable them.  They are going away entirely in
+version 6.
+
+The intent for negation would be for a pattern starting with `!` to
+match everything that *doesn't* match the supplied pattern.  However,
+the implementation is weird.  It is better to use the `ignore` option
+to set a pattern or set of patterns to exclude from matches.  If you
+want the "everything except *x*" type of behavior, you can use `**` as
+the main pattern, and set an `ignore` for the things to exclude.
+
+The comments feature is added in minimatch, primarily to more easily
+support use cases like ignore files, where a `#` at the start of a
+line makes the pattern "empty".  However, in the context of a
+straightforward filesystem globber, "comments" don't make much sense.
 
 ## Windows
 
