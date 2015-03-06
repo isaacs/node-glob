@@ -22,7 +22,8 @@ var opts = [
   null,
   { nonull: true },
   { mark: true },
-  { stat: true }
+  { stat: true },
+  { follow: true }
 ]
 
 test('set up broken symlink', function (t) {

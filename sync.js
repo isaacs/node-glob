@@ -205,6 +205,11 @@ GlobSync.prototype._emitMatch = function (index, e) {
 
 
 GlobSync.prototype._readdirInGlobStar = function (abs) {
+  // follow all symlinked directories forever
+  // just proceed as if this is a non-globstar situation
+  if (this.follow)
+    return this._readdir(abs, false)
+
   var entries
   var lstat
   var stat

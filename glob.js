@@ -400,6 +400,11 @@ Glob.prototype._readdirInGlobStar = function (abs, cb) {
   if (this.aborted)
     return
 
+  // follow all symlinked directories forever
+  // just proceed as if this is a non-globstar situation
+  if (this.follow)
+    return this._readdir(abs, false, cb)
+
   var lstatkey = 'lstat\0' + abs
   var self = this
   var lstatcb = inflight(lstatkey, lstatcb_)

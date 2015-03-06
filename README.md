@@ -265,6 +265,9 @@ filesystem.
 * `nonull` Return the pattern when no matches are found.
 * `nodir` Do not match directories, only files.
 * `ignore` Add a pattern or an array of patterns to exclude matches.
+* `follow` Follow symlinked directories when expanding `**` patterns.
+  Note that this can result in a lot of duplicate references in the
+  presence of cyclic links.
 
 ## Comparisons to other fnmatch/glob implementations
 

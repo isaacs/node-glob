@@ -81,6 +81,7 @@ function setopts (self, pattern, options) {
 
   self.pattern = pattern
   self.strict = options.strict !== false
+  self.follow = !!options.follow
   self.dot = !!options.dot
   self.mark = !!options.mark
   self.nodir = !!options.nodir

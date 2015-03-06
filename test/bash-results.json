@@ -99,6 +99,7 @@
     "./test/cwd-test.js",
     "./test/empty-set.js",
     "./test/error-callback.js",
+    "./test/follow.js",
     "./test/global-leakage.js",
     "./test/globstar-match.js",
     "./test/has-magic.js",
