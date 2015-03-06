@@ -81,6 +81,8 @@ function setopts (self, pattern, options) {
 
   self.pattern = pattern
   self.strict = options.strict !== false
+  self.realpath = !!options.realpath
+  self.realpathCache = options.realpathCache || Object.create(null)
   self.follow = !!options.follow
   self.dot = !!options.dot
   self.mark = !!options.mark
@@ -205,6 +207,8 @@ function makeAbs (self, f) {
     abs = f
   } else if (self.changedCwd) {
     abs = path.resolve(self.cwd, f)
+  } else if (self.realpath) {
+    abs = path.resolve(f)
   }
   return abs
 }

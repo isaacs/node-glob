@@ -173,6 +173,9 @@ be immediately available on the `g.found` member.
   path multiple times.
 * `symlinks` A record of which paths are symbolic links, which is
   relevant in resolving `**` patterns.
+* `realpathCache` An optional object which is passed to `fs.realpath`
+  to minimize unnecessary syscalls.  It is stored on the instantiated
+  Glob object, and may be re-used.
 
 ### Events
 
@@ -204,9 +207,9 @@ All options are added to the Glob object, as well.
 If you are running many `glob` operations, you can pass a Glob object
 as the `options` argument to a subsequent operation to shortcut some
 `stat` and `readdir` calls.  At the very least, you may pass in shared
-`symlinks`, `statCache`, and `cache` options, so that parallel glob
-operations will be sped up by sharing information about the
-filesystem.
+`symlinks`, `statCache`, `realpathCache`, and `cache` options, so that
+parallel glob operations will be sped up by sharing information about
+the filesystem.
 
 * `cwd` The current working directory in which to search.  Defaults
   to `process.cwd()`.
@@ -263,11 +266,16 @@ filesystem.
 * `nonegate` Suppress `negate` behavior.  (See below.)
 * `nocomment` Suppress `comment` behavior.  (See below.)
 * `nonull` Return the pattern when no matches are found.
-* `nodir` Do not match directories, only files.
+* `nodir` Do not match directories, only files.  (Note: to match
+  *only* directories, simply put a `/` at the end of the pattern.)
 * `ignore` Add a pattern or an array of patterns to exclude matches.
 * `follow` Follow symlinked directories when expanding `**` patterns.
   Note that this can result in a lot of duplicate references in the
   presence of cyclic links.
+* `realpath` Set to true to call `fs.realpath` on all of the results.
+  In the case of a symlink that cannot be resolved, the full absolute
+  path to the matched entry is returned (though it will usually be a
+  broken symlink)
 
 ## Comparisons to other fnmatch/glob implementations
 

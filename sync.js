@@ -50,6 +50,23 @@ function GlobSync (pattern, options) {
 
 GlobSync.prototype._finish = function () {
   assert(this instanceof GlobSync)
+  if (this.realpath) {
+    var self = this
+    this.matches.forEach(function (matchset, index) {
+      var set = self.matches[index] = Object.create(null)
+      for (var p in matchset) {
+        try {
+          var real = fs.realpathSync(p, this.realpathCache)
+          set[real] = true
+        } catch (er) {
+          if (er.syscall === 'stat')
+            set[self._makeAbs(p)] = true
+          else
+            throw er
+        }
+      }
+    })
+  }
   common.finish(this)
 }
 

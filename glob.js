@@ -114,6 +114,7 @@ function Glob (pattern, options, cb) {
     return new Glob(pattern, options, cb)
 
   setopts(this, pattern, options)
+  this._didRealPath = false
 
   // process each pattern in the minimatch set
   var n = this.minimatch.set.length
@@ -163,9 +164,60 @@ Glob.prototype._finish = function () {
   if (this.aborted)
     return
 
-  //console.error('FINISH', this.matches)
+  if (this.realpath && !this._didRealpath)
+    return this._realpath()
+
   common.finish(this)
   this.emit('end', this.found)
+}
+
+Glob.prototype._realpath = function () {
+  if (this._didRealpath)
+    return
+
+  this._didRealpath = true
+
+  var n = this.matches.length
+  if (n === 0)
+    return this.finish()
+
+  var self = this
+  this.matches.forEach(function (matchset, index) {
+    self._realpathSet(index, next)
+  })
+
+  function next () {
+    if (--n === 0)
+      self._finish()
+  }
+}
+
+Glob.prototype._realpathSet = function (index, cb) {
+  var found = Object.keys(this.matches[index])
+  var self = this
+  var n = found.length
+  if (n === 0)
+    return cb()
+
+  var set = this.matches[index] = Object.create(null)
+  found.forEach(function (p, i) {
+    // If there's a problem with the stat, then it means that
+    // one or more of the links in the realpath couldn't be
+    // resolved.  just return the abs value in that case.
+    fs.realpath(p, self.realpathCache, function (er, real) {
+      if (!er)
+        set[real] = true
+      else if (er.syscall === 'stat')
+        set[self._makeAbs(p)] = true
+      else
+        self.emit('error', er) // srsly wtf right here
+
+      if (--n === 0) {
+        self.matches[index] = set
+        cb()
+      }
+    })
+  })
 }
 
 Glob.prototype._mark = function (p) {
