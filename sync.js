@@ -388,6 +388,7 @@ GlobSync.prototype._processSimple = function (prefix, index) {
 // Returns either 'DIR', 'FILE', or false
 GlobSync.prototype._stat = function (f) {
   var abs = this._makeAbs(f)
+  var needDir = f.slice(-1) === '/'
 
   if (f.length > this.maxLength)
     return false
@@ -398,11 +399,15 @@ GlobSync.prototype._stat = function (f) {
     if (Array.isArray(c))
       c = 'DIR'
 
-    // It exists, but not how we need it
-    if (abs.slice(-1) === '/' && c !== 'DIR')
+    // It exists, but maybe not how we need it
+    if (!needDir || c === 'DIR')
+      return c
+
+    if (needDir && c === 'FILE')
       return false
 
-    return c
+    // otherwise we have to stat, because maybe c=true
+    // if we know it exists, but not what it is.
   }
 
   var exists
@@ -428,11 +433,12 @@ GlobSync.prototype._stat = function (f) {
 
   this.statCache[abs] = stat
 
-  if (abs.slice(-1) === '/' && !stat.isDirectory())
-    return false
-
   var c = stat.isDirectory() ? 'DIR' : 'FILE'
   this.cache[abs] = this.cache[abs] || c
+
+  if (needDir && c !== 'DIR')
+    return false
+
   return c
 }
 

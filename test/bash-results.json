@@ -115,6 +115,7 @@
     "./test/realpath.js",
     "./test/root-nomount.js",
     "./test/root.js",
+    "./test/slash-cwd.js",
     "./test/stat.js",
     "./test/sync-cb-throw.js",
     "./test/zz-cleanup.js",
