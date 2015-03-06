@@ -384,15 +384,22 @@ Glob.prototype._emitMatch = function (index, e) {
         return
     }
 
+    var abs = this._makeAbs(e)
     this.matches[index][e] = true
-    if (!this.stat && !this.mark)
-      return this.emit('match', e)
+    if (this.stat || this.mark) {
+      if (this.stat) {
+        var st = this.statCache[abs]
+        //assert(st)
+        this.emit('stat', e, this.statCache[abs])
+        this.emit('match', e)
+      } else if (this.mark) {
+        //assert(this.cache[abs] && this.cache[abs] !== true)
+        this.emit('match', this._mark(e))
+      }
+    } else {
+      this.emit('match', e)
+    }
 
-    var self = this
-    this._stat(this._makeAbs(e), function (er, c, st) {
-      self.emit('stat', e, st)
-      self.emit('match', e)
-    })
   }
 }
 
