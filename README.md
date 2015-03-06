@@ -242,7 +242,7 @@ filesystem.
 * `symlinks` A cache of known symbolic links.  You may pass in a
   previously generated `symlinks` object to save `lstat` calls when
   resolving `**` matches.
-* `sync` Perform a synchronous glob search.
+* `sync` DEPRECATED: use `glob.sync(pattern, opts)` instead.
 * `nounique` In some cases, brace-expanded patterns can result in the
   same file showing up multiple times in the result set.  By default,
   this implementation prevents duplicates in the result set.  Set this
