@@ -499,18 +499,18 @@ Glob.prototype._readdirError = function (f, er, cb) {
   // handle errors, and cache the information
   switch (er.code) {
     case 'ENOTDIR': // totally normal. means it *does* exist.
-      this.cache[f] = 'FILE'
+      this.cache[this._makeAbs(f)] = 'FILE'
       break
 
     case 'ENOENT': // not terribly unusual
     case 'ELOOP':
     case 'ENAMETOOLONG':
     case 'UNKNOWN':
-      this.cache[f] = false
+      this.cache[this._makeAbs(f)] = false
       break
 
     default: // some unusual error.  Treat as failure.
-      this.cache[f] = false
+      this.cache[this._makeAbs(f)] = false
       if (this.strict) return this.emit('error', er)
       if (!this.silent) console.error('glob error', er)
       break
@@ -606,18 +606,13 @@ Glob.prototype._processSimple2 = function (prefix, index, er, exists, cb) {
 
 // Returns either 'DIR', 'FILE', or false
 Glob.prototype._stat = function (f, cb) {
-  var abs = f
-  if (f.charAt(0) === '/')
-    abs = path.join(this.root, f)
-  else if (this.changedCwd)
-    abs = path.resolve(this.cwd, f)
-
+  var abs = this._makeAbs(f)
 
   if (f.length > this.maxLength)
     return cb()
 
-  if (!this.stat && ownProp(this.cache, f)) {
-    var c = this.cache[f]
+  if (!this.stat && ownProp(this.cache, abs)) {
+    var c = this.cache[abs]
 
     if (Array.isArray(c))
       c = 'DIR'
@@ -671,6 +666,6 @@ Glob.prototype._stat2 = function (f, abs, er, stat, cb) {
     return cb(null, false, stat)
 
   var c = stat.isDirectory() ? 'DIR' : 'FILE'
-  this.cache[f] = this.cache[f] || c
+  this.cache[abs] = this.cache[abs] || c
   return cb(null, c, stat)
 }

@@ -281,18 +281,18 @@ GlobSync.prototype._readdirError = function (f, er) {
   // handle errors, and cache the information
   switch (er.code) {
     case 'ENOTDIR': // totally normal. means it *does* exist.
-      this.cache[f] = 'FILE'
+      this.cache[this._makeAbs(f)] = 'FILE'
       break
 
     case 'ENOENT': // not terribly unusual
     case 'ELOOP':
     case 'ENAMETOOLONG':
     case 'UNKNOWN':
-      this.cache[f] = false
+      this.cache[this._makeAbs(f)] = false
       break
 
     default: // some unusual error.  Treat as failure.
-      this.cache[f] = false
+      this.cache[this._makeAbs(f)] = false
       if (this.strict) throw er
       if (!this.silent) console.error('glob error', er)
       break
@@ -370,18 +370,13 @@ GlobSync.prototype._processSimple = function (prefix, index) {
 
 // Returns either 'DIR', 'FILE', or false
 GlobSync.prototype._stat = function (f) {
-  var abs = f
-  if (f.charAt(0) === '/')
-    abs = path.join(this.root, f)
-  else if (this.changedCwd)
-    abs = path.resolve(this.cwd, f)
-
+  var abs = this._makeAbs(f)
 
   if (f.length > this.maxLength)
     return false
 
-  if (!this.stat && ownProp(this.cache, f)) {
-    var c = this.cache[f]
+  if (!this.stat && ownProp(this.cache, abs)) {
+    var c = this.cache[abs]
 
     if (Array.isArray(c))
       c = 'DIR'
@@ -420,7 +415,7 @@ GlobSync.prototype._stat = function (f) {
     return false
 
   var c = stat.isDirectory() ? 'DIR' : 'FILE'
-  this.cache[f] = this.cache[f] || c
+  this.cache[abs] = this.cache[abs] || c
   return c
 }
 
