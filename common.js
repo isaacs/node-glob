@@ -203,7 +203,8 @@ function finish (self) {
 }
 
 function mark (self, p) {
-  var c = self.cache[p]
+  var abs = makeAbs(self, p)
+  var c = self.cache[abs]
   var m = p
   if (c) {
     var isDir = c === 'DIR' || Array.isArray(c)
@@ -215,8 +216,9 @@ function mark (self, p) {
       m = m.slice(0, -1)
 
     if (m !== p) {
-      self.statCache[m] = self.statCache[p]
-      self.cache[m] = self.cache[p]
+      var mabs = makeAbs(self, m)
+      self.statCache[mabs] = self.statCache[abs]
+      self.cache[mabs] = self.cache[abs]
     }
   }
 
