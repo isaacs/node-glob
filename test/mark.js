@@ -12,9 +12,33 @@ glob.Glob.prototype._stat = function(o) { return function(f, cb) {
   }.bind(this), lag += 5)
 }}(glob.Glob.prototype._stat)
 
+test('mark with cwd', function (t) {
+  var pattern = '*/*'
+  var opt = { mark: true, cwd: 'a' }
+  glob(pattern, opt, function (er, res) {
+    if (er)
+      throw er
+
+    var expect = [
+      'abcdef/g/',
+      'abcfed/g/',
+      'b/c/',
+      'bc/e/',
+      'c/d/',
+      'cb/e/',
+      'symlink/a/'
+    ].sort()
+
+    t.same(res.sort(), expect)
+    t.same(glob.sync(pattern, opt).sort(), expect)
+    t.end()
+  })
+})
 
 test("mark, with **", function (t) {
-  glob("a/*b*/**", {mark: true}, function (er, results) {
+  var pattern = 'a/*b*/**'
+  var opt = { mark: true }
+  glob(pattern, opt, function (er, results) {
     if (er)
       throw er
     var expect =
@@ -35,12 +59,15 @@ test("mark, with **", function (t) {
         'a/cb/e/f' ]
 
     t.same(results, expect)
+    t.same(glob.sync(pattern, opt), expect)
     t.end()
   })
 })
 
 test("mark, no / on pattern", function (t) {
-  glob("a/*", {mark: true}, function (er, results) {
+  var pattern = 'a/*'
+  var opt = { mark: true }
+  glob(pattern, opt, function (er, results) {
     if (er)
       throw er
     var expect = [ 'a/abcdef/',
@@ -54,6 +81,7 @@ test("mark, no / on pattern", function (t) {
       expect.push('a/symlink/')
 
     t.same(results, expect)
+    t.same(glob.sync(pattern, opt), expect)
     t.end()
   }).on('match', function(m) {
     t.similar(m, /\/$/)
@@ -61,7 +89,9 @@ test("mark, no / on pattern", function (t) {
 })
 
 test("mark=false, no / on pattern", function (t) {
-  glob("a/*", function (er, results) {
+  var pattern = 'a/*'
+  var opt = null
+  glob(pattern, opt, function (er, results) {
     if (er)
       throw er
     var expect = [ 'a/abcdef',
@@ -74,6 +104,7 @@ test("mark=false, no / on pattern", function (t) {
     if (process.platform !== "win32")
       expect.push('a/symlink')
     t.same(results, expect)
+    t.same(glob.sync(pattern, opt), expect)
     t.end()
   }).on('match', function(m) {
     t.similar(m, /[^\/]$/)
@@ -81,7 +112,9 @@ test("mark=false, no / on pattern", function (t) {
 })
 
 test("mark=true, / on pattern", function (t) {
-  glob("a/*/", {mark: true}, function (er, results) {
+  var pattern = 'a/*/'
+  var opt = { mark: true }
+  glob(pattern, opt, function (er, results) {
     if (er)
       throw er
     var expect = [ 'a/abcdef/',
@@ -93,6 +126,7 @@ test("mark=true, / on pattern", function (t) {
     if (process.platform !== "win32")
       expect.push('a/symlink/')
     t.same(results, expect)
+    t.same(glob.sync(pattern, opt), expect)
     t.end()
   }).on('match', function(m) {
     t.similar(m, /\/$/)
@@ -100,7 +134,9 @@ test("mark=true, / on pattern", function (t) {
 })
 
 test("mark=false, / on pattern", function (t) {
-  glob("a/*/", function (er, results) {
+  var pattern = "a/*/"
+  var opt = null
+  glob(pattern, opt, function (er, results) {
     if (er)
       throw er
     var expect = [ 'a/abcdef/',
@@ -112,6 +148,7 @@ test("mark=false, / on pattern", function (t) {
     if (process.platform !== "win32")
       expect.push('a/symlink/')
     t.same(results, expect)
+    t.same(glob.sync(pattern, opt), expect)
     t.end()
   }).on('match', function(m) {
     t.similar(m, /\/$/)
@@ -126,12 +163,16 @@ var cwd = process.cwd().replace(/[\/\\]+$/, '').replace(/\\/g, '/')
       glob(pattern, {mark:mark}, function (er, results) {
         t.equal(results.length, 1)
         var res = results[0].replace(/\\/g, '/')
+        var syncRes = glob.sync(pattern, {mark:mark})
+        syncRes = syncRes[0].replace(/\\/g, '/')
         if (slash || mark)
           t.equal(res, cwd + '/')
         else
           t.equal(res.indexOf(cwd), 0)
+        t.equal(syncRes, res, 'sync should match async')
         t.end()
       })
     })
   })
 })
+
