@@ -424,35 +424,32 @@ Glob.prototype._emitMatch = function (index, e) {
   if (this.aborted)
     return
 
-  if (!this.matches[index][e]) {
-    if (this.paused) {
-      this._emitQueue.push([index, e])
-      return
-    }
+  if (this.matches[index][e])
+    return
 
-    if (this.nodir) {
-      var c = this.cache[this._makeAbs(e)]
-      if (c === 'DIR' || Array.isArray(c))
-        return
-    }
-
-    var abs = this._makeAbs(e)
-    this.matches[index][e] = true
-    if (this.stat || this.mark) {
-      if (this.stat) {
-        var st = this.statCache[abs]
-        //assert(st)
-        this.emit('stat', e, this.statCache[abs])
-        this.emit('match', e)
-      } else if (this.mark) {
-        //assert(this.cache[abs] && this.cache[abs] !== true)
-        this.emit('match', this._mark(e))
-      }
-    } else {
-      this.emit('match', e)
-    }
-
+  if (this.paused) {
+    this._emitQueue.push([index, e])
+    return
   }
+
+  var abs = this._makeAbs(e)
+
+  if (this.nodir) {
+    var c = this.cache[abs]
+    if (c === 'DIR' || Array.isArray(c))
+      return
+  }
+
+  if (this.mark)
+    e = this._mark(e)
+
+  this.matches[index][e] = true
+
+  var st = this.statCache[abs]
+  if (st)
+    this.emit('stat', e, st)
+
+  this.emit('match', e)
 }
 
 Glob.prototype._readdirInGlobStar = function (abs, cb) {

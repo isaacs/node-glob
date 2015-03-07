@@ -207,17 +207,22 @@ GlobSync.prototype._processReaddir = function (prefix, read, abs, remain, index,
 
 
 GlobSync.prototype._emitMatch = function (index, e) {
-  if (!this.matches[index][e]) {
-    if (this.nodir) {
-      var c = this.cache[this._makeAbs(e)]
-      if (c === 'DIR' || Array.isArray(c))
-        return
-    }
+  var abs = this._makeAbs(e)
+  if (this.mark)
+    e = this._mark(e)
 
-    this.matches[index][e] = true
-    if (this.stat || this.mark)
-      this._stat(this._makeAbs(e))
+  if (this.matches[index][e])
+    return
+
+  if (this.nodir) {
+    var c = this.cache[this._makeAbs(e)]
+    if (c === 'DIR' || Array.isArray(c))
+      return
   }
+
+  this.matches[index][e] = true
+  if (this.stat)
+    this._stat(e)
 }
 
 
