@@ -4,19 +4,19 @@ var tap = require("tap")
 var origCwd = process.cwd()
 process.chdir(__dirname)
 var path = require('path')
+var common = require('../common.js')
 function cacheCheck(g, t) {
   // verify that path cache keys are all absolute
   var caches = [ 'cache', 'statCache', 'symlinks' ]
   caches.forEach(function (c) {
     Object.keys(g[c]).forEach(function (p) {
-      t.ok(path.isAbsolute(p), p + ' should be absolute')
+      t.ok(common.isAbsolute(p), p + ' should be absolute')
     })
   })
 }
 
 tap.test("changing cwd and searching for **/d", function (t) {
   var glob = require('../')
-  var path = require('path')
   t.test('.', function (t) {
     var g = glob('**/d', function (er, matches) {
       t.ifError(er)

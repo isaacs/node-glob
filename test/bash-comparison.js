@@ -2,11 +2,12 @@
 // show that it does the same thing by default as the shell.
 require("./global-leakage.js")
 var tap = require("tap")
-, child_process = require("child_process")
-, bashResults = require("./bash-results.json")
-, globs = Object.keys(bashResults)
-, glob = require("../")
-, path = require("path")
+var child_process = require("child_process")
+var bashResults = require("./bash-results.json")
+var globs = Object.keys(bashResults)
+var glob = require("../")
+var path = require("path")
+var common = require('../common.js')
 
 // run from the root of the project
 // this is usually where you're at anyway, but be sure.
@@ -17,7 +18,7 @@ function cacheCheck(g, t) {
   var caches = [ 'cache', 'statCache', 'symlinks' ]
   caches.forEach(function (c) {
     Object.keys(g[c]).forEach(function (p) {
-      t.ok(path.isAbsolute(p), p + ' should be absolute')
+      t.ok(common.isAbsolute(p), p + ' should be absolute')
     })
   })
 }

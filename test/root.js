@@ -5,13 +5,14 @@ process.chdir(__dirname)
 
 var glob = require('../')
 var path = require('path')
+var common = require('../common.js')
 
 function cacheCheck(g, t) {
   // verify that path cache keys are all absolute
   var caches = [ 'cache', 'statCache', 'symlinks' ]
   caches.forEach(function (c) {
     Object.keys(g[c]).forEach(function (p) {
-      t.ok(path.isAbsolute(p), p + ' should be absolute')
+      t.ok(common.isAbsolute(p), p + ' should be absolute')
     })
   })
 }
