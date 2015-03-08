@@ -12,6 +12,16 @@ var tap = require("tap")
 // this is usually where you're at anyway, but be sure.
 process.chdir(path.resolve(__dirname, ".."))
 
+function cacheCheck(g, t) {
+  // verify that path cache keys are all absolute
+  var caches = [ 'cache', 'statCache', 'symlinks' ]
+  caches.forEach(function (c) {
+    Object.keys(g[c]).forEach(function (p) {
+      t.ok(path.isAbsolute(p), p + ' should be absolute')
+    })
+  })
+}
+
 function alphasort (a, b) {
   a = a.toLowerCase()
   b = b.toLowerCase()
@@ -28,13 +38,16 @@ globs.forEach(function (pattern) {
     return
 
   tap.test(pattern, function (t) {
-    glob(pattern, function (er, matches) {
+    var g = glob(pattern, function (er, matches) {
       if (er)
         throw er
 
       // sort and unmark, just to match the shell results
       matches = cleanResults(matches)
       t.deepEqual(matches, expect, pattern)
+
+      // verify that path cache keys are all absolute
+      cacheCheck(g, t)
       t.end()
     })
   })

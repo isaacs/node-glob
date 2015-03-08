@@ -234,7 +234,7 @@ function makeAbs (self, f) {
     abs = f
   } else if (self.changedCwd) {
     abs = path.resolve(self.cwd, f)
-  } else if (self.realpath) {
+  } else {
     abs = path.resolve(f)
   }
   return abs

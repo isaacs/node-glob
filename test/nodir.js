@@ -1,7 +1,18 @@
 require("./global-leakage.js")
 var test = require("tap").test
 var glob = require('../')
+var path = require('path')
 process.chdir(__dirname)
+
+function cacheCheck(g, t) {
+  // verify that path cache keys are all absolute
+  var caches = [ 'cache', 'statCache', 'symlinks' ]
+  caches.forEach(function (c) {
+    Object.keys(g[c]).forEach(function (p) {
+      t.ok(path.isAbsolute(p), p + ' should be absolute')
+    })
+  })
+}
 
 // [pattern, options, expect]
 var cases = [
@@ -34,11 +45,12 @@ cases.forEach(function (c) {
   test(pattern + ' ' + JSON.stringify(options), function (t) {
     var res = glob.sync(pattern, options).sort()
     t.same(res, expect, 'sync results')
-    glob(pattern, options, function (er, res) {
+    var g = glob(pattern, options, function (er, res) {
       if (er)
         throw er
       res = res.sort()
       t.same(res, expect, 'async results')
+      cacheCheck(g, t)
       t.end()
     })
   })
