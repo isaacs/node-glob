@@ -109,6 +109,7 @@
     "./test/new-glob-optional-options.js",
     "./test/nocase-nomagic.js",
     "./test/nodir.js",
+    "./test/nonull.js",
     "./test/pause-resume.js",
     "./test/readme-issue.js",
     "./test/realpath.js",
