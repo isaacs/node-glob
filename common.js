@@ -130,7 +130,7 @@ function finish (self) {
 
   for (var i = 0, l = self.matches.length; i < l; i ++) {
     var matches = self.matches[i]
-    if (!matches) {
+    if (!matches || Object.keys(matches).length === 0) {
       if (self.nonull) {
         // do like the shell, and spit out the literal glob
         var literal = self.minimatch.globSet[i]
