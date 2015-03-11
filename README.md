@@ -160,8 +160,6 @@ be immediately available on the `g.found` member.
 * `aborted` Boolean which is set to true when calling `abort()`.  There
   is no way at this time to continue a glob search after aborting, but
   you can re-use the statCache to avoid having to duplicate syscalls.
-* `statCache` Collection of all the stat results the glob search
-  performed.
 * `cache` Convenience object.  Each field has the following possible
   values:
   * `false` - Path does not exist
