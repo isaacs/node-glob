@@ -56,6 +56,7 @@ GlobSync.prototype._finish = function () {
       var set = self.matches[index] = Object.create(null)
       for (var p in matchset) {
         try {
+          p = self._makeAbs(p)
           var real = fs.realpathSync(p, this.realpathCache)
           set[real] = true
         } catch (er) {
