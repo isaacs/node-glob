@@ -179,12 +179,11 @@ Glob.prototype._realpath = function () {
 
   var n = this.matches.length
   if (n === 0)
-    return this.finish()
+    return this._finish()
 
   var self = this
-  this.matches.forEach(function (matchset, index) {
-    self._realpathSet(index, next)
-  })
+  for (var i = 0; i < this.matches.length; i++)
+    this._realpathSet(i, next)
 
   function next () {
     if (--n === 0)
@@ -193,9 +192,14 @@ Glob.prototype._realpath = function () {
 }
 
 Glob.prototype._realpathSet = function (index, cb) {
-  var found = Object.keys(this.matches[index])
+  var matchset = this.matches[index]
+  if (!matchset)
+    return cb()
+
+  var found = Object.keys(matchset)
   var self = this
   var n = found.length
+
   if (n === 0)
     return cb()
 
@@ -204,11 +208,12 @@ Glob.prototype._realpathSet = function (index, cb) {
     // If there's a problem with the stat, then it means that
     // one or more of the links in the realpath couldn't be
     // resolved.  just return the abs value in that case.
+    p = self._makeAbs(p)
     fs.realpath(p, self.realpathCache, function (er, real) {
       if (!er)
         set[real] = true
       else if (er.syscall === 'stat')
-        set[self._makeAbs(p)] = true
+        set[p] = true
       else
         self.emit('error', er) // srsly wtf right here
 
