@@ -8,6 +8,7 @@ var i = 0
 var tap = require("tap")
 var fs = require("fs")
 var rimraf = require("rimraf")
+var spawn = require('child_process').spawn
 
 var files =
 [ "a/.abcdef/x/y/z/a"
@@ -79,6 +80,18 @@ tap.test('remove npm-debug.log file, if present', function (t) {
   t.end()
 })
 
+// share 'a' via unc path \\<hostname>\glob-test
+if (process.platform === 'win32') {
+  tap.test('create unc-accessible share', function (t) {
+    var localPath = path.resolve(__dirname, 'a')
+    var net = spawn('net', ['share', 'glob-test=' + localPath])
+    net.stderr.pipe(process.stderr)
+    net.on('close', function (code) {
+      t.equal(code, 0, 'failed to create a unc share')
+      t.end()
+    })
+  })
+}
 
 // generate the bash pattern test-fixtures if possible
 if (process.platform === "win32" || !process.env.TEST_REGEN) {
@@ -86,7 +99,6 @@ if (process.platform === "win32" || !process.env.TEST_REGEN) {
   return
 }
 
-var spawn = require("child_process").spawn;
 var globs =
   // put more patterns here.
   // anything that would be directly in / should be in /tmp/glob-test
