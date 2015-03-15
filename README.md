@@ -182,7 +182,8 @@ be immediately available on the `g.found` member.
   matches found.  If the `nonull` option is set, and no match was found,
   then the `matches` list contains the original pattern.  The matches
   are sorted, unless the `nosort` flag is set.
-* `match` Every time a match is found, this is emitted with the matched.
+* `match` Every time a match is found, this is emitted with the specific
+  thing that matched. It is not deduplicated or resolved to a realpath.
 * `error` Emitted when an unexpected error is encountered, or whenever
   any fs error occurs if `options.strict` is set.
 * `abort` When `abort()` is called, this event is raised.
