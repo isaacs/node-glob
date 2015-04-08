@@ -87,6 +87,7 @@
     "./node_modules/minimatch",
     "./node_modules/mkdirp",
     "./node_modules/once",
+    "./node_modules/path-is-absolute",
     "./node_modules/rimraf",
     "./node_modules/tap",
     "./node_modules/tick",

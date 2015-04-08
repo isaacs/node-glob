@@ -4,13 +4,14 @@ var tap = require("tap")
 var origCwd = process.cwd()
 process.chdir(__dirname)
 var path = require('path')
-var common = require('../common.js')
+var isAbsolute = require('path-is-absolute')
+
 function cacheCheck(g, t) {
   // verify that path cache keys are all absolute
   var caches = [ 'cache', 'statCache', 'symlinks' ]
   caches.forEach(function (c) {
     Object.keys(g[c]).forEach(function (p) {
-      t.ok(common.isAbsolute(p), p + ' should be absolute')
+      t.ok(isAbsolute(p), p + ' should be absolute')
     })
   })
 }

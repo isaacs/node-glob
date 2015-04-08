@@ -7,7 +7,7 @@ var bashResults = require("./bash-results.json")
 var globs = Object.keys(bashResults)
 var glob = require("../")
 var path = require("path")
-var common = require('../common.js')
+var isAbsolute = require("path-is-absolute")
 
 // run from the root of the project
 // this is usually where you're at anyway, but be sure.
@@ -18,7 +18,7 @@ function cacheCheck(g, t) {
   var caches = [ 'cache', 'statCache', 'symlinks' ]
   caches.forEach(function (c) {
     Object.keys(g[c]).forEach(function (p) {
-      t.ok(common.isAbsolute(p), p + ' should be absolute')
+      t.ok(isAbsolute(p), p + ' should be absolute')
     })
   })
 }
