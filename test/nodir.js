@@ -1,7 +1,7 @@
 require("./global-leakage.js")
 var test = require("tap").test
 var glob = require('../')
-var common = require('../common.js')
+var isAbsolute = require('path-is-absolute')
 process.chdir(__dirname)
 
 function cacheCheck(g, t) {
@@ -9,7 +9,7 @@ function cacheCheck(g, t) {
   var caches = [ 'cache', 'statCache', 'symlinks' ]
   caches.forEach(function (c) {
     Object.keys(g[c]).forEach(function (p) {
-      t.ok(common.isAbsolute(p), p + ' should be absolute')
+      t.ok(isAbsolute(p), p + ' should be absolute')
     })
   })
 }
