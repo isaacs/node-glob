@@ -3,6 +3,7 @@ require('./global-leakage.js')
 // Show that glob ignores results matching pattern on ignore option
 
 var glob = require('../glob.js')
+var path = require('path')
 var test = require('tap').test
 
 // [pattern, ignore, expect, cwd]
@@ -10,6 +11,7 @@ var cases = [
   [ '*', null, ['abcdef', 'abcfed', 'b', 'bc', 'c', 'cb', 'symlink'], 'a'],
   [ '*', 'b', ['abcdef', 'abcfed', 'bc', 'c', 'cb', 'symlink'], 'a'],
   [ '*', 'b*', ['abcdef', 'abcfed', 'c', 'cb', 'symlink'], 'a'],
+  [ '**', ['/abcdef', '/abcdef/**'], ['abcfed', 'abcfed/g', 'abcfed/g/h', 'b', 'b/c', 'b/c/d', 'bc', 'bc/e', 'bc/e/f', 'c', 'c/d', 'c/d/c', 'c/d/c/b', 'cb', 'cb/e', 'cb/e/f', 'symlink', 'symlink/a', 'symlink/a/b', 'symlink/a/b/c'], 'a'],
   [ 'b/**', 'b/c/d', ['b', 'b/c'], 'a'],
   [ 'b/**', 'd', ['b', 'b/c', 'b/c/d'], 'a'],
   [ 'b/**', 'b/c/**', ['b'], 'a'],
@@ -45,8 +47,10 @@ cases.forEach(function (c, i) {
     name += ' cwd=' + cwd
 
   var opt = { ignore: ignore }
-  if (cwd)
+  if (cwd) {
     opt.cwd = cwd
+    opt.root = path.resolve(cwd)
+  }
 
   test(name, function (t) {
     glob(pattern, opt, function (er, res) {
