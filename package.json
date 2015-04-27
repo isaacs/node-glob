@@ -31,8 +31,8 @@
   },
   "scripts": {
     "prepublish": "npm run benchclean",
-    "profclean": "rm -f v8.log profile.txt",
-    "test": "tap test/*.js --cov",
+    "profclean": "rimraf v8.log profile.txt",
+    "test": "npm run profclean && tap test/*.js",
     "test-regen": "npm run profclean && TEST_REGEN=1 node test/00-setup.js",
     "bench": "bash benchmark.sh",
     "prof": "bash prof.sh && cat profile.txt",
