@@ -2,8 +2,12 @@ var test = require('tap').test;
 var glob = require('../');
 var fs = require('fs');
 var path = require('path');
+var skip = false
+if (/^v0\.(10|[0-9])\./.test(process.version)) {
+  skip = 'Does not work on Node < 0.12'
+}
 
-test('glob doesn\'t choke on UNC paths', function(t) {
+test('glob doesn\'t choke on UNC paths', { skip: skip }, function(t) {
   stubPlatform('win32', function(restorePlatform) {
     var readdir = fs.readdir;
 
