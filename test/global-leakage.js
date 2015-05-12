@@ -1,5 +1,5 @@
 if (require.main === module)
-  return console.log('ok')
+  return require('tap').pass('ok')
 
 var before = Object.keys(global).sort().join(':')
 var assert = require('assert')
