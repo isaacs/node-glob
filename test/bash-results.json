@@ -106,6 +106,7 @@
     "./test/has-magic.js",
     "./test/ignore.js",
     "./test/mark.js",
+    "./test/multiple-weird-error.js",
     "./test/negation-test.js",
     "./test/new-glob-optional-options.js",
     "./test/nocase-nomagic.js",
