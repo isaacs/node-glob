@@ -1,7 +1,7 @@
 var glob = require('../')
 var test = require('tap').test
 
-process.chdir(__dirname)
+process.chdir(__dirname + '/fixtures')
 
 test('follow symlinks', function (t) {
   var pattern = 'a/symlink/**'

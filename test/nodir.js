@@ -2,7 +2,7 @@ require("./global-leakage.js")
 var test = require("tap").test
 var glob = require('../')
 var isAbsolute = require('path-is-absolute')
-process.chdir(__dirname)
+process.chdir(__dirname + '/fixtures')
 
 function cacheCheck(g, t) {
   // verify that path cache keys are all absolute

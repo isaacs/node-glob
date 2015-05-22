@@ -3,16 +3,14 @@ require("./global-leakage.js")
 var tap = require("tap")
 , child_process = require("child_process")
 // just some gnarly pattern with lots of matches
-, pattern = "test/a/!(symlink)/**"
+, pattern = "a/!(symlink)/**"
 , bashResults = require("./bash-results.json")
 , patterns = Object.keys(bashResults)
 , glob = require("../")
 , Glob = glob.Glob
 , path = require("path")
 
-// run from the root of the project
-// this is usually where you're at anyway, but be sure.
-process.chdir(path.resolve(__dirname, ".."))
+process.chdir(__dirname + '/fixtures')
 
 function alphasort (a, b) {
   a = a.toLowerCase()

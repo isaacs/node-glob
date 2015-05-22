@@ -9,6 +9,8 @@ var tap = require("tap")
 var fs = require("fs")
 var rimraf = require("rimraf")
 
+var fixtureDir = path.resolve(__dirname, 'fixtures')
+
 var files =
 [ "a/.abcdef/x/y/z/a"
 , "a/abcdef/g/h"
@@ -19,22 +21,21 @@ var files =
 , "a/cb/e/f"
 ]
 
-var symlinkTo = path.resolve(__dirname, "a/symlink/a/b/c")
+var symlinkTo = path.resolve(fixtureDir, "a/symlink/a/b/c")
 var symlinkFrom = "../.."
 
 files = files.map(function (f) {
-  return path.resolve(__dirname, f)
+  return path.resolve(fixtureDir, f)
 })
 
 tap.test("remove fixtures", function (t) {
-  rimraf(path.resolve(__dirname, "a"), function (er) {
-    t.ifError(er, "remove fixtures")
-    t.end()
-  })
+  rimraf.sync(fixtureDir)
+  t.end()
 })
 
 files.forEach(function (f) {
   tap.test(f, function (t) {
+    f = path.resolve(fixtureDir, f)
     var d = path.dirname(f)
     mkdirp(d, 0755, function (er) {
       if (er) {
@@ -53,11 +54,10 @@ if (process.platform !== "win32") {
   tap.test("symlinky", function (t) {
     var d = path.dirname(symlinkTo)
     mkdirp(d, 0755, function (er) {
-      t.ifError(er)
-      fs.symlink(symlinkFrom, symlinkTo, "dir", function (er) {
-        t.ifError(er, "make symlink")
-        t.end()
-      })
+      if (er)
+        throw er
+      fs.symlinkSync(symlinkFrom, symlinkTo, "dir")
+      t.end()
     })
   })
 }
@@ -74,12 +74,6 @@ if (process.platform !== "win32") {
   })
 })
 
-tap.test('remove npm-debug.log file, if present', function (t) {
-  rimraf.sync(path.resolve(__dirname, '..', 'npm-debug.log'))
-  t.end()
-})
-
-
 // generate the bash pattern test-fixtures if possible
 if (process.platform === "win32" || !process.env.TEST_REGEN) {
   console.error("Windows, or TEST_REGEN unset.  Using cached fixtures.")
@@ -90,23 +84,23 @@ var spawn = require("child_process").spawn;
 var globs =
   // put more patterns here.
   // anything that would be directly in / should be in /tmp/glob-test
-  ["test/a/*/+(c|g)/./d"
-  ,"test/a/**/[cg]/../[cg]"
-  ,"test/a/{b,c,d,e,f}/**/g"
-  ,"test/a/b/**"
-  ,"test/**/g"
-  ,"test/a/abc{fed,def}/g/h"
-  ,"test/a/abc{fed/g,def}/**/"
-  ,"test/a/abc{fed/g,def}/**///**/"
-  ,"test/**/a/**/"
-  ,"test/+(a|b|c)/a{/,bc*}/**"
-  ,"test/*/*/*/f"
-  ,"test/**/f"
-  ,"test/a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/**/b/c/**"
+  ["a/*/+(c|g)/./d"
+  ,"a/**/[cg]/../[cg]"
+  ,"a/{b,c,d,e,f}/**/g"
+  ,"a/b/**"
+  ,"**/g"
+  ,"a/abc{fed,def}/g/h"
+  ,"a/abc{fed/g,def}/**/"
+  ,"a/abc{fed/g,def}/**///**/"
+  ,"**/a/**/"
+  ,"+(a|b|c)/a{/,bc*}/**"
+  ,"*/*/*/f"
+  ,"**/f"
+  ,"a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/**/b/c/**"
   ,"{./*/*,/tmp/glob-test/*}"
   ,"{/tmp/glob-test/*,*}" // evil owl face!  how you taunt me!
-  ,"test/a/!(symlink)/**"
-  ,"test/a/symlink/a/**/*"
+  ,"a/!(symlink)/**"
+  ,"a/symlink/a/**/*"
   ]
 var bashOutput = {}
 var fs = require("fs")
@@ -118,7 +112,7 @@ globs.forEach(function (pattern) {
               "shopt -s nullglob && " +
               // "shopt >&2; " +
               "eval \'for i in " + pattern + "; do echo $i; done\'"
-    var cp = spawn("bash", ["-c", cmd], { cwd: path.dirname(__dirname) })
+    var cp = spawn("bash", ["-c", cmd], { cwd: fixtureDir })
     var out = []
     cp.stdout.on("data", function (c) {
       out.push(c)

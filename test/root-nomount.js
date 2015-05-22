@@ -14,7 +14,7 @@ function cacheCheck(g, t) {
   })
 }
 
-process.chdir(__dirname)
+process.chdir(__dirname + '/fixtures')
 
 tap.test("changing root and searching for /b*/**", function (t) {
   t.test('.', function (t) {

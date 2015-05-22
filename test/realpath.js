@@ -2,8 +2,9 @@ var glob = require('../')
 var test = require('tap').test
 // pattern to find a bunch of duplicates
 var pattern = 'a/symlink/{*,**/*/*/*,*/*/**,*/*/*/*/*/*}'
-process.chdir(__dirname)
 var path = require('path')
+var fixtureDir = path.resolve(__dirname, 'fixtures')
+process.chdir(fixtureDir)
 
 // options, results
 // realpath:true set on each option
@@ -67,7 +68,7 @@ cases.forEach(function (c) {
   var expect = c[1]
   if (!(opt.nonull && expect[0].match(/^no one here/))) {
     expect = expect.map(function (d) {
-      d = (opt.cwd ? path.resolve(opt.cwd) : __dirname) + '/' + d
+      d = (opt.cwd ? path.resolve(opt.cwd) : fixtureDir) + '/' + d
       return d.replace(/\\/g, '/')
     })
   }

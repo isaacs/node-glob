@@ -1,126 +1,92 @@
 {
-  "test/a/*/+(c|g)/./d": [
-    "test/a/b/c/./d"
+  "a/*/+(c|g)/./d": [
+    "a/b/c/./d"
   ],
-  "test/a/**/[cg]/../[cg]": [
-    "test/a/abcdef/g/../g",
-    "test/a/abcfed/g/../g",
-    "test/a/b/c/../c",
-    "test/a/c/../c",
-    "test/a/c/d/c/../c",
-    "test/a/symlink/a/b/c/../c"
+  "a/**/[cg]/../[cg]": [
+    "a/abcdef/g/../g",
+    "a/abcfed/g/../g",
+    "a/b/c/../c",
+    "a/c/../c",
+    "a/c/d/c/../c",
+    "a/symlink/a/b/c/../c"
   ],
-  "test/a/{b,c,d,e,f}/**/g": [],
-  "test/a/b/**": [
-    "test/a/b",
-    "test/a/b/c",
-    "test/a/b/c/d"
+  "a/{b,c,d,e,f}/**/g": [],
+  "a/b/**": [
+    "a/b",
+    "a/b/c",
+    "a/b/c/d"
   ],
-  "test/**/g": [
-    "test/a/abcdef/g",
-    "test/a/abcfed/g"
+  "**/g": [
+    "a/abcdef/g",
+    "a/abcfed/g"
   ],
-  "test/a/abc{fed,def}/g/h": [
-    "test/a/abcdef/g/h",
-    "test/a/abcfed/g/h"
+  "a/abc{fed,def}/g/h": [
+    "a/abcdef/g/h",
+    "a/abcfed/g/h"
   ],
-  "test/a/abc{fed/g,def}/**/": [
-    "test/a/abcdef",
-    "test/a/abcdef/g",
-    "test/a/abcfed/g"
+  "a/abc{fed/g,def}/**/": [
+    "a/abcdef",
+    "a/abcdef/g",
+    "a/abcfed/g"
   ],
-  "test/a/abc{fed/g,def}/**///**/": [
-    "test/a/abcdef",
-    "test/a/abcdef/g",
-    "test/a/abcfed/g"
+  "a/abc{fed/g,def}/**///**/": [
+    "a/abcdef",
+    "a/abcdef/g",
+    "a/abcfed/g"
   ],
-  "test/**/a/**/": [
-    "test/a",
-    "test/a/abcdef",
-    "test/a/abcdef/g",
-    "test/a/abcfed",
-    "test/a/abcfed/g",
-    "test/a/b",
-    "test/a/b/c",
-    "test/a/bc",
-    "test/a/bc/e",
-    "test/a/c",
-    "test/a/c/d",
-    "test/a/c/d/c",
-    "test/a/cb",
-    "test/a/cb/e",
-    "test/a/symlink",
-    "test/a/symlink/a",
-    "test/a/symlink/a/b",
-    "test/a/symlink/a/b/c",
-    "test/a/symlink/a/b/c/a",
-    "test/a/symlink/a/b/c/a/b",
-    "test/a/symlink/a/b/c/a/b/c"
+  "**/a/**/": [
+    "a",
+    "a/abcdef",
+    "a/abcdef/g",
+    "a/abcfed",
+    "a/abcfed/g",
+    "a/b",
+    "a/b/c",
+    "a/bc",
+    "a/bc/e",
+    "a/c",
+    "a/c/d",
+    "a/c/d/c",
+    "a/cb",
+    "a/cb/e",
+    "a/symlink",
+    "a/symlink/a",
+    "a/symlink/a/b",
+    "a/symlink/a/b/c",
+    "a/symlink/a/b/c/a",
+    "a/symlink/a/b/c/a/b",
+    "a/symlink/a/b/c/a/b/c"
   ],
-  "test/+(a|b|c)/a{/,bc*}/**": [
-    "test/a/abcdef",
-    "test/a/abcdef/g",
-    "test/a/abcdef/g/h",
-    "test/a/abcfed",
-    "test/a/abcfed/g",
-    "test/a/abcfed/g/h"
+  "+(a|b|c)/a{/,bc*}/**": [
+    "a/abcdef",
+    "a/abcdef/g",
+    "a/abcdef/g/h",
+    "a/abcfed",
+    "a/abcfed/g",
+    "a/abcfed/g/h"
   ],
-  "test/*/*/*/f": [
-    "test/a/bc/e/f",
-    "test/a/cb/e/f"
+  "*/*/*/f": [
+    "a/bc/e/f",
+    "a/cb/e/f"
   ],
-  "test/**/f": [
-    "test/a/bc/e/f",
-    "test/a/cb/e/f"
+  "**/f": [
+    "a/bc/e/f",
+    "a/cb/e/f"
   ],
-  "test/a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/**/b/c/**": [
-    "test/a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c",
-    "test/a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a",
-    "test/a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b",
-    "test/a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c"
+  "a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/**/b/c/**": [
+    "a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c",
+    "a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a",
+    "a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b",
+    "a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c"
   ],
   "{./*/*,/tmp/glob-test/*}": [
-    "./examples/g.js",
-    "./examples/usr-local.js",
-    "./node_modules/inflight",
-    "./node_modules/inherits",
-    "./node_modules/minimatch",
-    "./node_modules/mkdirp",
-    "./node_modules/once",
-    "./node_modules/path-is-absolute",
-    "./node_modules/rimraf",
-    "./node_modules/tap",
-    "./node_modules/tick",
-    "./test/00-setup.js",
-    "./test/a",
-    "./test/abort.js",
-    "./test/bash-comparison.js",
-    "./test/bash-results.json",
-    "./test/broken-symlink.js",
-    "./test/cwd-test.js",
-    "./test/empty-set.js",
-    "./test/error-callback.js",
-    "./test/follow.js",
-    "./test/global-leakage.js",
-    "./test/globstar-match.js",
-    "./test/has-magic.js",
-    "./test/ignore.js",
-    "./test/mark.js",
-    "./test/multiple-weird-error.js",
-    "./test/negation-test.js",
-    "./test/new-glob-optional-options.js",
-    "./test/nocase-nomagic.js",
-    "./test/nodir.js",
-    "./test/nonull.js",
-    "./test/pause-resume.js",
-    "./test/readme-issue.js",
-    "./test/realpath.js",
-    "./test/root-nomount.js",
-    "./test/root.js",
-    "./test/slash-cwd.js",
-    "./test/stat.js",
-    "./test/sync-cb-throw.js",
-    "./test/zz-cleanup.js",
+    "./a/abcdef",
+    "./a/abcfed",
+    "./a/b",
+    "./a/bc",
+    "./a/c",
+    "./a/cb",
+    "./a/symlink",
     "/tmp/glob-test/asdf",
     "/tmp/glob-test/bar",
     "/tmp/glob-test/baz",
@@ -137,46 +103,32 @@
     "/tmp/glob-test/quux",
     "/tmp/glob-test/qwer",
     "/tmp/glob-test/rewq",
-    "benchclean.sh",
-    "benchmark.sh",
-    "common.js",
-    "CONTRIBUTING.md",
-    "examples",
-    "glob.js",
-    "LICENSE",
-    "make-benchmark-fixture.sh",
-    "node_modules",
-    "oh-my-glob.gif",
-    "package.json",
-    "prof.sh",
-    "README.md",
-    "sync.js",
-    "test"
+    "a"
   ],
-  "test/a/!(symlink)/**": [
-    "test/a/abcdef",
-    "test/a/abcdef/g",
-    "test/a/abcdef/g/h",
-    "test/a/abcfed",
-    "test/a/abcfed/g",
-    "test/a/abcfed/g/h",
-    "test/a/b",
-    "test/a/b/c",
-    "test/a/b/c/d",
-    "test/a/bc",
-    "test/a/bc/e",
-    "test/a/bc/e/f",
-    "test/a/c",
-    "test/a/c/d",
-    "test/a/c/d/c",
-    "test/a/c/d/c/b",
-    "test/a/cb",
-    "test/a/cb/e",
-    "test/a/cb/e/f"
+  "a/!(symlink)/**": [
+    "a/abcdef",
+    "a/abcdef/g",
+    "a/abcdef/g/h",
+    "a/abcfed",
+    "a/abcfed/g",
+    "a/abcfed/g/h",
+    "a/b",
+    "a/b/c",
+    "a/b/c/d",
+    "a/bc",
+    "a/bc/e",
+    "a/bc/e/f",
+    "a/c",
+    "a/c/d",
+    "a/c/d/c",
+    "a/c/d/c/b",
+    "a/cb",
+    "a/cb/e",
+    "a/cb/e/f"
   ],
-  "test/a/symlink/a/**/*": [
-    "test/a/symlink/a/b",
-    "test/a/symlink/a/b/c",
-    "test/a/symlink/a/b/c/a"
+  "a/symlink/a/**/*": [
+    "a/symlink/a/b",
+    "a/symlink/a/b/c",
+    "a/symlink/a/b/c/a"
   ]
 }

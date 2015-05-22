@@ -7,7 +7,7 @@ require("./global-leakage.js")
 var glob = require('../glob.js')
 var test = require('tap').test
 
-process.chdir(__dirname)
+process.chdir(__dirname + '/fixtures')
 test('glob respects minimatch negate flag when activated with leading !', function(t) {
   var expect = ["abcdef/g", "abcfed/g", "c/d", "cb/e"]
 

@@ -1,7 +1,7 @@
 require("./global-leakage.js")
 var test = require("tap").test
 var glob = require('../')
-process.chdir(__dirname)
+process.chdir(__dirname + '/fixtures')
 
 // expose timing issues
 var lag = 5

@@ -33,7 +33,7 @@ var cases = [
   [ 'a/c/**', ['a/c/**', 'a/c/*', 'a/c/*/c'], []]
 ]
 
-process.chdir(__dirname)
+process.chdir(__dirname + '/fixtures')
 
 cases.forEach(function (c, i) {
   var pattern = c[0]

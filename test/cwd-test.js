@@ -2,7 +2,7 @@ require("./global-leakage.js")
 var tap = require("tap")
 
 var origCwd = process.cwd()
-process.chdir(__dirname)
+process.chdir(__dirname + '/fixtures')
 var path = require('path')
 var isAbsolute = require('path-is-absolute')
 

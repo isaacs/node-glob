@@ -1,7 +1,7 @@
 require("./global-leakage.js")
 var t = require("tap")
 
-process.chdir(__dirname)
+process.chdir(__dirname + '/fixtures')
 
 var glob = require('../')
 var path = require('path')

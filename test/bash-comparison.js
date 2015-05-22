@@ -11,7 +11,9 @@ var isAbsolute = require("path-is-absolute")
 
 // run from the root of the project
 // this is usually where you're at anyway, but be sure.
-process.chdir(path.resolve(__dirname, ".."))
+var root = path.dirname(__dirname)
+var fixtures = path.resolve(__dirname, 'fixtures')
+process.chdir(fixtures)
 
 function cacheCheck(g, t) {
   // verify that path cache keys are all absolute
