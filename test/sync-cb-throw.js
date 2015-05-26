@@ -24,6 +24,22 @@ test('sync throws if provided callback', function (t) {
     g.GlobSync('*', function() {})
   })
 
+  t.throws(function () {
+    g.GlobSync()
+  })
+
+  t.throws(function () {
+    g.sync()
+  })
+
+  t.throws(function () {
+    g()
+  })
+
+  t.throws(function () {
+    g.Glob()
+  })
+
   t.end()
 })
 
