@@ -26,13 +26,13 @@
   "devDependencies": {
     "mkdirp": "0",
     "rimraf": "^2.2.8",
-    "tap": "^1.1.0",
+    "tap": "^1.1.4",
     "tick": "0.0.6"
   },
   "scripts": {
     "prepublish": "npm run benchclean",
     "profclean": "rm -f v8.log profile.txt",
-    "test": "tap test/*.js",
+    "test": "tap test/*.js --cov",
     "test-regen": "npm run profclean && TEST_REGEN=1 node test/00-setup.js",
     "bench": "bash benchmark.sh",
     "prof": "bash prof.sh && cat profile.txt",

@@ -5,7 +5,7 @@ var tap = require("tap")
 , path = require("path")
 
 tap.test("cleanup fixtures", function (t) {
-  rimraf(path.resolve(__dirname, "a"), function (er) {
+  rimraf(path.resolve(__dirname, "fixtures"), function (er) {
     t.ifError(er, "removed")
     t.end()
   })
