@@ -37,7 +37,7 @@ files.forEach(function (f) {
   tap.test(f, function (t) {
     f = path.resolve(fixtureDir, f)
     var d = path.dirname(f)
-    mkdirp(d, 0755, function (er) {
+    mkdirp(d, '0755', function (er) {
       if (er) {
         t.fail(er)
         return t.bailout()
@@ -53,7 +53,7 @@ files.forEach(function (f) {
 if (process.platform !== "win32") {
   tap.test("symlinky", function (t) {
     var d = path.dirname(symlinkTo)
-    mkdirp(d, 0755, function (er) {
+    mkdirp(d, '0755', function (er) {
       if (er)
         throw er
       fs.symlinkSync(symlinkFrom, symlinkTo, "dir")
