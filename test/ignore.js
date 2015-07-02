@@ -44,6 +44,8 @@ cases.forEach(function (c, i) {
   if (cwd)
     name += ' cwd=' + cwd
 
+  var matches = []
+
   var opt = { ignore: ignore }
   if (cwd)
     opt.cwd = cwd
@@ -53,9 +55,12 @@ cases.forEach(function (c, i) {
       if (er)
         throw er
       t.same(res.sort(), expect, 'async')
+      t.same(matches.sort(), expect, 'match events')
       res = glob.sync(pattern, opt)
       t.same(res.sort(), expect, 'sync')
       t.end()
+    }).on('match', function (p) {
+      matches.push(p)
     })
   })
 })
