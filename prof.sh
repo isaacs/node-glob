@@ -14,6 +14,6 @@ node --prof -e '
   })
   //console.log(glob.sync("**/*.txt").length);
   ' "$wd"
-mv v8.log "$wd"
+mv *v8.log "$wd/v8.log"
 cd "$wd"
 node-tick-processor > profile.txt

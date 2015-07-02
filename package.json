@@ -36,7 +36,7 @@
     "test-regen": "npm run profclean && TEST_REGEN=1 node test/00-setup.js",
     "bench": "bash benchmark.sh",
     "prof": "bash prof.sh && cat profile.txt",
-    "benchclean": "bash benchclean.sh"
+    "benchclean": "node benchclean.js"
   },
   "license": "ISC"
 }
