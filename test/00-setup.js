@@ -107,12 +107,14 @@ var fs = require("fs")
 
 globs.forEach(function (pattern) {
   tap.test("generate fixture " + pattern, function (t) {
-    var cmd = "shopt -s globstar && " +
-              "shopt -s extglob && " +
-              "shopt -s nullglob && " +
-              // "shopt >&2; " +
-              "eval \'for i in " + pattern + "; do echo $i; done\'"
-    var cp = spawn("bash", ["-c", cmd], { cwd: fixtureDir })
+    var opts = [
+      "-O", "globstar",
+      "-O", "extglob",
+      "-O", "nullglob",
+      "-c",
+      "for i in " + pattern + "; do echo $i; done"
+    ]
+    var cp = spawn("bash", opts, { cwd: fixtureDir })
     var out = []
     cp.stdout.on("data", function (c) {
       out.push(c)
