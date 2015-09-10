@@ -37,7 +37,7 @@ The following characters have special magic meaning when used in a
 path portion:
 
 * `*` Matches 0 or more characters in a single path portion
-* `?` Matches 1 character
+* `?` Matches 0 or 1 character
 * `[...]` Matches a range of characters, similar to a RegExp range.
   If the first character of the range is `!` or `^` then it matches
   any character not in the range.
