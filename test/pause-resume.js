@@ -1,14 +1,13 @@
 require("./global-leakage.js")
 // show that no match events happen while paused.
 var tap = require("tap")
-, child_process = require("child_process")
+var child_process = require("child_process")
 // just some gnarly pattern with lots of matches
-, pattern = "a/!(symlink)/**"
-, bashResults = require("./bash-results.json")
-, patterns = Object.keys(bashResults)
-, glob = require("../")
-, Glob = glob.Glob
-, path = require("path")
+var pattern = "a/!(symlink)/**"
+var bashResults = require("./bash-results.json")
+var glob = require("../")
+var Glob = glob.Glob
+var path = require("path")
 
 process.chdir(__dirname + '/fixtures')
 
@@ -36,9 +35,9 @@ function cleanResults (m) {
 var globResults = []
 tap.test("use a Glob object, and pause/resume it", function (t) {
   var g = new Glob(pattern)
-  , paused = false
-  , res = []
-  , expect = bashResults[pattern]
+  var paused = false
+  var res = []
+  var expect = bashResults[pattern]
 
   g.on("match", function (m) {
     t.notOk(g.paused, "must not be paused")

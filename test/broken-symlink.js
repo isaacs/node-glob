@@ -3,6 +3,9 @@ var test = require('tap').test
 var glob = require('../')
 var mkdirp = require('mkdirp')
 
+if (process.platform === 'win32')
+  return require('tap').plan(0, 'skip on windows')
+
 process.chdir(__dirname)
 
 var link = 'a/broken-link/link'

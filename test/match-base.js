@@ -8,9 +8,10 @@ var expect = [
   'a',
   'a/abcdef',
   'a/abcfed',
-  'a/symlink/a',
-  'a/symlink/a/b/c/a'
 ]
+
+if (process.platform !== 'win32')
+  expect.push('a/symlink/a', 'a/symlink/a/b/c/a')
 
 t.test('chdir', function (t) {
   var origCwd = process.cwd()

@@ -54,6 +54,13 @@ cases.forEach(function (c, i) {
     glob(pattern, opt, function (er, res) {
       if (er)
         throw er
+
+      if (process.platform === 'win32') {
+        expect = expect.filter(function (f) {
+          return !/\bsymlink\b/.test(f)
+        })
+      }
+
       t.same(res.sort(), expect, 'async')
       t.same(matches.sort(), expect, 'match events')
       res = glob.sync(pattern, opt)

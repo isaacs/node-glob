@@ -26,8 +26,10 @@ test('mark with cwd', function (t) {
       'bc/e/',
       'c/d/',
       'cb/e/',
-      'symlink/a/'
     ].sort()
+
+    if (process.platform !== 'win32')
+      expect.push('symlink/a/')
 
     t.same(res.sort(), expect)
     t.same(glob.sync(pattern, opt).sort(), expect)

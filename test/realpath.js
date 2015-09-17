@@ -6,6 +6,9 @@ var path = require('path')
 var fixtureDir = path.resolve(__dirname, 'fixtures')
 process.chdir(fixtureDir)
 
+if (process.platform === 'win32')
+  return require('tap').plan(0, 'skip on windows')
+
 // options, results
 // realpath:true set on each option
 var cases = [

@@ -36,7 +36,7 @@ globs.forEach(function (pattern) {
   // anything regarding the symlink thing will fail on windows, so just skip it
   if (process.platform === "win32" &&
       expect.some(function (m) {
-        return /\/symlink\//.test(m)
+        return /\bsymlink\b/.test(m)
       }))
     return
 
