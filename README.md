@@ -164,8 +164,8 @@ be immediately available on the `g.found` member.
   values:
   * `false` - Path does not exist
   * `true` - Path exists
-  * `'DIR'` - Path exists, and is not a directory
-  * `'FILE'` - Path exists, and is a directory
+  * `'FILE'` - Path exists, and is not a directory
+  * `'DIR'` - Path exists, and is a directory
   * `[file, entries, ...]` - Path exists, is a directory, and the
     array value is the results of `fs.readdir`
 * `statCache` Cache of `fs.stat` results, to prevent statting the same
