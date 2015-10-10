@@ -265,7 +265,7 @@ the filesystem.
   equivalent to `**/*.js`, matching all js files in all directories.
 * `nodir` Do not match directories, only files.  (Note: to match
   *only* directories, simply put a `/` at the end of the pattern.)
-* `ignore` Add a pattern or an array of patterns to exclude matches.
+* `ignore` Add a pattern or an array of glob patterns to exclude matches.
 * `follow` Follow symlinked directories when expanding `**` patterns.
   Note that this can result in a lot of duplicate references in the
   presence of cyclic links.
