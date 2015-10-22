@@ -13,6 +13,7 @@ var fixtureDir = path.resolve(__dirname, 'fixtures')
 
 var files =
 [ "a/.abcdef/x/y/z/a"
+, "a/.abcdef/x/y/z/b"
 , "a/abcdef/g/h"
 , "a/abcfed/g/h"
 , "a/b/c/d"
