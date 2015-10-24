@@ -77,10 +77,14 @@ test("mark, no / on pattern", function (t) {
                    'a/b/',
                    'a/bc/',
                    'a/c/',
-                   'a/cb/' ]
+                   'a/cb/',
+                   'a/x/',
+                   'a/z/' ]
 
     if (process.platform !== "win32")
       expect.push('a/symlink/')
+
+    expect = expect.sort()
 
     t.same(results, expect)
     t.same(glob.sync(pattern, opt), expect)
@@ -101,10 +105,15 @@ test("mark=false, no / on pattern", function (t) {
                    'a/b',
                    'a/bc',
                    'a/c',
-                   'a/cb' ]
+                   'a/cb',
+                   'a/x',
+                   'a/z' ]
 
     if (process.platform !== "win32")
       expect.push('a/symlink')
+
+    expect = expect.sort()
+
     t.same(results, expect)
     t.same(glob.sync(pattern, opt), expect)
     t.end()
@@ -124,9 +133,15 @@ test("mark=true, / on pattern", function (t) {
                     'a/b/',
                     'a/bc/',
                     'a/c/',
-                    'a/cb/' ]
+                    'a/cb/',
+                    'a/x/',
+                    'a/z/' ]
+
     if (process.platform !== "win32")
       expect.push('a/symlink/')
+
+    expect = expect.sort()
+
     t.same(results, expect)
     t.same(glob.sync(pattern, opt), expect)
     t.end()
@@ -146,9 +161,14 @@ test("mark=false, / on pattern", function (t) {
                    'a/b/',
                    'a/bc/',
                    'a/c/',
-                   'a/cb/' ]
+                   'a/cb/',
+                   'a/x/',
+                   'a/z/' ]
     if (process.platform !== "win32")
       expect.push('a/symlink/')
+
+    expect = expect.sort()
+
     t.same(results, expect)
     t.same(glob.sync(pattern, opt), expect)
     t.end()

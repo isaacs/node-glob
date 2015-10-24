@@ -55,7 +55,9 @@
     "a/symlink/a/b/c",
     "a/symlink/a/b/c/a",
     "a/symlink/a/b/c/a/b",
-    "a/symlink/a/b/c/a/b/c"
+    "a/symlink/a/b/c/a/b/c",
+    "a/x",
+    "a/z"
   ],
   "+(a|b|c)/a{/,bc*}/**": [
     "a/abcdef",
@@ -87,6 +89,8 @@
     "./a/c",
     "./a/cb",
     "./a/symlink",
+    "./a/x",
+    "./a/z",
     "/tmp/glob-test/asdf",
     "/tmp/glob-test/bar",
     "/tmp/glob-test/baz",
@@ -124,7 +128,9 @@
     "a/c/d/c/b",
     "a/cb",
     "a/cb/e",
-    "a/cb/e/f"
+    "a/cb/e/f",
+    "a/x",
+    "a/z"
   ],
   "a/symlink/a/**/*": [
     "a/symlink/a/b",

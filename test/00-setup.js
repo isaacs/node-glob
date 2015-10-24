@@ -19,6 +19,8 @@ var files =
 , "a/bc/e/f"
 , "a/c/d/c/b"
 , "a/cb/e/f"
+, "a/x/.y/b"
+, "a/z/.y/b"
 ]
 
 var symlinkTo = path.resolve(fixtureDir, "a/symlink/a/b/c")
