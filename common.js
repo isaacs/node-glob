@@ -36,15 +36,16 @@ function setupIgnores (self, options) {
   }
 }
 
+// ignore patterns are always in dot:true mode.
 function ignoreMap (pattern) {
   var gmatcher = null
   if (pattern.slice(-3) === '/**') {
     var gpattern = pattern.replace(/(\/\*\*)+$/, '')
-    gmatcher = new Minimatch(gpattern)
+    gmatcher = new Minimatch(gpattern, { dot: true })
   }
 
   return {
-    matcher: new Minimatch(pattern),
+    matcher: new Minimatch(pattern, { dot: true }),
     gmatcher: gmatcher
   }
 }
