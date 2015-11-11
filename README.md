@@ -118,7 +118,7 @@ options.
 * `options` {Object}
 * `cb` {Function}
   * `err` {Error | null}
-  * `matches` {Array<String>} filenames found matching the pattern
+  * `matches` {Array\<String\>} filenames found matching the pattern
 
 Perform an asynchronous glob search.
 
@@ -126,7 +126,7 @@ Perform an asynchronous glob search.
 
 * `pattern` {String} Pattern to be matched
 * `options` {Object}
-* return: {Array<String>} filenames found matching the pattern
+* return: {Array\<String\>} filenames found matching the pattern
 
 Perform a synchronous glob search.
 
@@ -148,7 +148,7 @@ immediately.
 * `options` {Object}
 * `cb` {Function} Called when an error occurs, or matches are found
   * `err` {Error | null}
-  * `matches` {Array<String>} filenames found matching the pattern
+  * `matches` {Array\<String\>} filenames found matching the pattern
 
 Note that if the `sync` flag is set in the options, then matches will
 be immediately available on the `g.found` member.
