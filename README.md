@@ -114,19 +114,19 @@ options.
 
 ## glob(pattern, [options], cb)
 
-* `pattern` {String} Pattern to be matched
-* `options` {Object}
-* `cb` {Function}
-  * `err` {Error | null}
-  * `matches` {Array<String>} filenames found matching the pattern
+* `pattern` `{String}` Pattern to be matched
+* `options` `{Object}`
+* `cb` `{Function}`
+  * `err` `{Error | null}`
+  * `matches` `{Array<String>}` filenames found matching the pattern
 
 Perform an asynchronous glob search.
 
 ## glob.sync(pattern, [options])
 
-* `pattern` {String} Pattern to be matched
-* `options` {Object}
-* return: {Array<String>} filenames found matching the pattern
+* `pattern` `{String}` Pattern to be matched
+* `options` `{Object}`
+* return: `{Array<String>}` filenames found matching the pattern
 
 Perform a synchronous glob search.
 
@@ -144,11 +144,11 @@ immediately.
 
 ### new glob.Glob(pattern, [options], [cb])
 
-* `pattern` {String} pattern to search for
-* `options` {Object}
-* `cb` {Function} Called when an error occurs, or matches are found
-  * `err` {Error | null}
-  * `matches` {Array<String>} filenames found matching the pattern
+* `pattern` `{String}` pattern to search for
+* `options` `{Object}`
+* `cb` `{Function}` Called when an error occurs, or matches are found
+  * `err` `{Error | null}`
+  * `matches` `{Array<String>}` filenames found matching the pattern
 
 Note that if the `sync` flag is set in the options, then matches will
 be immediately available on the `g.found` member.
