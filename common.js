@@ -106,31 +106,11 @@ function setopts (self, pattern, options) {
 
   // disable comments and negation unless the user explicitly
   // passes in false as the option.
-  options.nonegate = options.nonegate === false ? false : true
-  options.nocomment = options.nocomment === false ? false : true
-  deprecationWarning(options)
+  options.nonegate = true
+  options.nocomment = true
 
   self.minimatch = new Minimatch(pattern, options)
   self.options = self.minimatch.options
-}
-
-// TODO(isaacs): remove entirely in v6
-// exported to reset in tests
-exports.deprecationWarned
-function deprecationWarning(options) {
-  if (!options.nonegate || !options.nocomment) {
-    if (process.noDeprecation !== true && !exports.deprecationWarned) {
-      var msg = 'glob WARNING: comments and negation will be disabled in v6'
-      if (process.throwDeprecation)
-        throw new Error(msg)
-      else if (process.traceDeprecation)
-        console.trace(msg)
-      else
-        console.error(msg)
-
-      exports.deprecationWarned = true
-    }
-  }
 }
 
 function finish (self) {
