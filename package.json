@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "mkdirp": "0",
+    "path-win32": "^1.0.1",
     "rimraf": "^2.2.8",
     "tap": "^1.1.4",
     "tick": "0.0.6"

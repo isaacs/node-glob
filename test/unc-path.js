@@ -2,12 +2,8 @@ var test = require('tap').test;
 var glob = require('../');
 var fs = require('fs');
 var path = require('path');
-var skip = false
-if (/^v0\.(10|[0-9])\./.test(process.version)) {
-  skip = 'Does not work on Node < 0.12'
-}
 
-test('glob doesn\'t choke on UNC paths', { skip: skip }, function(t) {
+test('glob doesn\'t choke on UNC paths', function(t) {
   stubPlatform('win32', function(restorePlatform) {
     var readdir = fs.readdir;
 
@@ -62,14 +58,27 @@ function stubPlatform(platform, fn) {
       writable: false
     });
 
+
     path.sep = '\\';
-    path.resolve = path[platform].resolve;
-    path.join = path.win32.join;
-    path.normalize = path.win32.normalize;
+    path.resolve = pathForPlatform(platform).resolve;
+    path.join = pathForPlatform(platform).join;
+    path.normalize = pathForPlatform(platform).normalize;
 
     return fn(restore);
   } catch(e) {
     restore();
     throw e;
   }
+}
+
+function pathForPlatform(platform) {
+  var result = path[platform];
+  if (!result) {
+    if (platform === 'win32') {
+      return require('path-win32');
+    } else {
+      throw TypeError("Unknown Platform: " + platform);
+    }
+  }
+  return result;
 }
