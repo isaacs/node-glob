@@ -104,11 +104,6 @@ function setopts (self, pattern, options) {
 
   self.nomount = !!options.nomount
 
-  // disable comments and negation unless the user explicitly
-  // passes in false as the option.
-  options.nonegate = true
-  options.nocomment = true
-
   self.minimatch = new Minimatch(pattern, options)
   self.options = self.minimatch.options
 }
