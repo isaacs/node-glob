@@ -104,6 +104,11 @@ function setopts (self, pattern, options) {
 
   self.nomount = !!options.nomount
 
+  // disable comments and negation in Minimatch.
+  // Note that they are not supported in Glob itself anyway.
+  options.nonegate = true
+  options.nocomment = true
+
   self.minimatch = new Minimatch(pattern, options)
   self.options = self.minimatch.options
 }
