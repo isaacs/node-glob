@@ -45,9 +45,7 @@ var minimatch = require('minimatch')
 var Minimatch = minimatch.Minimatch
 var inherits = require('inherits')
 var EE = require('events').EventEmitter
-var path = require('path')
 var assert = require('assert')
-var isAbsolute = require('path-is-absolute')
 var globSync = require('./sync.js')
 var common = require('./common.js')
 var alphasort = common.alphasort
@@ -58,7 +56,7 @@ var inflight = require('inflight')
 var util = require('util')
 var childrenIgnored = common.childrenIgnored
 var isIgnored = common.isIgnored
-
+var path = require('path')
 var once = require('once')
 
 function glob (pattern, options, cb) {
@@ -320,8 +318,8 @@ Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
   var read
   if (prefix === null)
     read = '.'
-  else if (isAbsolute(prefix) || isAbsolute(pattern.join('/'))) {
-    if (!prefix || !isAbsolute(prefix))
+  else if (this.isAbsolute(prefix) || this.isAbsolute(pattern.join('/'))) {
+    if (!prefix || !this.isAbsolute(prefix))
       prefix = '/' + prefix
     read = prefix
   } else
@@ -651,18 +649,18 @@ Glob.prototype._processSimple2 = function (prefix, index, er, exists, cb) {
   if (!exists)
     return cb()
 
-  if (prefix && isAbsolute(prefix) && !this.nomount) {
+  if (prefix && this.isAbsolute(prefix) && !this.nomount) {
     var trail = /[\/\\]$/.test(prefix)
     if (prefix.charAt(0) === '/') {
       prefix = path.join(this.root, prefix)
     } else {
-      prefix = path.resolve(this.root, prefix)
+      prefix = this.resolve(this.root, prefix)
       if (trail)
         prefix += '/'
     }
   }
 
-  if (process.platform === 'win32')
+  if (this.platform === 'win32')
     prefix = prefix.replace(/\\/g, '/')
 
   // Mark this as a match

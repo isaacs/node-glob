@@ -8,7 +8,6 @@ var Glob = require('./glob.js').Glob
 var util = require('util')
 var path = require('path')
 var assert = require('assert')
-var isAbsolute = require('path-is-absolute')
 var common = require('./common.js')
 var alphasort = common.alphasort
 var alphasorti = common.alphasorti
@@ -110,8 +109,8 @@ GlobSync.prototype._process = function (pattern, index, inGlobStar) {
   var read
   if (prefix === null)
     read = '.'
-  else if (isAbsolute(prefix) || isAbsolute(pattern.join('/'))) {
-    if (!prefix || !isAbsolute(prefix))
+  else if (this.isAbsolute(prefix) || this.isAbsolute(pattern.join('/'))) {
+    if (!prefix || !this.isAbsolute(prefix))
       prefix = '/' + prefix
     read = prefix
   } else
@@ -376,7 +375,7 @@ GlobSync.prototype._processSimple = function (prefix, index) {
   if (!exists)
     return
 
-  if (prefix && isAbsolute(prefix) && !this.nomount) {
+  if (prefix && this.isAbsolute(prefix) && !this.nomount) {
     var trail = /[\/\\]$/.test(prefix)
     if (prefix.charAt(0) === '/') {
       prefix = path.join(this.root, prefix)
