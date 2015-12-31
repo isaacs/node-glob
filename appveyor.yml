@@ -1,33 +1,20 @@
-# http://www.appveyor.com/docs/appveyor-yml
-
-# Fix line endings in Windows. (runs before repo cloning)
-init:
-  - git config --global core.autocrlf true
-
-# Test against these versions of Node.js.
 environment:
   matrix:
-    - nodejs_version: "0.10"
-    - nodejs_version: "0.12"
-    - nodejs_version: "4.2"
-    - nodejs_version: "5"
-
-# Install scripts. (runs after repo cloning)
+    - nodejs_version: '5'
+    - nodejs_version: '4'
+    - nodejs_version: '0.12'
+    - nodejs_version: '0.10'
 install:
-  - git rev-parse HEAD
-  - md C:\nc
-  - npm config set cache C:\nc
-  - npm version
+  - ps: Install-Product node :nodejs_version
+  - set CI=true
+  - npm -g install npm@latest
+  - set PATH=%APPDATA%\npm;%PATH%
   - npm install
-
-# Post-install test scripts.
-test_script:
-  # Output useful info for debugging.
-  - npm version
-  - cmd: npm run test
-
-# Don't actually build.
+matrix:
+  fast_finish: true
 build: off
-
-# Set build version format here instead of in the admin panel.
-version: "{build}"
+version: '{build}'
+shallow_clone: true
+clone_depth: 1
+test_script:
+  - npm test
