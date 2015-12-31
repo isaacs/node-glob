@@ -13,7 +13,8 @@ var allowedDirs = [
 ]
 
 fs.readdirSync = function (p) {
-  if (allowedDirs.indexOf(path.resolve(p)) === -1) {
+  if (allowedDirs.indexOf(path.resolve(p)) === -1 &&
+      !p.match(/[\\\/]node_modules[\\\/]/)) {
     sawSyncENOTSUP = true
     var er = new Error('ENOTSUP: Operation not supported')
     er.path = path
@@ -24,7 +25,8 @@ fs.readdirSync = function (p) {
 }
 
 fs.readdir = function (p, cb) {
-  if (allowedDirs.indexOf(path.resolve(p)) === -1) {
+  if (allowedDirs.indexOf(path.resolve(p)) === -1 &&
+      !p.match(/[\\\/]node_modules[\\\/]/)) {
     setTimeout(function () {
       sawAsyncENOTSUP = true
       er = new Error('ENOTSUP: Operation not supported')
