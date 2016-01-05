@@ -1,15 +1,29 @@
 // basic test
 // show that it does the same thing by default as the shell.
+require("./global-leakage.js")
 var tap = require("tap")
-, child_process = require("child_process")
-, bashResults = require("./bash-results.json")
-, globs = Object.keys(bashResults)
-, glob = require("../")
-, path = require("path")
+var child_process = require("child_process")
+var bashResults = require("./bash-results.json")
+var globs = Object.keys(bashResults)
+var glob = require("../")
+var path = require("path")
+var isAbsolute = require("path-is-absolute")
 
 // run from the root of the project
 // this is usually where you're at anyway, but be sure.
-process.chdir(path.resolve(__dirname, ".."))
+var root = path.dirname(__dirname)
+var fixtures = path.resolve(__dirname, 'fixtures')
+process.chdir(fixtures)
+
+function cacheCheck(g, t) {
+  // verify that path cache keys are all absolute
+  var caches = [ 'cache', 'statCache', 'symlinks' ]
+  caches.forEach(function (c) {
+    Object.keys(g[c]).forEach(function (p) {
+      t.ok(isAbsolute(p), p + ' should be absolute')
+    })
+  })
+}
 
 function alphasort (a, b) {
   a = a.toLowerCase()
@@ -22,19 +36,21 @@ globs.forEach(function (pattern) {
   // anything regarding the symlink thing will fail on windows, so just skip it
   if (process.platform === "win32" &&
       expect.some(function (m) {
-        return /\/symlink\//.test(m)
+        return /\bsymlink\b/.test(m)
       }))
     return
 
   tap.test(pattern, function (t) {
-    glob(pattern, function (er, matches) {
+    var g = glob(pattern, function (er, matches) {
       if (er)
         throw er
 
       // sort and unmark, just to match the shell results
       matches = cleanResults(matches)
-
       t.deepEqual(matches, expect, pattern)
+
+      // verify that path cache keys are all absolute
+      cacheCheck(g, t)
       t.end()
     })
   })
@@ -42,7 +58,7 @@ globs.forEach(function (pattern) {
   tap.test(pattern + " sync", function (t) {
     var matches = cleanResults(glob.sync(pattern))
 
-    t.deepEqual(matches, expect, "should match shell")
+    t.deepEqual(matches, expect, "should match shell (sync)")
     t.end()
   })
 })
@@ -55,9 +71,9 @@ function cleanResults (m) {
   }).sort(alphasort).reduce(function (set, f) {
     if (f !== set[set.length - 1]) set.push(f)
     return set
-  }, []).sort(alphasort).map(function (f) {
+  }, []).map(function (f) {
     // de-windows
     return (process.platform !== 'win32') ? f
            : f.replace(/^[a-zA-Z]:[\/\\]+/, '/').replace(/[\\\/]+/g, '/')
-  })
+  }).sort(alphasort)
 }

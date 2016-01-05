@@ -1,23 +1,34 @@
+require("./global-leakage.js")
 var t = require("tap")
 
-var origCwd = process.cwd()
-process.chdir(__dirname)
+process.chdir(__dirname + '/fixtures')
 
 var glob = require('../')
 var path = require('path')
+var isAbsolute = require('path-is-absolute')
+
+function cacheCheck(g, t) {
+  // verify that path cache keys are all absolute
+  var caches = [ 'cache', 'statCache', 'symlinks' ]
+  caches.forEach(function (c) {
+    Object.keys(g[c]).forEach(function (p) {
+      t.ok(isAbsolute(p), p + ' should be absolute')
+    })
+  })
+}
 
 t.test('.', function (t) {
-  glob('/b*/**', { globDebug: true, root: '.' }, function (er, matches) {
+  var g = glob('/b*/**', { root: '.' }, function (er, matches) {
     t.ifError(er)
     t.like(matches, [])
+    cacheCheck(g, t)
     t.end()
   })
 })
 
 
 t.test('a', function (t) {
-  console.error("root=" + path.resolve('a'))
-  glob('/b*/**', { globDebug: true, root: path.resolve('a') }, function (er, matches) {
+  var g = glob('/b*/**', { root: path.resolve('a') }, function (er, matches) {
     t.ifError(er)
     var wanted = [
         '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f'
@@ -26,21 +37,18 @@ t.test('a', function (t) {
       })
 
     t.like(matches, wanted)
+    cacheCheck(g, t)
     t.end()
   })
 })
 
 t.test('root=a, cwd=a/b', function (t) {
-  glob('/b*/**', { globDebug: true, root: 'a', cwd: path.resolve('a/b') }, function (er, matches) {
+  var g = glob('/b*/**', { root: 'a', cwd: path.resolve('a/b') }, function (er, matches) {
     t.ifError(er)
     t.like(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ].map(function (m) {
       return path.join(path.resolve('a'), m).replace(/\\/g, '/')
     }))
+    cacheCheck(g, t)
     t.end()
   })
-})
-
-t.test('cd -', function (t) {
-  process.chdir(origCwd)
-  t.end()
 })

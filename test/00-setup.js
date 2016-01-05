@@ -1,12 +1,15 @@
 // just a little pre-run script to set up the fixtures.
 // zz-finish cleans it up
 
+require("./global-leakage.js")
 var mkdirp = require("mkdirp")
 var path = require("path")
 var i = 0
 var tap = require("tap")
 var fs = require("fs")
 var rimraf = require("rimraf")
+
+var fixtureDir = path.resolve(__dirname, 'fixtures')
 
 var files =
 [ "a/.abcdef/x/y/z/a"
@@ -16,26 +19,27 @@ var files =
 , "a/bc/e/f"
 , "a/c/d/c/b"
 , "a/cb/e/f"
+, "a/x/.y/b"
+, "a/z/.y/b"
 ]
 
-var symlinkTo = path.resolve(__dirname, "a/symlink/a/b/c")
+var symlinkTo = path.resolve(fixtureDir, "a/symlink/a/b/c")
 var symlinkFrom = "../.."
 
 files = files.map(function (f) {
-  return path.resolve(__dirname, f)
+  return path.resolve(fixtureDir, f)
 })
 
 tap.test("remove fixtures", function (t) {
-  rimraf(path.resolve(__dirname, "a"), function (er) {
-    t.ifError(er, "remove fixtures")
-    t.end()
-  })
+  rimraf.sync(fixtureDir)
+  t.end()
 })
 
 files.forEach(function (f) {
   tap.test(f, function (t) {
+    f = path.resolve(fixtureDir, f)
     var d = path.dirname(f)
-    mkdirp(d, 0755, function (er) {
+    mkdirp(d, '0755', function (er) {
       if (er) {
         t.fail(er)
         return t.bailout()
@@ -51,13 +55,11 @@ files.forEach(function (f) {
 if (process.platform !== "win32") {
   tap.test("symlinky", function (t) {
     var d = path.dirname(symlinkTo)
-    console.error("mkdirp", d)
-    mkdirp(d, 0755, function (er) {
-      t.ifError(er)
-      fs.symlink(symlinkFrom, symlinkTo, "dir", function (er) {
-        t.ifError(er, "make symlink")
-        t.end()
-      })
+    mkdirp(d, '0755', function (er) {
+      if (er)
+        throw er
+      fs.symlinkSync(symlinkFrom, symlinkTo, "dir")
+      t.end()
     })
   })
 }
@@ -74,7 +76,6 @@ if (process.platform !== "win32") {
   })
 })
 
-
 // generate the bash pattern test-fixtures if possible
 if (process.platform === "win32" || !process.env.TEST_REGEN) {
   console.error("Windows, or TEST_REGEN unset.  Using cached fixtures.")
@@ -85,34 +86,37 @@ var spawn = require("child_process").spawn;
 var globs =
   // put more patterns here.
   // anything that would be directly in / should be in /tmp/glob-test
-  ["test/a/*/+(c|g)/./d"
-  ,"test/a/**/[cg]/../[cg]"
-  ,"test/a/{b,c,d,e,f}/**/g"
-  ,"test/a/b/**"
-  ,"test/**/g"
-  ,"test/a/abc{fed,def}/g/h"
-  ,"test/a/abc{fed/g,def}/**/"
-  ,"test/a/abc{fed/g,def}/**///**/"
-  ,"test/**/a/**/"
-  ,"test/+(a|b|c)/a{/,bc*}/**"
-  ,"test/*/*/*/f"
-  ,"test/**/f"
-  ,"test/a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/**/b/c/**"
+  ["a/*/+(c|g)/./d"
+  ,"a/**/[cg]/../[cg]"
+  ,"a/{b,c,d,e,f}/**/g"
+  ,"a/b/**"
+  ,"**/g"
+  ,"a/abc{fed,def}/g/h"
+  ,"a/abc{fed/g,def}/**/"
+  ,"a/abc{fed/g,def}/**///**/"
+  ,"**/a/**/"
+  ,"+(a|b|c)/a{/,bc*}/**"
+  ,"*/*/*/f"
+  ,"**/f"
+  ,"a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/**/b/c/**"
   ,"{./*/*,/tmp/glob-test/*}"
   ,"{/tmp/glob-test/*,*}" // evil owl face!  how you taunt me!
-  ,"test/a/!(symlink)/**"
+  ,"a/!(symlink)/**"
+  ,"a/symlink/a/**/*"
   ]
 var bashOutput = {}
 var fs = require("fs")
 
 globs.forEach(function (pattern) {
   tap.test("generate fixture " + pattern, function (t) {
-    var cmd = "shopt -s globstar && " +
-              "shopt -s extglob && " +
-              "shopt -s nullglob && " +
-              // "shopt >&2; " +
-              "eval \'for i in " + pattern + "; do echo $i; done\'"
-    var cp = spawn("bash", ["-c", cmd], { cwd: path.dirname(__dirname) })
+    var opts = [
+      "-O", "globstar",
+      "-O", "extglob",
+      "-O", "nullglob",
+      "-c",
+      "for i in " + pattern + "; do echo $i; done"
+    ]
+    var cp = spawn("bash", opts, { cwd: fixtureDir })
     var out = []
     cp.stdout.on("data", function (c) {
       out.push(c)
