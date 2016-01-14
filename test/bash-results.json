@@ -132,9 +132,9 @@
     "a/x",
     "a/z"
   ],
-  "a/symlink/a/**/*": [
+  "a/symlink/a/**": [
+    "a/symlink/a",
     "a/symlink/a/b",
-    "a/symlink/a/b/c",
-    "a/symlink/a/b/c/a"
+    "a/symlink/a/b/c"
   ]
 }
