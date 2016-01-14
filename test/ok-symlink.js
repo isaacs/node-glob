@@ -23,9 +23,9 @@ test('set up working symlink', function (t) {
   fs.symlinkSync('../working-target', 'a/working-link/link')
   t.end()
 })
-/*
+
 test('async follow test', function (t) {
-  var pattern = 'a/working-* /** /*.js';
+  var pattern = 'a/working-*/**/*.js';
   var expected = [
     'a/working-target/file.js',
     'a/working-link/link/file.js',
@@ -48,7 +48,7 @@ test('async follow test', function (t) {
 })
 
 test('async nofollow test', function (t) {
-  var pattern = 'a/working-* /** /*.js';
+  var pattern = 'a/working-*/**/*.js';
   var expected = [
     'a/working-target/file.js',
   ];
@@ -70,7 +70,7 @@ test('async nofollow test', function (t) {
 })
 
 test('sync follow test', function (t) {
-  var pattern = 'a/working-* /** /*.js';
+  var pattern = 'a/working-*/**/*.js';
   var expected = [
     'a/working-target/file.js',
     'a/working-link/link/file.js',
@@ -86,7 +86,7 @@ test('sync follow test', function (t) {
   });
   t.end();
 })
-*/
+
 test('sync nofollow test', function (t) {
   var pattern = 'a/working-*/**/*.js';
   var expected = [

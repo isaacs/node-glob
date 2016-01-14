@@ -490,7 +490,7 @@ Glob.prototype._readdirInGlobStar = function (abs, cb) {
       self.cache[abs] = 'FILE'
       cb()
     } else
-      if (!isSym || this.follow ) {
+      if (!isSym || this.follow) {
         self._readdir(abs, false, cb)
       } else {
         cb()
