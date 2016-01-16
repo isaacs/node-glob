@@ -58,7 +58,7 @@ test('catch fulfilled promise - catch/then/then', function(t) {
 
 test('rejected promise - catch/then', function(t) {
   
-  expectError(t)
+  expectError()
 
   glob('*')
   .catch(function(err) {
@@ -74,7 +74,7 @@ test('rejected promise - catch/then', function(t) {
 
 test('rejected promise - then/catch/then', function(t) {
 
-  expectError(t)
+  expectError()
 
   glob('*')
   .then(function(res) {
