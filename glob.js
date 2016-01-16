@@ -283,6 +283,57 @@ Glob.prototype.resume = function () {
   }
 }
 
+if (typeof Promise === 'function') {
+
+  Glob.prototype.then = function (onFulfilled, onRejected) {
+    var self = this
+    return new Promise(function (resolve, reject) {
+      self.on('end', function(ret) {
+        try {
+          ret = onFulfilled(ret)
+          resolve(ret)
+        } catch (err) {
+          reject(err)
+        }
+      })
+      self.on('error', function(err) {
+        if (typeof onRejected === 'function') {
+          try {
+            var ret = onRejected(err)
+            resolve(ret)
+          } catch (err) {
+            reject(err)
+          }
+        } else {
+          reject(err)
+        }
+      })
+    })
+  }
+
+  Glob.prototype.catch = function (onRejected) {
+    var self = this
+    return new Promise(function (resolve, reject) {
+      self.on('end', function(ret) {
+        try {
+          resolve(ret)
+        } catch (err) {
+          reject(err)
+        }
+      })
+      self.on('error', function(err) {
+        try {
+          var ret = onRejected(err)
+          resolve(ret)
+        } catch (err) {
+          reject(err)
+        }
+      })
+    })
+  }
+
+}
+
 Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
   assert(this instanceof Glob)
   assert(typeof cb === 'function')
