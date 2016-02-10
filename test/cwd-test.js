@@ -5,6 +5,7 @@ var origCwd = process.cwd()
 process.chdir(__dirname + '/fixtures')
 var path = require('path')
 var isAbsolute = require('path-is-absolute')
+var glob = require('../')
 
 function cacheCheck(g, t) {
   // verify that path cache keys are all absolute
@@ -17,7 +18,6 @@ function cacheCheck(g, t) {
 }
 
 tap.test("changing cwd and searching for **/d", function (t) {
-  var glob = require('../')
   t.test('.', function (t) {
     var g = glob('**/d', function (er, matches) {
       t.ifError(er)
@@ -63,10 +63,28 @@ tap.test("changing cwd and searching for **/d", function (t) {
     })
   })
 
-  t.test('cd -', function (t) {
-    process.chdir(origCwd)
+  t.end()
+})
+
+tap.test('non-dir cwd should raise error', function (t) {
+  var notdir = 'a/b/c/d'
+  var abs = path.resolve(notdir)
+  var expect = new Error('ENOTDIR invalid cwd ' + abs)
+  expect.code = 'ENOTDIR'
+  expect.path = notdir
+  expect.stack = undefined
+  var msg = 'raise error when cwd is not a dir'
+
+  t.throws(function () {
+    glob.sync('*', { cwd: notdir })
+  }, expect)
+  glob('*', { cwd: notdir }, function (er, results) {
+    t.match(er, expect)
     t.end()
   })
+})
 
+tap.test('cd -', function (t) {
+  process.chdir(origCwd)
   t.end()
 })
