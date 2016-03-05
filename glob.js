@@ -162,14 +162,23 @@ function Glob (pattern, options, cb) {
   if (n === 0)
     return done()
 
+  var sync = true
   for (var i = 0; i < n; i ++) {
     this._process(this.minimatch.set[i], i, false, done)
   }
+  sync = false
 
   function done () {
     --self._processing
-    if (self._processing <= 0)
-      self._finish()
+    if (self._processing <= 0) {
+      if (sync) {
+        process.nextTick(function () {
+          self._finish()
+        })
+      } else {
+        self._finish()
+      }
+    }
   }
 }
 

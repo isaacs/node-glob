@@ -80,3 +80,32 @@ cases.forEach(function (c, i) {
     })
   })
 })
+
+test('race condition', function (t) {
+  process.chdir(__dirname)
+  var pattern = 'fixtures/*'
+  ;[true, false].forEach(function (dot) {
+    ;['fixtures/**', null].forEach(function (ignore) {
+      ;[false, true].forEach(function (nonull) {
+        ;[false, process.cwd(), '.'].forEach(function (cwd) {
+          var opt = {
+            dot: dot,
+            ignore: ignore,
+            nonull: nonull,
+          }
+          if (cwd)
+            opt.cwd = cwd
+          var expect = ignore ? [] : [ 'fixtures/a' ]
+          t.test(JSON.stringify(opt), function (t) {
+            t.plan(2)
+            t.same(glob.sync(pattern, opt), expect)
+            glob(pattern, opt).on('end', function (res) {
+              t.same(res, expect)
+            })
+          })
+        })
+      })
+    })
+  })
+  t.end()
+})
