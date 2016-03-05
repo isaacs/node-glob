@@ -79,14 +79,16 @@ test('nocase, nomagic', function(t) {
                '/tmp/a' ]
   if(process.platform.match(/^win/)) {
     want = want.map(function(p) {
-      return 'C:' + p
+      return 'c:' + p
     })
   }
   glob('/tmp/a', { nocase: true }, function(er, res) {
     if (er)
       throw er
     if (process.platform.match(/^win/))
-      res = res.map(function (r) { return r.replace(/\\/g, '/') })
+      res = res.map(function (r) {
+        return r.replace(/\\/g, '/').replace(/^C:/, 'c:')
+      })
     t.same(res.sort(), want)
     if (--n === 0) t.end()
   })
@@ -94,7 +96,9 @@ test('nocase, nomagic', function(t) {
     if (er)
       throw er
     if (process.platform.match(/^win/))
-      res = res.map(function (r) { return r.replace(/\\/g, '/') })
+      res = res.map(function (r) {
+        return r.replace(/\\/g, '/').replace(/^C:/, 'c:')
+      })
     t.same(res.sort(), want)
     if (--n === 0) t.end()
   })
@@ -112,7 +116,7 @@ test('nocase, with some magic', function(t) {
                '/tmp/a' ]
   if(process.platform.match(/^win/)) {
     want = want.map(function(p) {
-      return 'C:' + p
+      return 'c:' + p
     })
   }
 
