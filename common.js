@@ -153,7 +153,11 @@ function finish (self) {
     }
     if (self.nodir) {
       all = all.filter(function (e) {
-        return !(/\/$/.test(e))
+        var notDir = !(/\/$/.test(e))
+        var c = self.cache[e]
+        if (notDir && c)
+          notDir = c !== 'DIR' && !Array.isArray(c)
+        return notDir
       })
     }
   }
@@ -192,7 +196,7 @@ function mark (self, p) {
 // lotta situps...
 function makeAbs (self, f) {
   var abs = f
-  if (f.charAt(0) === '/') {
+  if (f.charAt(0) === '/' && f.indexOf(self.root) !== 0) {
     abs = path.join(self.root, f)
   } else if (isAbsolute(f) || f === '') {
     abs = f
@@ -201,6 +205,7 @@ function makeAbs (self, f) {
   } else {
     abs = path.resolve(f)
   }
+
   return abs
 }
 
