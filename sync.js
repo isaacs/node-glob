@@ -307,7 +307,7 @@ GlobSync.prototype._readdirError = function (f, er) {
     case 'ENOTDIR': // totally normal. means it *does* exist.
       var abs = this._makeAbs(f)
       this.cache[abs] = 'FILE'
-      if (abs === this._makeAbs(this.cwd)) {
+      if (abs === this.cwdAbs) {
         var error = new Error(er.code + ' invalid cwd ' + this.cwd)
         error.path = this.cwd
         error.code = er.code

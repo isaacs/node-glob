@@ -102,6 +102,7 @@ function setopts (self, pattern, options) {
   if (process.platform === "win32")
     self.root = self.root.replace(/\\/g, "/")
 
+  self.cwdAbs = makeAbs(self, self.cwd)
   self.nomount = !!options.nomount
 
   // disable comments and negation in Minimatch.
