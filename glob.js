@@ -580,10 +580,11 @@ Glob.prototype._readdirError = function (f, er, cb) {
   switch (er.code) {
     case 'ENOTSUP': // https://github.com/isaacs/node-glob/issues/205
     case 'ENOTDIR': // totally normal. means it *does* exist.
-      this.cache[this._makeAbs(f)] = 'FILE'
-      if (f === this.cwd) {
-        var error = new Error(er.code + ' invalid cwd ' + f)
-        error.path = f
+      var abs = this._makeAbs(f)
+      this.cache[abs] = 'FILE'
+      if (abs === this._makeAbs(this.cwd)) {
+        var error = new Error(er.code + ' invalid cwd ' + this.cwd)
+        error.path = this.cwd
         error.code = er.code
         this.emit('error', error)
         this.abort()

@@ -154,7 +154,7 @@ function finish (self) {
     if (self.nodir) {
       all = all.filter(function (e) {
         var notDir = !(/\/$/.test(e))
-        var c = self.cache[e]
+        var c = self.cache[e] || self.cache[makeAbs(self, e)]
         if (notDir && c)
           notDir = c !== 'DIR' && !Array.isArray(c)
         return notDir
@@ -205,6 +205,9 @@ function makeAbs (self, f) {
   } else {
     abs = path.resolve(f)
   }
+
+  if (process.platform === 'win32')
+    abs = abs.replace(/\\/g, '/')
 
   return abs
 }
