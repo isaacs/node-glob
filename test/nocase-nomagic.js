@@ -3,6 +3,12 @@ var fs = require('fs')
 var test = require('tap').test;
 var glob = require('../');
 
+var cwd = process.cwd()
+var drive = 'c'
+if (/^[a-zA-Z]:[\\\/]/.test(cwd)) {
+  drive = cwd.charAt(0).toLowerCase()
+}
+
 test('mock fs', function(t) {
   var stat = fs.stat
   var statSync = fs.statSync
@@ -12,10 +18,10 @@ test('mock fs', function(t) {
   function fakeStat(path) {
     var ret
     switch (path.toLowerCase().replace(/\\/g, '/')) {
-      case '/tmp': case '/tmp/': case 'c:\\tmp': case 'c:\\tmp\\':
+      case '/tmp': case '/tmp/': case drive+':\\tmp': case drive+':\\tmp\\':
         ret = { isDirectory: function() { return true } }
         break
-      case '/tmp/a': case 'c:/tmp/a':
+      case '/tmp/a': case drive+':/tmp/a':
         ret = { isDirectory: function() { return false } }
         break
     }
@@ -40,10 +46,10 @@ test('mock fs', function(t) {
   function fakeReaddir(path) {
     var ret
     switch (path.toLowerCase().replace(/\\/g, '/')) {
-      case '/tmp': case '/tmp/': case 'c:/tmp': case 'c:/tmp/':
+      case '/tmp': case '/tmp/': case drive+':/tmp': case drive+':/tmp/':
         ret = [ 'a', 'A' ]
         break
-      case '/': case 'c:/':
+      case '/': case drive+':/':
         ret = ['tmp', 'tMp', 'tMP', 'TMP']
     }
     return ret
@@ -79,7 +85,7 @@ test('nocase, nomagic', function(t) {
                '/tmp/a' ]
   if(process.platform.match(/^win/)) {
     want = want.map(function(p) {
-      return 'c:' + p
+      return drive+':' + p
     })
   }
   glob('/tmp/a', { nocase: true }, function(er, res) {
@@ -87,7 +93,7 @@ test('nocase, nomagic', function(t) {
       throw er
     if (process.platform.match(/^win/))
       res = res.map(function (r) {
-        return r.replace(/\\/g, '/').replace(/^C:/, 'c:')
+        return r.replace(/\\/g, '/').replace(new RegExp('^' + drive + ':'), drive+':')
       })
     t.same(res.sort(), want)
     if (--n === 0) t.end()
@@ -97,7 +103,7 @@ test('nocase, nomagic', function(t) {
       throw er
     if (process.platform.match(/^win/))
       res = res.map(function (r) {
-        return r.replace(/\\/g, '/').replace(/^C:/, 'c:')
+        return r.replace(/\\/g, '/').replace(new RegExp('^' + drive + ':'), drive+':')
       })
     t.same(res.sort(), want)
     if (--n === 0) t.end()
@@ -116,7 +122,7 @@ test('nocase, with some magic', function(t) {
                '/tmp/a' ]
   if(process.platform.match(/^win/)) {
     want = want.map(function(p) {
-      return 'c:' + p
+      return drive + ':' + p
     })
   }
 
