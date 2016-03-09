@@ -226,12 +226,34 @@ GlobSync.prototype._emitMatch = function (index, e) {
     this._stat(e)
 }
 
-
 GlobSync.prototype._readdirInGlobStar = function (abs) {
   // follow all symlinked directories forever
   // just proceed as if this is a non-globstar situation
-  if (this.follow)
-    return this._readdir(abs, false)
+  if (this.follow) {
+    if (this.followsymlinkscyles) {
+      return this._readdir(abs, false);
+    }
+
+    var absRealPath;
+    try {
+      absRealPath = fs.realpathSync(abs, this.realpathCache);
+    } catch (e) {
+      // doesn't exist
+      return null
+    }
+
+    if (!ownProp(this.followed, absRealPath)) {
+      this.followed[absRealPath] = abs;
+      return this._readdir(abs, false);
+    } else if (this.followed[absRealPath] === abs) {
+      return this._readdir(abs, false);
+    } else if (common.getPathDepth(abs) < common.getPathDepth(this.followed[absRealPath])) {
+      this.followed[absRealPath] = abs;
+      return this._readdir(abs, false);
+    } else {
+      return null;
+    }
+  }
 
   var entries
   var lstat

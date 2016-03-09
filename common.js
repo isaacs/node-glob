@@ -7,6 +7,7 @@ exports.finish = finish
 exports.mark = mark
 exports.isIgnored = isIgnored
 exports.childrenIgnored = childrenIgnored
+exports.getPathDepth = getPathDepth
 
 function ownProp (obj, field) {
   return Object.prototype.hasOwnProperty.call(obj, field)
@@ -68,6 +69,7 @@ function setopts (self, pattern, options) {
   self.realpath = !!options.realpath
   self.realpathCache = options.realpathCache || Object.create(null)
   self.follow = !!options.follow
+  self.followsymlinkscyles = options.followsymlinkscyles !== false
   self.dot = !!options.dot
   self.mark = !!options.mark
   self.nodir = !!options.nodir
@@ -85,6 +87,7 @@ function setopts (self, pattern, options) {
   self.cache = options.cache || Object.create(null)
   self.statCache = options.statCache || Object.create(null)
   self.symlinks = options.symlinks || Object.create(null)
+  self.followed = options.followed || Object.create(null)
 
   setupIgnores(self, options)
 
@@ -112,6 +115,12 @@ function setopts (self, pattern, options) {
 
   self.minimatch = new Minimatch(pattern, options)
   self.options = self.minimatch.options
+}
+
+var pathSepRE = new RegExp(path.sep === '\\' ? '\\\\' : path.sep, "g");
+function getPathDepth(p) {
+  var m = p.match(pathSepRE)
+  return m && m.length || 0;
 }
 
 function finish (self) {

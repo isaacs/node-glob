@@ -489,11 +489,30 @@ Glob.prototype._readdirInGlobStar = function (abs, cb) {
 
   // follow all symlinked directories forever
   // just proceed as if this is a non-globstar situation
-  if (this.follow)
-    return this._readdir(abs, false, cb)
+  var self = this
+  if (this.follow) {
+    if (this.followsymlinkscyles) {
+      return this._readdir(abs, false, cb);
+    }
+
+    return fs.realpath(abs, this.realpathCache, function(err, absRealPath) {
+      if (err) { return cb(); } // doesn't exist : ignore
+
+      if (!ownProp(self.followed, absRealPath)) {
+        self.followed[absRealPath] = abs;
+        return self._readdir(abs, false, cb);
+      } else if (self.followed[absRealPath] === abs) {
+        return self._readdir(abs, false, cb);
+      } else if (common.getPathDepth(abs) < common.getPathDepth(self.followed[absRealPath])) {
+        self.followed[absRealPath] = abs;
+        return self._readdir(abs, false, cb);
+      } else {
+        return cb();
+      }
+    });
+  }
 
   var lstatkey = 'lstat\0' + abs
-  var self = this
   var lstatcb = inflight(lstatkey, lstatcb_)
 
   if (lstatcb)
