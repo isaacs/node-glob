@@ -62,6 +62,9 @@ GlobSync.prototype._finish = function () {
         } catch (er) {
           if (er.syscall === 'stat')
             set[self._makeAbs(p)] = true
+          else if (er.code === 'ELOOP') {
+            if (real) set[real] = true
+          }
           else
             throw er
         }
