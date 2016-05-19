@@ -14,6 +14,7 @@ function ownProp (obj, field) {
 
 var path = require("path")
 var minimatch = require("minimatch")
+var ignore = require("ignore")
 var isAbsolute = require("path-is-absolute")
 var Minimatch = minimatch.Minimatch
 
@@ -26,28 +27,10 @@ function alphasort (a, b) {
 }
 
 function setupIgnores (self, options) {
-  self.ignore = options.ignore || []
-
-  if (!Array.isArray(self.ignore))
-    self.ignore = [self.ignore]
-
-  if (self.ignore.length) {
-    self.ignore = self.ignore.map(ignoreMap)
+  if(!options.ignore) {
+    return
   }
-}
-
-// ignore patterns are always in dot:true mode.
-function ignoreMap (pattern) {
-  var gmatcher = null
-  if (pattern.slice(-3) === '/**') {
-    var gpattern = pattern.replace(/(\/\*\*)+$/, '')
-    gmatcher = new Minimatch(gpattern, { dot: true })
-  }
-
-  return {
-    matcher: new Minimatch(pattern, { dot: true }),
-    gmatcher: gmatcher
-  }
+  self.ignore = ignore().add([].concat(options.ignore))
 }
 
 function setopts (self, pattern, options) {
@@ -163,10 +146,9 @@ function finish (self) {
     }
   }
 
-  if (self.ignore.length)
-    all = all.filter(function(m) {
-      return !isIgnored(self, m)
-    })
+  if (self.ignore) {
+    all = self.ignore.filter(all);
+  }
 
   self.found = all
 }
@@ -217,19 +199,18 @@ function makeAbs (self, f) {
 // Return true, if pattern ends with globstar '**', for the accompanying parent directory.
 // Ex:- If node_modules/** is the pattern, add 'node_modules' to ignore list along with it's contents
 function isIgnored (self, path) {
-  if (!self.ignore.length)
+  if(!path)
     return false
 
-  return self.ignore.some(function(item) {
-    return item.matcher.match(path) || !!(item.gmatcher && item.gmatcher.match(path))
-  })
+  if (!self.ignore)
+    return false
+
+  return self.ignore.filter(path).length === 0
 }
 
 function childrenIgnored (self, path) {
-  if (!self.ignore.length)
+  if (!self.ignore)
     return false
 
-  return self.ignore.some(function(item) {
-    return !!(item.gmatcher && item.gmatcher.match(path))
-  })
+  return self.ignore.filter([path]).length === 0;
 }
