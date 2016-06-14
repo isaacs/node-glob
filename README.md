@@ -326,6 +326,9 @@ Results from absolute patterns such as `/foo/*` are mounted onto the
 root setting using `path.join`.  On windows, this will by default result
 in `/foo/*` matching `C:\foo\bar.txt`.
 
+Additionally, results returned from glob on windows will return '/' as
+the seperator.
+
 ## Race Conditions
 
 Glob searching, by its very nature, is susceptible to race conditions,
