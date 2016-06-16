@@ -17,6 +17,7 @@
     "node": "*"
   },
   "dependencies": {
+    "fs.realpath": "^1.0.0",
     "inflight": "^1.0.4",
     "inherits": "2",
     "minimatch": "2 || 3",
