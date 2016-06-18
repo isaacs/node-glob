@@ -14,12 +14,17 @@ test("create glob object without processing", function (t) {
 })
 
 test("detect magic in glob patterns", function (t) {
-  t.notOk(glob.hasMagic("a/b/c/"), "no magic a/b/c/")
+  t.notOk(glob.hasMagic("a/b/c/"), "no magic in a/b/c/")
   t.ok(glob.hasMagic("a/b/**/"), "magic in a/b/**/")
   t.ok(glob.hasMagic("a/b/?/"), "magic in a/b/?/")
   t.ok(glob.hasMagic("a/b/+(x|y)"), "magic in a/b/+(x|y)")
   t.notOk(glob.hasMagic("a/b/+(x|y)", {noext:true}), "no magic in a/b/+(x|y) noext")
   t.ok(glob.hasMagic('{a,b}'), 'magic in {a,b}')
   t.notOk(glob.hasMagic('{a,b}', {nobrace:true}), 'magic in {a,b} nobrace:true')
+  t.end()
+})
+
+test("ensure empty pattern does not throw error", function (t) {
+  t.notOk(glob.hasMagic(""), "no magic ''")
   t.end()
 })
