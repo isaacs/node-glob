@@ -93,7 +93,7 @@ test('nocase, nomagic', function(t) {
       throw er
     if (process.platform.match(/^win/))
       res = res.map(function (r) {
-        return r.replace(/\\/g, '/').replace(new RegExp('^' + drive + ':'), drive+':')
+        return r.replace(/\\/g, '/').replace(new RegExp('^' + drive + ':', 'i'), drive+':')
       })
     t.same(res.sort(), want)
     if (--n === 0) t.end()
@@ -103,7 +103,7 @@ test('nocase, nomagic', function(t) {
       throw er
     if (process.platform.match(/^win/))
       res = res.map(function (r) {
-        return r.replace(/\\/g, '/').replace(new RegExp('^' + drive + ':'), drive+':')
+        return r.replace(/\\/g, '/').replace(new RegExp('^' + drive + ':', 'i'), drive+':')
       })
     t.same(res.sort(), want)
     if (--n === 0) t.end()
@@ -129,15 +129,21 @@ test('nocase, with some magic', function(t) {
   glob('/tmp/*', { nocase: true }, function(er, res) {
     if (er)
       throw er
-    if (process.platform.match(/^win/))
-      res = res.map(function (r) { return r.replace(/\\/g, '/') })
+    if (process.platform.match(/^win/)) {
+      res = res.map(function (r) {
+        return r.replace(/\\/g, '/').replace(new RegExp('^' + drive + ':', 'i'), drive+':')
+      })
+    }
     t.same(res.sort(), want)
   })
   glob('/tmp/*', { nocase: true }, function(er, res) {
     if (er)
       throw er
-    if (process.platform.match(/^win/))
-      res = res.map(function (r) { return r.replace(/\\/g, '/') })
+    if (process.platform.match(/^win/)) {
+      res = res.map(function (r) {
+        return r.replace(/\\/g, '/').replace(new RegExp('^' + drive + ':', 'i'), drive+':')
+      })
+    }
     t.same(res.sort(), want)
   })
 })
