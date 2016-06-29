@@ -103,6 +103,9 @@ glob.hasMagic = function (pattern, options_) {
   if (set.length > 1)
     return true
 
+  if (set.length === 0)
+    return false
+
   for (var j = 0; j < set[0].length; j++) {
     if (typeof set[0][j] !== 'string')
       return true
