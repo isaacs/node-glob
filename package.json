@@ -27,8 +27,8 @@
   "devDependencies": {
     "mkdirp": "0",
     "rimraf": "^2.2.8",
-    "tap": "^5.7.0",
-    "tick": "0.0.6"
+    "tap": "^6.2.0",
+    "tick": "0.1.1"
   },
   "scripts": {
     "prepublish": "npm run benchclean",
