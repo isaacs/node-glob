@@ -13,7 +13,16 @@ test("create glob object without processing", function (t) {
   t.end()
 })
 
+test("non-string pattern is evil magic", function (t) {
+  var patterns = [ 0, null, 12, {x:1}, undefined, /x/, NaN ]
+  patterns.forEach(function (p) {
+    t.throws('' + p, function () { glob.hasMagic(p) })
+  })
+  t.end()
+})
+
 test("detect magic in glob patterns", function (t) {
+  t.notOk(glob.hasMagic(""), "no magic in ''")
   t.notOk(glob.hasMagic("a/b/c/"), "no magic a/b/c/")
   t.ok(glob.hasMagic("a/b/**/"), "magic in a/b/**/")
   t.ok(glob.hasMagic("a/b/?/"), "magic in a/b/?/")
