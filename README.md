@@ -273,6 +273,9 @@ the filesystem.
   In the case of a symlink that cannot be resolved, the full absolute
   path to the matched entry is returned (though it will usually be a
   broken symlink)
+* `absolute` Set to true to always receive absolute paths for the
+  `'match'` event. Will not pass absolute paths to the callback
+  or returned from `glob.sync`.
 
 ## Comparisons to other fnmatch/glob implementations
 

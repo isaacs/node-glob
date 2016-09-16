@@ -485,7 +485,7 @@ Glob.prototype._emitMatch = function (index, e) {
   if (st)
     this.emit('stat', e, st)
 
-  this.emit('match', e)
+  this.emit('match', this._absolute ? abs : e)
 }
 
 Glob.prototype._readdirInGlobStar = function (abs, cb) {
