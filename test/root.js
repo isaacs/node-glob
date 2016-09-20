@@ -20,7 +20,7 @@ function cacheCheck(g, t) {
 t.test('.', function (t) {
   var g = glob('/b*/**', { root: '.' }, function (er, matches) {
     t.ifError(er)
-    t.like(matches, [])
+    t.same(matches, [])
     cacheCheck(g, t)
     t.end()
   })
@@ -36,7 +36,7 @@ t.test('a', function (t) {
         return path.join(path.resolve('a'), m).replace(/\\/g, '/')
       })
 
-    t.like(matches, wanted)
+    t.same(matches, wanted)
     cacheCheck(g, t)
     t.end()
   })
@@ -45,10 +45,37 @@ t.test('a', function (t) {
 t.test('root=a, cwd=a/b', function (t) {
   var g = glob('/b*/**', { root: 'a', cwd: path.resolve('a/b') }, function (er, matches) {
     t.ifError(er)
-    t.like(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ].map(function (m) {
+    t.same(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ].map(function (m) {
       return path.join(path.resolve('a'), m).replace(/\\/g, '/')
     }))
     cacheCheck(g, t)
+    t.end()
+  })
+})
+
+t.test('combined with absolute option', function(t) {
+  var g = glob('/b*/**', { root: path.resolve('a'), absolute: true }, function (er, matches) {
+    t.ifError(er)
+    t.same(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ].map(function (m) {
+      return path.join(path.resolve('a'), m).replace(/\\/g, '/')
+    }))
+    cacheCheck(g, t)
+    t.end()
+  })
+})
+
+t.test('cwdAbs when root=a, absolute=true', function(t) {
+   var g = glob('/b*/**', { root: path.resolve('a'), absolute: true }, function (er, matches) {
+    t.ifError(er)
+    t.same(g.cwdAbs, process.cwd().replace(/\\/g, '/'))
+    t.end()
+  })
+})
+
+t.test('cwdAbs when root=a, absolute=true, cwd=__dirname', function(t) {
+   var g = glob('/b*/**', { root: path.resolve('a'), absolute: true, cwd: __dirname }, function (er, matches) {
+    t.ifError(er)
+    t.same(g.cwdAbs, __dirname.replace(/\\/g, '/'))
     t.end()
   })
 })
