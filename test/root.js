@@ -52,3 +52,32 @@ t.test('root=a, cwd=a/b', function (t) {
     t.end()
   })
 })
+
+t.test('combined with absolute option', function(t) {
+  var g = glob('/b*/**', { root: path.resolve('a'), absolute: true }, function (er, matches) {
+    t.ifError(er)
+    /* For some reason this passes even though it compares
+      [ '/Users/phated/node-glob/test/fixtures/a/Users/phated/node-glob/test/fixtures/a/b',
+        '/Users/phated/node-glob/test/fixtures/a/Users/phated/node-glob/test/fixtures/a/b/c',
+        '/Users/phated/node-glob/test/fixtures/a/Users/phated/node-glob/test/fixtures/a/b/c/d',
+        '/Users/phated/node-glob/test/fixtures/a/Users/phated/node-glob/test/fixtures/a/bc',
+        '/Users/phated/node-glob/test/fixtures/a/Users/phated/node-glob/test/fixtures/a/bc/e',
+        '/Users/phated/node-glob/test/fixtures/a/Users/phated/node-glob/test/fixtures/a/bc/e/f' ]
+      to
+      [ '/Users/phated/node-glob/test/fixtures/a/b',
+        '/Users/phated/node-glob/test/fixtures/a/b/c',
+        '/Users/phated/node-glob/test/fixtures/a/b/c/d',
+        '/Users/phated/node-glob/test/fixtures/a/bc',
+        '/Users/phated/node-glob/test/fixtures/a/bc/e',
+        '/Users/phated/node-glob/test/fixtures/a/bc/e/f' ]
+    */
+    // t.like(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ].map(function (m) {
+    //   return path.join(path.resolve('a'), m).replace(/\\/g, '/')
+    // }))
+    t.same(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ].map(function (m) {
+      return path.join(path.resolve('a'), m).replace(/\\/g, '/')
+    }))
+    cacheCheck(g, t)
+    t.end()
+  })
+})
