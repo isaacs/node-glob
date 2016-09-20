@@ -465,7 +465,7 @@ Glob.prototype._emitMatch = function (index, e) {
     return
   }
 
-  var abs = this._makeAbs(e)
+  var abs = isAbsolute(e) ? e : this._makeAbs(e)
 
   if (this.mark)
     e = this._mark(e)

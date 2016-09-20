@@ -81,3 +81,19 @@ t.test('combined with absolute option', function(t) {
     t.end()
   })
 })
+
+t.test('cwdAbs when root=a, absolute=true', function(t) {
+   var g = glob('/b*/**', { root: path.resolve('a'), absolute: true }, function (er, matches) {
+    t.ifError(er)
+    t.same(g.cwdAbs, process.cwd().replace(/\\/g, '/'))
+    t.end()
+  })
+})
+
+t.test('cwdAbs when root=a, absolute=true, cwd=__dirname', function(t) {
+   var g = glob('/b*/**', { root: path.resolve('a'), absolute: true, cwd: __dirname }, function (er, matches) {
+    t.ifError(er)
+    t.same(g.cwdAbs, __dirname.replace(/\\/g, '/'))
+    t.end()
+  })
+})
