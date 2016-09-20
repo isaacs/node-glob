@@ -457,9 +457,6 @@ Glob.prototype._emitMatch = function (index, e) {
   if (this.aborted)
     return
 
-  if (this.matches[index][e])
-    return
-
   if (isIgnored(this, e))
     return
 
@@ -470,14 +467,20 @@ Glob.prototype._emitMatch = function (index, e) {
 
   var abs = this._makeAbs(e)
 
+  if (this.mark)
+    e = this._mark(e)
+
+  if (this.absolute)
+    e = abs
+
+  if (this.matches[index][e])
+    return
+
   if (this.nodir) {
     var c = this.cache[abs]
     if (c === 'DIR' || Array.isArray(c))
       return
   }
-
-  if (this.mark)
-    e = this._mark(e)
 
   this.matches[index][e] = true
 
@@ -485,7 +488,7 @@ Glob.prototype._emitMatch = function (index, e) {
   if (st)
     this.emit('stat', e, st)
 
-  this.emit('match', this._absolute ? abs : e)
+  this.emit('match', e)
 }
 
 Glob.prototype._readdirInGlobStar = function (abs, cb) {
