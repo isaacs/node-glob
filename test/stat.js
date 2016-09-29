@@ -3,9 +3,10 @@ var glob = require('../')
 var test = require('tap').test
 var path = require('path')
 var Stats = require('fs').Stats
+var dir = __dirname + '/fixtures'
 
 test('stat all the things', function(t) {
-  var g = new glob.Glob('a/*abc*/**', { stat: true, cwd: __dirname })
+  var g = new glob.Glob('a/*abc*/**', { stat: true, cwd: dir })
   var matches = []
   g.on('match', function(m) {
     matches.push(m)
@@ -23,7 +24,7 @@ test('stat all the things', function(t) {
     t.same(eof, matches)
     var cache = Object.keys(this.statCache)
     t.same(cache.map(function (f) {
-      return path.relative(__dirname, f).replace(/\\/g, '/')
+      return path.relative(dir, f).replace(/\\/g, '/')
     }).sort(), matches)
 
     cache.forEach(function(c) {
