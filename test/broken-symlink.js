@@ -8,17 +8,17 @@ if (process.platform === 'win32')
 
 process.chdir(__dirname)
 
-var link = 'a/broken-link/link'
+var link = 'fixtures/a/broken-link/link'
 
 var patterns = [
-  'a/broken-link/*',
-  'a/broken-link/**',
-  'a/broken-link/**/link',
-  'a/broken-link/**/*',
-  'a/broken-link/link',
-  'a/broken-link/{link,asdf}',
-  'a/broken-link/+(link|asdf)',
-  'a/broken-link/!(asdf)'
+  'fixtures/a/broken-link/*',
+  'fixtures/a/broken-link/**',
+  'fixtures/a/broken-link/**/link',
+  'fixtures/a/broken-link/**/*',
+  'fixtures/a/broken-link/link',
+  'fixtures/a/broken-link/{link,asdf}',
+  'fixtures/a/broken-link/+(link|asdf)',
+  'fixtures/a/broken-link/!(asdf)'
 ]
 
 var opts = [
@@ -31,8 +31,8 @@ var opts = [
 
 test('set up broken symlink', function (t) {
   cleanup()
-  mkdirp.sync('a/broken-link')
-  fs.symlinkSync('this-does-not-exist', 'a/broken-link/link')
+  mkdirp.sync('fixtures/a/broken-link')
+  fs.symlinkSync('this-does-not-exist', 'fixtures/a/broken-link/link')
   t.end()
 })
 
@@ -77,6 +77,6 @@ test('cleanup', function (t) {
 })
 
 function cleanup () {
-  try { fs.unlinkSync('a/broken-link/link') } catch (e) {}
-  try { fs.rmdirSync('a/broken-link') } catch (e) {}
+  try { fs.unlinkSync('fixtures/a/broken-link/link') } catch (e) {}
+  try { fs.rmdirSync('fixtures/a/broken-link') } catch (e) {}
 }
