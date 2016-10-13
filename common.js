@@ -26,13 +26,20 @@ function alphasort (a, b) {
 }
 
 function setupIgnores (self, options) {
+  var absolutePattern = (isAbsolute.posix(self.pattern) || isAbsolute(self.pattern));
   self.ignore = options.ignore || []
 
   if (!Array.isArray(self.ignore))
     self.ignore = [self.ignore]
 
   if (self.ignore.length) {
-    self.ignore = self.ignore.map(ignoreMap)
+    self.ignore = self.ignore.map(function (ignorePattern) {
+      if (absolutePattern) {
+        ignorePattern = makeAbs(self, ignorePattern)
+      }
+
+      return ignoreMap(ignorePattern)
+    })
   }
 }
 
@@ -87,8 +94,6 @@ function setopts (self, pattern, options) {
   self.statCache = options.statCache || Object.create(null)
   self.symlinks = options.symlinks || Object.create(null)
 
-  setupIgnores(self, options)
-
   self.changedCwd = false
   var cwd = process.cwd()
   if (!ownProp(options, "cwd"))
@@ -117,6 +122,10 @@ function setopts (self, pattern, options) {
 
   self.minimatch = new Minimatch(pattern, options)
   self.options = self.minimatch.options
+
+  // this should come last so self.changedCwd is set (among other things)
+  // to allow the ignores to be resolved absolutely if needed
+  setupIgnores(self, options)
 }
 
 function finish (self) {
