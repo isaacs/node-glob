@@ -4,6 +4,11 @@ require('./global-leakage.js')
 
 var glob = require('../glob.js')
 var test = require('tap').test
+var path = require('path')
+
+function toAbsoluteFixtures(p) {
+  return path.join(__dirname, 'fixtures', p)
+}
 
 // [pattern, ignore, expect, opt (object) or cwd (string)]
 var cases = [
@@ -36,7 +41,9 @@ var cases = [
   [ 'a/**/b', ['a/x/**'], ['a/b', 'a/c/d/c/b', 'a/symlink/a/b']],
   [ 'a/**/b', ['a/x/**'], ['a/b', 'a/c/d/c/b', 'a/symlink/a/b', 'a/z/.y/b'], { dot: true }],
   [ '*/.abcdef', 'a/**', [] ],
-  [ 'a/*/.y/b', 'a/x/**', [ 'a/z/.y/b' ] ]
+  [ 'a/*/.y/b', 'a/x/**', [ 'a/z/.y/b' ] ],
+  // Absolute glob, relative ignore
+  [ toAbsoluteFixtures('a/*'), 'a/b', ['a/abcdef', 'a/abcfed', 'a/bc', 'a/c', 'a/cb', 'a/symlink', 'a/x', 'a/z'].map(toAbsoluteFixtures)]
 ]
 
 process.chdir(__dirname + '/fixtures')
