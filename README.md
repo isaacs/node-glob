@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/isaacs/node-glob.svg?branch=master)](https://travis-ci.org/isaacs/node-glob/) [![Dependency Status](https://david-dm.org/isaacs/node-glob.svg)](https://david-dm.org/isaacs/node-glob) [![devDependency Status](https://david-dm.org/isaacs/node-glob/dev-status.svg)](https://david-dm.org/isaacs/node-glob#info=devDependencies) [![optionalDependency Status](https://david-dm.org/isaacs/node-glob/optional-status.svg)](https://david-dm.org/isaacs/node-glob#info=optionalDependencies)
+
 # Glob
 
 Match files using the patterns the shell uses, like stars and stuff.
