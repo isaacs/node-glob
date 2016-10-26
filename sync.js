@@ -1,8 +1,6 @@
 module.exports = globSync
 globSync.GlobSync = GlobSync
 
-var fs = require('fs')
-var rp = require('fs.realpath')
 var minimatch = require('minimatch')
 var Minimatch = minimatch.Minimatch
 var Glob = require('./glob.js').Glob
@@ -37,7 +35,7 @@ function GlobSync (pattern, options) {
   if (!(this instanceof GlobSync))
     return new GlobSync(pattern, options)
 
-  setopts(this, pattern, options)
+  setopts(this, pattern, options, true)
 
   if (this.noprocess)
     return this
@@ -59,7 +57,7 @@ GlobSync.prototype._finish = function () {
       for (var p in matchset) {
         try {
           p = self._makeAbs(p)
-          var real = rp.realpathSync(p, self.realpathCache)
+          var real = self.rp.realpathSync(p, self.realpathCache)
           set[real] = true
         } catch (er) {
           if (er.syscall === 'stat')
@@ -248,7 +246,7 @@ GlobSync.prototype._readdirInGlobStar = function (abs) {
   var lstat
   var stat
   try {
-    lstat = fs.lstatSync(abs)
+    lstat = this.fs.lstatSync(abs)
   } catch (er) {
     if (er.code === 'ENOENT') {
       // lstat failed, doesn't exist
@@ -285,7 +283,7 @@ GlobSync.prototype._readdir = function (abs, inGlobStar) {
   }
 
   try {
-    return this._readdirEntries(abs, fs.readdirSync(abs))
+    return this._readdirEntries(abs, this.fs.readdirSync(abs))
   } catch (er) {
     this._readdirError(abs, er)
     return null
@@ -444,7 +442,7 @@ GlobSync.prototype._stat = function (f) {
   if (!stat) {
     var lstat
     try {
-      lstat = fs.lstatSync(abs)
+      lstat = this.fs.lstatSync(abs)
     } catch (er) {
       if (er && (er.code === 'ENOENT' || er.code === 'ENOTDIR')) {
         this.statCache[abs] = false
@@ -454,7 +452,7 @@ GlobSync.prototype._stat = function (f) {
 
     if (lstat && lstat.isSymbolicLink()) {
       try {
-        stat = fs.statSync(abs)
+        stat = this.fs.statSync(abs)
       } catch (er) {
         stat = lstat
       }

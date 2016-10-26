@@ -12,6 +12,8 @@ function ownProp (obj, field) {
   return Object.prototype.hasOwnProperty.call(obj, field)
 }
 
+var fs = require("fs")
+var rp = require("fs.realpath")
 var path = require("path")
 var minimatch = require("minimatch")
 var isAbsolute = require("path-is-absolute")
@@ -23,6 +25,26 @@ function alphasorti (a, b) {
 
 function alphasort (a, b) {
   return a.localeCompare(b)
+}
+
+function setupFs (self, options) {
+  if (!options.fs) {
+    self.fs = fs
+    self.rp = rp
+  } else {
+    // if custom filesystem adapter is provided, force realpath option to false
+    self.realpath = false
+    // wire up the adapter functions, deferring to stat when lstat is absent
+    self.fs = self.sync ? {
+      readdirSync: options.fs.readdirSync,
+      statSync: options.fs.statSync,
+      lstatSync: options.fs.lstatSync || options.fs.statSync
+    } : {
+      readdir: options.fs.readdir,
+      stat: options.fs.stat,
+      lstat: options.fs.lstat || options.fs.stat
+    }
+  }
 }
 
 function setupIgnores (self, options) {
@@ -50,7 +72,7 @@ function ignoreMap (pattern) {
   }
 }
 
-function setopts (self, pattern, options) {
+function setopts (self, pattern, options, sync) {
   if (!options)
     options = {}
 
@@ -73,7 +95,7 @@ function setopts (self, pattern, options) {
   self.nodir = !!options.nodir
   if (self.nodir)
     self.mark = true
-  self.sync = !!options.sync
+  self.sync = sync
   self.nounique = !!options.nounique
   self.nonull = !!options.nonull
   self.nosort = !!options.nosort
@@ -86,6 +108,8 @@ function setopts (self, pattern, options) {
   self.cache = options.cache || Object.create(null)
   self.statCache = options.statCache || Object.create(null)
   self.symlinks = options.symlinks || Object.create(null)
+
+  setupFs(self, options)
 
   setupIgnores(self, options)
 
