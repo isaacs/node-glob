@@ -115,6 +115,15 @@ glob.hasMagic = function (pattern, options_) {
   return false
 }
 
+glob.createFsCache = function () {
+  return {
+    cache: Object.create(null),
+    statCache: Object.create(null),
+    symlinks: Object.create(null),
+    realpathCache: Object.create(null)
+  }
+}
+
 glob.Glob = Glob
 inherits(Glob, EE)
 function Glob (pattern, options, cb) {
