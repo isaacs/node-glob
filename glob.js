@@ -168,10 +168,12 @@ function Glob (pattern, options, cb) {
     return done()
 
   var sync = true
-  for (var i = 0; i < n; i ++) {
-    this._process(this.minimatch.set[i], i, false, done)
-  }
-  sync = false
+  process.nextTick(function () {
+    for (var i = 0; i < n; i ++) {
+      self._process(self.minimatch.set[i], i, false, done)
+    }
+    sync = false
+  });
 
   function done () {
     --self._processing
