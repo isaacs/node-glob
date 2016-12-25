@@ -1,6 +1,6 @@
-require("./global-leakage.js")
+require('./global-leakage.js')
 var test = require('tap').test
-var glob = require("../glob.js")
+var glob = require('../glob.js')
 
 // Patterns that cannot match anything
 var patterns = [

@@ -12,9 +12,9 @@ function ownProp (obj, field) {
   return Object.prototype.hasOwnProperty.call(obj, field)
 }
 
-var path = require("path")
-var minimatch = require("minimatch")
-var isAbsolute = require("path-is-absolute")
+var path = require('path')
+var minimatch = require('minimatch')
+var isAbsolute = require('path-is-absolute')
 var Minimatch = minimatch.Minimatch
 
 function alphasorti (a, b) {
@@ -28,8 +28,7 @@ function alphasort (a, b) {
 function setupIgnores (self, options) {
   self.ignore = options.ignore || []
 
-  if (!Array.isArray(self.ignore))
-    self.ignore = [self.ignore]
+  if (!Array.isArray(self.ignore)) { self.ignore = [self.ignore] }
 
   if (self.ignore.length) {
     self.ignore = self.ignore.map(ignoreMap)
@@ -51,15 +50,16 @@ function ignoreMap (pattern) {
 }
 
 function setopts (self, pattern, options) {
-  if (!options)
+  if (!options) {
     options = {}
+  }
 
   // base-matching: just use globstar for that.
-  if (options.matchBase && -1 === pattern.indexOf("/")) {
+  if (options.matchBase && pattern.indexOf('/') === -1) {
     if (options.noglobstar) {
-      throw new Error("base matching requires globstar")
+      throw new Error('base matching requires globstar')
     }
-    pattern = "**/" + pattern
+    pattern = '**/' + pattern
   }
 
   self.silent = !!options.silent
@@ -71,8 +71,9 @@ function setopts (self, pattern, options) {
   self.dot = !!options.dot
   self.mark = !!options.mark
   self.nodir = !!options.nodir
-  if (self.nodir)
+  if (self.nodir) {
     self.mark = true
+  }
   self.sync = !!options.sync
   self.nounique = !!options.nounique
   self.nonull = !!options.nonull
@@ -91,23 +92,25 @@ function setopts (self, pattern, options) {
 
   self.changedCwd = false
   var cwd = process.cwd()
-  if (!ownProp(options, "cwd"))
+  if (!ownProp(options, 'cwd')) {
     self.cwd = cwd
-  else {
+  } else {
     self.cwd = path.resolve(options.cwd)
     self.changedCwd = self.cwd !== cwd
   }
 
-  self.root = options.root || path.resolve(self.cwd, "/")
+  self.root = options.root || path.resolve(self.cwd, '/')
   self.root = path.resolve(self.root)
-  if (process.platform === "win32")
-    self.root = self.root.replace(/\\/g, "/")
+  if (process.platform === 'win32') {
+    self.root = self.root.replace(/\\/g, '/')
+  }
 
   // TODO: is an absolute `cwd` supposed to be resolved against `root`?
   // e.g. { cwd: '/test', root: __dirname } === path.join(__dirname, '/test')
   self.cwdAbs = isAbsolute(self.cwd) ? self.cwd : makeAbs(self, self.cwd)
-  if (process.platform === "win32")
-    self.cwdAbs = self.cwdAbs.replace(/\\/g, "/")
+  if (process.platform === 'win32') {
+    self.cwdAbs = self.cwdAbs.replace(/\\/g, '/')
+  }
   self.nomount = !!options.nomount
 
   // disable comments and negation in Minimatch.
@@ -123,55 +126,57 @@ function finish (self) {
   var nou = self.nounique
   var all = nou ? [] : Object.create(null)
 
-  for (var i = 0, l = self.matches.length; i < l; i ++) {
+  for (var i = 0, l = self.matches.length; i < l; i++) {
     var matches = self.matches[i]
     if (!matches || Object.keys(matches).length === 0) {
       if (self.nonull) {
         // do like the shell, and spit out the literal glob
         var literal = self.minimatch.globSet[i]
-        if (nou)
+        if (nou) {
           all.push(literal)
-        else
-          all[literal] = true
+        } else { all[literal] = true }
       }
     } else {
       // had matches
       var m = Object.keys(matches)
-      if (nou)
-        all.push.apply(all, m)
-      else
+      if (nou) { all.push.apply(all, m) } else {
         m.forEach(function (m) {
           all[m] = true
         })
+      }
     }
   }
 
-  if (!nou)
+  if (!nou) {
     all = Object.keys(all)
+  }
 
-  if (!self.nosort)
+  if (!self.nosort) {
     all = all.sort(self.nocase ? alphasorti : alphasort)
+  }
 
   // at *some* point we statted all of these
   if (self.mark) {
-    for (var i = 0; i < all.length; i++) {
+    for (i = 0; i < all.length; i++) {
       all[i] = self._mark(all[i])
     }
     if (self.nodir) {
       all = all.filter(function (e) {
         var notDir = !(/\/$/.test(e))
         var c = self.cache[e] || self.cache[makeAbs(self, e)]
-        if (notDir && c)
+        if (notDir && c) {
           notDir = c !== 'DIR' && !Array.isArray(c)
+        }
         return notDir
       })
     }
   }
 
-  if (self.ignore.length)
-    all = all.filter(function(m) {
+  if (self.ignore.length) {
+    all = all.filter(function (m) {
       return !isIgnored(self, m)
     })
+  }
 
   self.found = all
 }
@@ -184,10 +189,11 @@ function mark (self, p) {
     var isDir = c === 'DIR' || Array.isArray(c)
     var slash = p.slice(-1) === '/'
 
-    if (isDir && !slash)
+    if (isDir && !slash) {
       m += '/'
-    else if (!isDir && slash)
+    } else if (!isDir && slash) {
       m = m.slice(0, -1)
+    }
 
     if (m !== p) {
       var mabs = makeAbs(self, m)
@@ -212,29 +218,29 @@ function makeAbs (self, f) {
     abs = path.resolve(f)
   }
 
-  if (process.platform === 'win32')
+  if (process.platform === 'win32') {
     abs = abs.replace(/\\/g, '/')
+  }
 
   return abs
 }
 
-
 // Return true, if pattern ends with globstar '**', for the accompanying parent directory.
 // Ex:- If node_modules/** is the pattern, add 'node_modules' to ignore list along with it's contents
 function isIgnored (self, path) {
-  if (!self.ignore.length)
+  if (!self.ignore.length) {
     return false
+  }
 
-  return self.ignore.some(function(item) {
+  return self.ignore.some(function (item) {
     return item.matcher.match(path) || !!(item.gmatcher && item.gmatcher.match(path))
   })
 }
 
 function childrenIgnored (self, path) {
-  if (!self.ignore.length)
-    return false
+  if (!self.ignore.length) { return false }
 
-  return self.ignore.some(function(item) {
+  return self.ignore.some(function (item) {
     return !!(item.gmatcher && item.gmatcher.match(path))
   })
 }
