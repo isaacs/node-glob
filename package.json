@@ -16,6 +16,19 @@
   "engines": {
     "node": "*"
   },
+  "keywords" : [
+	"wildcard",
+	"regex",
+	"patterns",
+	"finding",
+	"filesystem",
+	"directories",
+	"utilitly",
+	"traverse",
+	"filters",
+	"minimatch",
+	"match"
+  ],
   "dependencies": {
     "fs.realpath": "^1.0.0",
     "inflight": "^1.0.4",
