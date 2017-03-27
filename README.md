@@ -140,7 +140,7 @@ var mg = new Glob(pattern, options, cb)
 It's an EventEmitter, and starts walking the filesystem to find matches
 immediately.
 
-### new glob.Glob(pattern, [options], [cb])
+### new glob.Glob(pattern, [options, [cb]])
 
 * `pattern` `{String}` pattern to search for
 * `options` `{Object}`
