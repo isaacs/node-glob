@@ -137,36 +137,13 @@
     "a/symlink/a/b/c",
     "a/symlink/a/b/c/a"
   ],
-  "a/*": [
+  "a/!(symlink)": [
     "a/abcdef",
     "a/abcfed",
     "a/b",
     "a/bc",
     "a/c",
     "a/cb",
-    "a/x",
-    "a/z"
-  ],
-  "a/*/**": [
-    "a/abcdef",
-    "a/abcdef/g",
-    "a/abcdef/g/h",
-    "a/abcfed",
-    "a/abcfed/g",
-    "a/abcfed/g/h",
-    "a/b",
-    "a/b/c",
-    "a/b/c/d",
-    "a/bc",
-    "a/bc/e",
-    "a/bc/e/f",
-    "a/c",
-    "a/c/d",
-    "a/c/d/c",
-    "a/c/d/c/b",
-    "a/cb",
-    "a/cb/e",
-    "a/cb/e/f",
     "a/x",
     "a/z"
   ]
