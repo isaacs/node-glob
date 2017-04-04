@@ -59,6 +59,9 @@ t.test('stat errors other than ENOENT are ok', function (t) {
 })
 
 t.test('globstar with error in root', function (t) {
+  if (process.platform === 'win32')
+    return t.plan(0, 'skip on windows')
+
   var expect = [
     'a',
     'a/abcdef',
