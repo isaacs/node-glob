@@ -34,14 +34,13 @@ glob("**/*.js", options, function (er, files) {
 "Globs" are the patterns you type when you do stuff like `ls *.js` on
 the command line, or put `build/*` in a `.gitignore` file.
 
-Before parsing the path part patterns, braced sections are expanded
-into a set.  Braced sections start with `{` and end with `}`, with any
-number of comma-delimited sections within.  Braced sections may contain
-slash characters, so `a{/b/c,bcd}` would expand into `a/b/c` and `abcd`.
-
 The following characters have special magic meaning when used in a
 path portion:
 
+* `{...}` Before parsing the path part patterns, braced sections are expanded
+into a set.  Braced sections start with `{` and end with `}`, with any
+number of comma-delimited sections within.  Braced sections may contain
+slash characters, so `a{/b/c,bcd}` would expand into `a/b/c` and `abcd`.
 * `*` Matches 0 or more characters in a single path portion
 * `?` Matches 1 character
 * `[...]` Matches a range of characters, similar to a RegExp range.
