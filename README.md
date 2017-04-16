@@ -166,8 +166,8 @@ be immediately available on the `g.found` member.
   * `'DIR'` - Path exists, and is a directory
   * `[file, entries, ...]` - Path exists, is a directory, and the
     array value is the results of `fs.readdir`
-* `statCache` Cache of `fs.stat` results, to prevent statting the same
-  path multiple times.
+* `statCache` Collection of all `fs.stat` results the glob search
+  performed. Helps prevent statting the same path multiple times.
 * `symlinks` A record of which paths are symbolic links, which is
   relevant in resolving `**` patterns.
 * `realpathCache` An optional object which is passed to `fs.realpath`
