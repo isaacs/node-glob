@@ -240,6 +240,8 @@ the filesystem.
   to set this, you may pass the statCache from one glob() call to the
   options object of another, if you know that the filesystem will not
   change between calls.  (See "Race Conditions" below.)
+* `noresolve` Set to true to cache the result of `lstat` (instead of
+  `stat`) when matching symlinks.
 * `symlinks` A cache of known symbolic links.  You may pass in a
   previously generated `symlinks` object to save `lstat` calls when
   resolving `**` matches.

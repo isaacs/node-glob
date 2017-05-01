@@ -751,7 +751,7 @@ Glob.prototype._stat = function (f, cb) {
     fs.lstat(abs, statcb)
 
   function lstatcb_ (er, lstat) {
-    if (lstat && lstat.isSymbolicLink()) {
+    if (lstat && lstat.isSymbolicLink() && !self.noresolve) {
       // If it's a symlink, then treat it as the target, unless
       // the target does not exist, then treat it as a file.
       return fs.stat(abs, function (er, stat) {

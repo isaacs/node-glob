@@ -452,7 +452,7 @@ GlobSync.prototype._stat = function (f) {
       }
     }
 
-    if (lstat && lstat.isSymbolicLink()) {
+    if (lstat && lstat.isSymbolicLink() && !this.noresolve) {
       try {
         stat = fs.statSync(abs)
       } catch (er) {

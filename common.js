@@ -85,6 +85,7 @@ function setopts (self, pattern, options) {
   self.maxLength = options.maxLength || Infinity
   self.cache = options.cache || Object.create(null)
   self.statCache = options.statCache || Object.create(null)
+  self.noresolve = !!options.noresolve
   self.symlinks = options.symlinks || Object.create(null)
 
   setupIgnores(self, options)
