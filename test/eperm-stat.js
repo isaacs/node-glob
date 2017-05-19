@@ -87,6 +87,11 @@ t.test('globstar with error in root', function (t) {
     'a/x',
     'a/z'
   ]
+  if (process.platform === 'win32') {
+    expect = expect.filter(function(path) {
+      return path.indexOf('/symlink') === -1
+    })
+  }
 
   var pattern = 'a/**'
   t.plan(2)
