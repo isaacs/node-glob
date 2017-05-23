@@ -82,14 +82,10 @@ var GlobSync = glob.GlobSync = globSync.GlobSync
 glob.glob = glob
 
 function extend (origin, add) {
-  if (add === null || typeof add !== 'object') {
-    return origin
-  }
-
-  var keys = Object.keys(add)
-  var i = keys.length
-  while (i--) {
-    origin[keys[i]] = add[keys[i]]
+  if (add !== null && typeof add === 'object') {
+    for (var key in add) {
+      origin[key] = add[key];
+    }
   }
   return origin
 }
