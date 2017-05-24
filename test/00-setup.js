@@ -102,7 +102,7 @@ var globs =
   ,"{./*/*,/tmp/glob-test/*}"
   ,"{/tmp/glob-test/*,*}" // evil owl face!  how you taunt me!
   ,"a/!(symlink)/**"
-  ,"a/symlink/a/**/*"
+  ,"a/symlink/a/**"
   ]
 var bashOutput = {}
 var fs = require("fs")

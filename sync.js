@@ -263,8 +263,13 @@ GlobSync.prototype._readdirInGlobStar = function (abs) {
   // don't bother doing a readdir in that case.
   if (!isSym && lstat && !lstat.isDirectory())
     this.cache[abs] = 'FILE'
-  else
-    entries = this._readdir(abs, false)
+  else {
+    if (!isSym || this.follow) {
+        entries = this._readdir(abs, false)
+    } else {
+        entries = [];
+    }
+  }
 
   return entries
 }
@@ -360,15 +365,16 @@ GlobSync.prototype._processGlobStar = function (prefix, read, abs, remain, index
   var gspref = prefix ? [ prefix ] : []
   var noGlobStar = gspref.concat(remainWithoutGlobStar)
 
-  // the noGlobStar pattern exits the inGlobStar state
-  this._process(noGlobStar, index, false)
-
   var len = entries.length
   var isSym = this.symlinks[abs]
 
   // If it's a symlink, and we're in a globstar, then stop
   if (isSym && inGlobStar)
     return
+
+  // the noGlobStar pattern exits the inGlobStar state
+  this._process(noGlobStar, index, false)
+
 
   for (var i = 0; i < len; i++) {
     var e = entries[i]
