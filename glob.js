@@ -240,6 +240,9 @@ Glob.prototype._realpathSet = function (index, cb) {
         set[real] = true
       else if (er.syscall === 'stat')
         set[p] = true
+      else if (er.code === 'ELOOP') {
+        if (real) set[real] = true
+      }
       else
         self.emit('error', er) // srsly wtf right here
 
