@@ -1,0 +1,23 @@
+{
+  "name": "node-glob",
+  "version": "4.0.6",
+  "homepage": "https://github.com/isaacs/node-glob",
+  "authors": [
+    "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)"
+  ],
+  "description": "a little globber",
+  "main": "glob.js",
+  "moduleType": [
+    "node"
+  ],
+  "keywords": [
+    "glob"
+  ],
+  "license": "ISC",
+  "ignore": [
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
