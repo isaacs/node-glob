@@ -489,13 +489,13 @@ Glob.prototype._emitMatch = function (index, e) {
   this.emit('match', e)
 }
 
-Glob.prototype._readdirInGlobStar = function (abs, cb) {
+Glob.prototype._readdirInGlobStar = function (abs, nofollow, cb) {
   if (this.aborted)
     return
 
   // follow all symlinked directories forever
   // just proceed as if this is a non-globstar situation
-  if (this.follow)
+  if (!nofollow && this.follow)
     return this._readdir(abs, false, cb)
 
   var lstatkey = 'lstat\0' + abs
@@ -532,7 +532,7 @@ Glob.prototype._readdir = function (abs, inGlobStar, cb) {
 
   //console.error('RD %j %j', +inGlobStar, abs)
   if (inGlobStar && !ownProp(this.symlinks, abs))
-    return this._readdirInGlobStar(abs, cb)
+    return this._readdirInGlobStar(abs, true, cb)
 
   if (ownProp(this.cache, abs)) {
     var c = this.cache[abs]

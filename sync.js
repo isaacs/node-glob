@@ -238,10 +238,10 @@ GlobSync.prototype._emitMatch = function (index, e) {
 }
 
 
-GlobSync.prototype._readdirInGlobStar = function (abs) {
+GlobSync.prototype._readdirInGlobStar = function (abs, nofollow) {
   // follow all symlinked directories forever
   // just proceed as if this is a non-globstar situation
-  if (this.follow)
+  if (!nofollow && this.follow)
     return this._readdir(abs, false)
 
   var entries
@@ -273,7 +273,7 @@ GlobSync.prototype._readdir = function (abs, inGlobStar) {
   var entries
 
   if (inGlobStar && !ownProp(this.symlinks, abs))
-    return this._readdirInGlobStar(abs)
+    return this._readdirInGlobStar(abs, true)
 
   if (ownProp(this.cache, abs)) {
     var c = this.cache[abs]
