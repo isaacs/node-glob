@@ -117,7 +117,7 @@ function setopts (self, pattern, options) {
   if (process.platform === "win32") {
     var winPath = new WinPath(pattern)
     if (winPath.isAbsolute) {
-      options.root = winPath.device
+      options.root = winPath.device + '\\'
       pattern = winPath.sep + winPath.tail
     }
   }
