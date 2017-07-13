@@ -4,6 +4,7 @@ var os = require('os')
 
 var uncRoot = '\\\\' + os.hostname() + '\\glob-test'
 var localRoot = path.resolve(__dirname, 'fixtures/a')
+var windowsRoot = localRoot
 
 function mockMinimatchForWin32() {
   var minimatch = require('minimatch')
@@ -32,6 +33,8 @@ function mockResolveForWin32() {
     var args = arguments
     if (args[0].indexOf(uncRoot) === 0) {
       args[0] = args[0].replace(uncRoot, localRoot).replace(/\\/g, '/')
+    } else if (args[0].indexOf('C:\\') === 0) {
+      args[0] = args[0].replace('C:\\', '/').replace(/\\/g, '/')
     }
     return originalResolve.apply(path, args)
   }
@@ -43,6 +46,7 @@ function mockProcessPlatformForWin32() {
 
 var mockingWin32 = process.platform !== 'win32'
 if (mockingWin32) {
+  windowsRoot = 'C:' + localRoot.replace(/\//g, '\\')
   mockMinimatchForWin32()
   mockResolveForWin32()
 }
@@ -65,8 +69,8 @@ test('glob doesn\'t choke on UNC paths', function(t) {
 })
 
 test('can match abs paths on Windows with nocase', function(t) {
-  var testPath = path.resolve(__dirname, "a")
-  glob(testPath, {nocase: true}, function (err, match) {
+  var testPath = path.resolve(__dirname, "fixtures/a/b/c/d")
+  glob(windowsRoot + '\\**\\b\\c\\d', {nocase: true}, function (err, match) {
     t.same(match, [testPath])
     t.end()
   })
