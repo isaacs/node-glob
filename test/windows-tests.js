@@ -1,4 +1,3 @@
-var minimatch = require('minimatch')
 var test = require('tap').test
 var path = require('path')
 var os = require('os')
@@ -6,10 +5,9 @@ var os = require('os')
 var uncRoot = '\\\\' + os.hostname() + '\\glob-test'
 var localRoot = path.resolve(__dirname, 'fixtures/a')
 
-if (process.platform !== 'win32') {
-  Object.defineProperty(process, 'platform', { value: 'win32' })
-
-  var OriginalMinimatch = minimatch.Minimatch;
+function mockMinimatchForWin32() {
+  var minimatch = require('minimatch')
+  var OriginalMinimatch = minimatch.Minimatch
   minimatch.Minimatch = function Minimatch(pattern, options) {
     if (!(this instanceof Minimatch))
       return new Minimatch(pattern, options)
@@ -25,9 +23,11 @@ if (process.platform !== 'win32') {
     this.makeRe = mm.makeRe
     this.match = mm.match
     this.matchOne = mm.matchOne
-  };
+  }
+}
 
-  var originalResolve = path.resolve.bind(path);
+function mockResolveForWin32() {
+  var originalResolve = path.resolve
   path.resolve = function() {
     var args = arguments
     if (args[0].indexOf(uncRoot) === 0) {
@@ -37,7 +37,19 @@ if (process.platform !== 'win32') {
   }
 }
 
+function mockProcessPlatformForWin32() {
+  Object.defineProperty(process, 'platform', { value: 'win32' })
+}
+
+var mockingWin32 = process.platform !== 'win32'
+if (mockingWin32) {
+  mockMinimatchForWin32()
+  mockResolveForWin32()
+}
 var glob = require('../glob.js')
+if (mockingWin32) {
+  mockProcessPlatformForWin32()
+}
 
 test('glob doesn\'t choke on UNC paths', function(t) {
   var expect = [uncRoot + '\\c', uncRoot + '\\cb']
