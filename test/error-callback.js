@@ -1,18 +1,18 @@
-require("./global-leakage.js")
+require('./global-leakage.js')
 var logCalled
-var console_error = console.error
+var consoleError = console.error
 console.error = function () {
   logCalled = [].slice.call(arguments, 0)
-  console.error = console_error
+  console.error = consoleError
 }
 
 var fs = require('fs')
 var test = require('tap').test
 var glob = require('../')
 
-test('mock fs', function(t) {
-  fs.readdir = function(path, cb) {
-    process.nextTick(function() {
+test('mock fs', function (t) {
+  fs.readdir = function (path, cb) {
+    process.nextTick(function () {
       cb(new Error('mock fs.readdir error'))
     })
   }
@@ -20,8 +20,8 @@ test('mock fs', function(t) {
   t.end()
 })
 
-test('error callback', function(t) {
-  glob('*', function(err, res) {
+test('error callback', function (t) {
+  glob('*', function (err, res) {
     t.ok(err, 'expecting mock error')
     t.end()
   })

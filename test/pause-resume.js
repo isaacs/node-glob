@@ -1,15 +1,14 @@
-require("./global-leakage.js")
+require('./global-leakage.js')
 // show that no match events happen while paused.
-var tap = require("tap")
-var child_process = require("child_process")
+var tap = require('tap')
+var path = require('path')
 // just some gnarly pattern with lots of matches
-var pattern = "a/!(symlink)/**"
-var bashResults = require("./bash-results.json")
-var glob = require("../")
+var pattern = 'a/!(symlink)/**'
+var bashResults = require('./bash-results.json')
+var glob = require('../')
 var Glob = glob.Glob
-var path = require("path")
 
-process.chdir(__dirname + '/fixtures')
+process.chdir(path.join(__dirname, '/fixtures'))
 
 function alphasort (a, b) {
   a = a.toLowerCase()
@@ -21,7 +20,7 @@ function cleanResults (m) {
   // normalize discrepancies in ordering, duplication,
   // and ending slashes.
   return m.map(function (m) {
-    return m.replace(/\/+/g, "/").replace(/\/$/, "")
+    return m.replace(/\/+/g, '/').replace(/\/$/, '')
   }).sort(alphasort).reduce(function (set, f) {
     if (f !== set[set.length - 1]) set.push(f)
     return set
@@ -33,29 +32,27 @@ function cleanResults (m) {
 }
 
 var globResults = []
-tap.test("use a Glob object, and pause/resume it", function (t) {
+tap.test('use a Glob object, and pause/resume it', function (t) {
   var g = new Glob(pattern)
-  var paused = false
-  var res = []
   var expect = bashResults[pattern]
 
-  g.on("match", function (m) {
-    t.notOk(g.paused, "must not be paused")
+  g.on('match', function (m) {
+    t.notOk(g.paused, 'must not be paused')
     globResults.push(m)
     g.pause()
-    t.ok(g.paused, "must be paused")
+    t.ok(g.paused, 'must be paused')
     setTimeout(g.resume.bind(g), 10)
   })
 
-  g.on("end", function (matches) {
-    t.pass("reached glob end")
+  g.on('end', function (matches) {
+    t.pass('reached glob end')
     globResults = cleanResults(globResults)
     matches = cleanResults(matches)
     t.deepEqual(matches, globResults,
-      "end event matches should be the same as match events")
+      'end event matches should be the same as match events')
 
     t.deepEqual(matches, expect,
-      "glob matches should be the same as bash results")
+      'glob matches should be the same as bash results')
 
     t.end()
   })

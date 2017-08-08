@@ -14,7 +14,7 @@ var allowedDirs = [
 
 fs.readdirSync = function (p) {
   if (allowedDirs.indexOf(path.resolve(p)) === -1 &&
-      !p.match(/[\\\/]node_modules[\\\/]/)) {
+      !p.match(/[\\/]node_modules[\\/]/)) {
     sawSyncENOTSUP = true
     var er = new Error('ENOTSUP: Operation not supported')
     er.path = path
@@ -26,10 +26,10 @@ fs.readdirSync = function (p) {
 
 fs.readdir = function (p, cb) {
   if (allowedDirs.indexOf(path.resolve(p)) === -1 &&
-      !p.match(/[\\\/]node_modules[\\\/]/)) {
+      !p.match(/[\\/]node_modules[\\/]/)) {
     setTimeout(function () {
       sawAsyncENOTSUP = true
-      er = new Error('ENOTSUP: Operation not supported')
+      var er = new Error('ENOTSUP: Operation not supported')
       er.path = path
       er.code = 'ENOTSUP'
       return cb(er)
@@ -41,8 +41,7 @@ fs.readdir = function (p, cb) {
 
 var glob = require('../')
 var test = require('tap').test
-var common = require('../common.js')
-process.chdir(__dirname + '/fixtures')
+process.chdir(path.join(__dirname, '/fixtures'))
 
 var pattern = 'a/**/h'
 var expect = [ 'a/abcdef/g/h', 'a/abcfed/g/h' ]
@@ -54,9 +53,10 @@ test(pattern + ' ' + JSON.stringify(options), function (t) {
   t.same(res, expect, 'sync results')
   t.ok(sawSyncENOTSUP, 'saw sync ENOTSUP')
 
-  var g = glob(pattern, options, function (er, res) {
-    if (er)
+  glob(pattern, options, function (er, res) {
+    if (er) {
       throw er
+    }
     t.ok(sawAsyncENOTSUP, 'saw async ENOTSUP')
     res = res.sort()
     t.same(res, expect, 'async results')

@@ -1,5 +1,6 @@
-require("./global-leakage.js")
-var dir = __dirname + '/fixtures'
+var path = require('path')
+require('./global-leakage.js')
+var dir = path.join(__dirname, '/fixtures')
 
 var fs = require('fs')
 var expect = [
@@ -13,7 +14,7 @@ var expect = [
 
 var lstat = fs.lstat
 var lstatSync = fs.lstatSync
-var badPaths = /\ba[\\\/]?$|\babcdef\b/
+var badPaths = /\ba[\\/]?$|\babcdef\b/
 
 fs.lstat = function (path, cb) {
   // synthetically generate a non-ENOENT error
@@ -44,8 +45,9 @@ t.test('stat errors other than ENOENT are ok', function (t) {
   t.plan(2)
   t.test('async', function (t) {
     glob('a/*abc*/**', { stat: true, cwd: dir }, function (er, matches) {
-      if (er)
+      if (er) {
         throw er
+      }
       t.same(matches, expect)
       t.end()
     })
@@ -92,8 +94,9 @@ t.test('globstar with error in root', function (t) {
   t.plan(2)
   t.test('async', function (t) {
     glob(pattern, { cwd: dir }, function (er, matches) {
-      if (er)
+      if (er) {
         throw er
+      }
       t.same(matches, expect)
       t.end()
     })

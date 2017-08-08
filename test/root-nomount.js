@@ -1,10 +1,10 @@
-require("./global-leakage.js")
-var tap = require("tap")
+require('./global-leakage.js')
+var tap = require('tap')
 var glob = require('../')
 var path = require('path')
 var isAbsolute = require('path-is-absolute')
 
-function cacheCheck(g, t) {
+function cacheCheck (g, t) {
   // verify that path cache keys are all absolute
   var caches = [ 'cache', 'statCache', 'symlinks' ]
   caches.forEach(function (c) {
@@ -14,9 +14,9 @@ function cacheCheck(g, t) {
   })
 }
 
-process.chdir(__dirname + '/fixtures')
+process.chdir(path.join(__dirname, '/fixtures'))
 
-tap.test("changing root and searching for /b*/**", function (t) {
+tap.test('changing root and searching for /b*/**', function (t) {
   t.test('.', function (t) {
     var g = glob('/b*/**', { root: '.', nomount: true }, function (er, matches) {
       t.ifError(er)
