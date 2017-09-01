@@ -7,7 +7,7 @@ var patterns = [
   '# comment',
   ' ',
   '\n',
-  'just doesnt happen to match anything so this is a control'
+  'just doesn't happen to match anything so this is a control'
 ]
 
 patterns.forEach(function (p) {
