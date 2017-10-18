@@ -317,9 +317,11 @@ GlobSync.prototype._readdirError = function (f, er) {
   // handle errors, and cache the information
   switch (er.code) {
     case 'ENOTSUP': // https://github.com/isaacs/node-glob/issues/205
-    case 'ENOTDIR': // totally normal. means it *does* exist.
+    case 'ENOTDIR': // Either means it exists, but it is a file, or some prefix of the path refers to a file
       var abs = this._makeAbs(f)
-      this.cache[abs] = 'FILE'
+      if (fs.existsSync(abs)) { // Is false when just some prefix of the path is a file, e.g. "/a.jpg/rest-of-path"
+        this.cache[abs] = 'FILE'
+      }
       if (abs === this.cwdAbs) {
         var error = new Error(er.code + ' invalid cwd ' + this.cwd)
         error.path = this.cwd
