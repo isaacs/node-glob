@@ -283,6 +283,10 @@ GlobSync.prototype._readdir = function (abs, inGlobStar) {
     if (Array.isArray(c))
       return c
   }
+  
+  if(fs.existsSync(abs) && !fs.lstatSync(abs).isDirectory()) {
+    return null;
+  }
 
   try {
     return this._readdirEntries(abs, fs.readdirSync(abs))
