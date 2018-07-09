@@ -7,6 +7,7 @@ exports.finish = finish
 exports.mark = mark
 exports.isIgnored = isIgnored
 exports.childrenIgnored = childrenIgnored
+exports.isWinDrive = isWinDrive
 
 function ownProp (obj, field) {
   return Object.prototype.hasOwnProperty.call(obj, field)
@@ -204,6 +205,8 @@ function makeAbs (self, f) {
   var abs = f
   if (f.charAt(0) === '/') {
     abs = path.join(self.root, f)
+  } else if (isWinDrive(f)) {
+    abs = f + '/'
   } else if (isAbsolute(f) || f === '') {
     abs = f
   } else if (self.changedCwd) {
@@ -237,4 +240,8 @@ function childrenIgnored (self, path) {
   return self.ignore.some(function(item) {
     return !!(item.gmatcher && item.gmatcher.match(path))
   })
+}
+
+function isWinDrive (path) {
+  return process.platform === 'win32' && path.match(/^[a-z]+:$/i)
 }

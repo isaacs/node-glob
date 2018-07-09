@@ -346,7 +346,7 @@ Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
   if (prefix === null)
     read = '.'
   else if (isAbsolute(prefix) || isAbsolute(pattern.join('/'))) {
-    if (!prefix || !isAbsolute(prefix))
+    if ((!prefix || !isAbsolute(prefix)) && !common.isWinDrive(prefix))
       prefix = '/' + prefix
     read = prefix
   } else
