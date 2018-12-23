@@ -48,7 +48,6 @@ var inherits = require('inherits')
 var EE = require('events').EventEmitter
 var path = require('path')
 var assert = require('assert')
-var isAbsolute = require('path-is-absolute')
 var globSync = require('./sync.js')
 var common = require('./common.js')
 var alphasort = common.alphasort
@@ -345,8 +344,8 @@ Glob.prototype._process = function (pattern, index, inGlobStar, cb) {
   var read
   if (prefix === null)
     read = '.'
-  else if (isAbsolute(prefix) || isAbsolute(pattern.join('/'))) {
-    if (!prefix || !isAbsolute(prefix))
+  else if (path.isAbsolute(prefix) || path.isAbsolute(pattern.join('/'))) {
+    if (!prefix || !path.isAbsolute(prefix))
       prefix = '/' + prefix
     read = prefix
   } else
@@ -463,7 +462,7 @@ Glob.prototype._emitMatch = function (index, e) {
     return
   }
 
-  var abs = isAbsolute(e) ? e : this._makeAbs(e)
+  var abs = path.isAbsolute(e) ? e : this._makeAbs(e)
 
   if (this.mark)
     e = this._mark(e)
@@ -687,7 +686,7 @@ Glob.prototype._processSimple2 = function (prefix, index, er, exists, cb) {
   if (!exists)
     return cb()
 
-  if (prefix && isAbsolute(prefix) && !this.nomount) {
+  if (prefix && path.isAbsolute(prefix) && !this.nomount) {
     var trail = /[\/\\]$/.test(prefix)
     if (prefix.charAt(0) === '/') {
       prefix = path.join(this.root, prefix)
