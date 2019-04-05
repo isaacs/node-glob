@@ -31,7 +31,7 @@
     "tick": "0.0.6"
   },
   "scripts": {
-    "prepublish": "npm run benchclean",
+    "prepublishOnly": "npm run benchclean",
     "profclean": "rm -f v8.log profile.txt",
     "test": "tap test/*.js --cov",
     "test-regen": "npm run profclean && TEST_REGEN=1 node test/00-setup.js",
