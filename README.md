@@ -7,7 +7,7 @@ Match files using the patterns the shell uses, like stars and stuff.
 This is a glob implementation in JavaScript.  It uses the `minimatch`
 library to do its matching.
 
-![](logo/glob.svg)
+![](logo/glob.png)
 
 ## Usage
 
