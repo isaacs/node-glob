@@ -1,8 +1,18 @@
-sudo: false
 language: node_js
+
 node_js:
-  - '0.10'
-  - '0.12'
-  - '4'
-  - '5'
-  - '6'
+  - node
+  - 12
+  - 10
+  - 8
+
+os:
+  - linux
+  - windows
+
+cache:
+  directories:
+    - $HOME/.npm
+
+notifications:
+  email: false
