@@ -120,11 +120,15 @@ options.
 
 Perform an asynchronous glob search.
 
-## glob.sync(pattern, [options])
+## glob.sync(pattern, options)
 
 * `pattern` `{String}` Pattern to be matched
 * `options` `{Object}`
-* return: `{Array<String>}` filenames found matching the pattern
+
+  :warning: Must include property `sync: true` to run synchronously.
+
+* return: `{Object}`
+  * `matches` `{Array<String>}` Array of matched filenames
 
 Perform a synchronous glob search.
 
