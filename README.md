@@ -127,8 +127,7 @@ Perform an asynchronous glob search.
 
   :warning: Must include property `sync: true` to run synchronously.
 
-* return: `{Object}`
-  * `matches` `{Array<String>}` Array of matched filenames
+* return: `{Array<String>}` Array of matched filenames
 
 Perform a synchronous glob search.
 
