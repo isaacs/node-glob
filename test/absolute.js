@@ -2,15 +2,10 @@ require('./global-leakage.js')
 var t = require('tap')
 var glob = require('../')
 var common = require('../common.js')
+var path = require('path')
 var pattern = 'a/b/**';
 var bashResults = require('./bash-results.json')
-var isAbsolute = require('path-is-absolute')
 process.chdir(__dirname + '/fixtures')
-
-t.Test.prototype.addAssert('isAbsolute', 1, function (file, message, extra) {
-  extra.found = file
-  return this.ok(isAbsolute(file), message || 'must be absolute', extra)
-})
 
 var marks = [ true, false ]
 marks.forEach(function (mark) {
@@ -22,7 +17,7 @@ marks.forEach(function (mark) {
 
       var matchCount = 0
       g.on('match', function (m) {
-        t.isAbsolute(m)
+        t.ok(path.isAbsolute(m), 'must be absolute', { found: m })
         matchCount++
       })
 
@@ -30,7 +25,7 @@ marks.forEach(function (mark) {
         t.equal(matchCount, bashResults[pattern].length, 'must match all files')
         t.equal(results.length, bashResults[pattern].length, 'must match all files')
         results.forEach(function (m) {
-          t.isAbsolute(m)
+          t.ok(path.isAbsolute(m), 'must be absolute', { found: m })
         })
         t.end()
       })
@@ -41,7 +36,7 @@ marks.forEach(function (mark) {
 
       t.equal(results.length, bashResults[pattern].length, 'must match all files')
       results.forEach(function (m) {
-        t.ok(isAbsolute(m), 'must be absolute', { found: m })
+        t.ok(path.isAbsolute(m), 'must be absolute', { found: m })
       })
       t.end()
     })
