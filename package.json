@@ -39,5 +39,8 @@
     "prof": "bash prof.sh && cat profile.txt",
     "benchclean": "node benchclean.js"
   },
-  "license": "ISC"
+  "license": "ISC",
+  "funding": {
+    "url": "https://github.com/sponsors/isaacs"
+  }
 }
