@@ -17,6 +17,22 @@ var minimatch = require("minimatch")
 var isAbsolute = require("path-is-absolute")
 var Minimatch = minimatch.Minimatch
 
+function WinPath (p) {
+  if (!(this instanceof WinPath))
+    return new WinPath(p)
+
+  // pull off the device/UNC bit from a windows path.
+  // from node's lib/path.js
+  var splitDeviceRe =
+      /^([a-zA-Z]:|[\\\/]{2}[^\\\/]+[\\\/]+[^\\\/]+)?([\\\/])?([\s\S]*?)$/
+  var result = splitDeviceRe.exec(p)
+  this.device = result[1] || ''
+  this.sep = result[2] || ''
+  this.tail = result[3] || ''
+  this.isUnc = !!this.device && this.device.charAt(1) !== ':'
+  this.isAbsolute = !!this.sep || this.isUnc // UNC paths are always absolute
+}
+
 function alphasorti (a, b) {
   return a.toLowerCase().localeCompare(b.toLowerCase())
 }
@@ -96,6 +112,14 @@ function setopts (self, pattern, options) {
   else {
     self.cwd = path.resolve(options.cwd)
     self.changedCwd = self.cwd !== cwd
+  }
+
+  if (process.platform === "win32") {
+    var winPath = new WinPath(pattern)
+    if (winPath.isAbsolute) {
+      options.root = winPath.device
+      pattern = winPath.sep + winPath.tail
+    }
   }
 
   self.root = options.root || path.resolve(self.cwd, "/")
