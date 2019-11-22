@@ -4,7 +4,6 @@ var tap = require("tap")
 var origCwd = process.cwd()
 process.chdir(__dirname + '/fixtures')
 var path = require('path')
-var isAbsolute = require('path-is-absolute')
 var glob = require('../')
 
 function cacheCheck(g, t) {
@@ -12,7 +11,7 @@ function cacheCheck(g, t) {
   var caches = [ 'cache', 'statCache', 'symlinks' ]
   caches.forEach(function (c) {
     Object.keys(g[c]).forEach(function (p) {
-      t.ok(isAbsolute(p), p + ' should be absolute')
+      t.ok(path.isAbsolute(p), p + ' should be absolute')
     })
   })
 }
