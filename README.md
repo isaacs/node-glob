@@ -183,7 +183,7 @@ be immediately available on the `g.found` member.
 * `match` Every time a match is found, this is emitted with the specific
   thing that matched. It is not deduplicated or resolved to a realpath.
 * `error` Emitted when an unexpected error is encountered, or whenever
-  any fs error occurs if `options.strict` is set.
+  any fs error occurs, unless the `strict` option is set to false.
 * `abort` When `abort()` is called, this event is raised.
 
 ### Methods
@@ -230,9 +230,9 @@ the filesystem.
   read a directory, a warning will be printed to stderr.  Set the
   `silent` option to true to suppress these warnings.
 * `strict` When an unusual error is encountered when attempting to
-  read a directory, the process will just continue on in search of
-  other matches.  Set the `strict` option to raise an error in these
-  cases.
+  read a directory, an error will be raised. Set the `strict` option
+  to false continue the search for other matches in these cases.
+  Defaults to true.
 * `cache` See `cache` property above.  Pass in a previously generated
   cache object to save some fs calls.
 * `statCache` A cache of results of filesystem information, to prevent
