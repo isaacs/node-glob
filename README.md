@@ -67,7 +67,7 @@ then it will not match any glob pattern unless that pattern's
 corresponding path part also has a `.` as its first character.
 
 For example, the pattern `a/.*/c` would match the file at `a/.b/c`.
-However the pattern `a/*/c` would not, because `*` does not start with
+However, the pattern `a/*/c` would not, because `*` does not start with
 a dot character.
 
 You can make glob treat dots as normal characters by setting
@@ -89,7 +89,7 @@ example:
     $ echo a*s*d*f
     a*s*d*f
 
-To get the bash-style behavior, set the `nonull:true` in the options.
+To get the bash-style behaviour, set the `nonull:true` in the options.
 
 ### See Also:
 
@@ -172,14 +172,14 @@ be immediately available on the `g.found` member.
   relevant in resolving `**` patterns.
 * `realpathCache` An optional object which is passed to `fs.realpath`
   to minimize unnecessary syscalls.  It is stored on the instantiated
-  Glob object, and may be re-used.
+  Glob object and may be re-used.
 
 ### Events
 
 * `end` When the matching is finished, this is emitted with all the
   matches found.  If the `nonull` option is set, and no match was found,
   then the `matches` list contains the original pattern.  The matches
-  are sorted, unless the `nosort` flag is set.
+  are sorted unless the `nosort` flag is set.
 * `match` Every time a match is found, this is emitted with the specific
   thing that matched. It is not deduplicated or resolved to a realpath.
 * `error` Emitted when an unexpected error is encountered, or whenever
@@ -195,10 +195,10 @@ be immediately available on the `g.found` member.
 ### Options
 
 All the options that can be passed to Minimatch can also be passed to
-Glob to change pattern matching behavior.  Also, some have been added,
+Glob to change pattern matching behaviour.  Also, some have been added,
 or have glob-specific ramifications.
 
-All options are false by default, unless otherwise noted.
+All options are false by default unless otherwise noted.
 
 All options are added to the Glob object, as well.
 
@@ -224,7 +224,7 @@ the filesystem.
   requires additional stat calls.
 * `nosort` Don't sort the results.
 * `stat` Set to true to stat *all* results.  This reduces performance
-  somewhat, and is completely unnecessary, unless `readdir` is presumed
+  somewhat, and is completely unnecessary unless `readdir` is presumed
   to be an untrustworthy indicator of file existence.
 * `silent` When an unusual error is encountered when attempting to
   read a directory, a warning will be printed to stderr.  Set the
@@ -247,8 +247,8 @@ the filesystem.
 * `nounique` In some cases, brace-expanded patterns can result in the
   same file showing up multiple times in the result set.  By default,
   this implementation prevents duplicates in the result set.  Set this
-  flag to disable that behavior.
-* `nonull` Set to never return an empty set, instead returning a set
+  flag to disable that behaviour.
+* `nonull` Set to never return an empty set, instead of returning a set
   containing the pattern itself.  This is the default in glob(3).
 * `debug` Set to enable debug logging in minimatch and glob.
 * `nobrace` Do not expand `{a,b}` and `{1..3}` brace sets.
@@ -281,7 +281,7 @@ the filesystem.
 
 While strict compliance with the existing standards is a worthwhile
 goal, some discrepancies exist between node-glob and other
-implementations, and are intentional.
+implementations and are intentional.
 
 The double-star character `**` is supported by default, unless the
 `noglobstar` flag is set.  This is supported in the manner of bsdglob
@@ -308,7 +308,7 @@ checked for validity.  Since those two are valid, matching proceeds.
 
 ### Comments and Negation
 
-Previously, this module let you mark a pattern as a "comment" if it
+Previously, this module lets you mark a pattern as a "comment" if it
 started with a `#` character, or a "negated" pattern if it started
 with a `!` character.
 
@@ -320,7 +320,7 @@ To specify things that should not match, use the `ignore` option.
 
 **Please only use forward-slashes in glob expressions.**
 
-Though windows uses either `/` or `\` as its path separator, only `/`
+Though windows use either `/` or `\` as its path separator, only `/`
 characters are used by this glob implementation.  You must use
 forward-slashes **only** in glob expressions.  Back-slashes will always
 be interpreted as escape characters, not path separators.
@@ -354,7 +354,7 @@ The logo is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Intern
 
 ## Contributing
 
-Any change to behavior (including bugfixes) must come with a test.
+Any change to behaviour (including bugfixes) must come with a test.
 
 Patches that fail tests or reduce performance will be rejected.
 
