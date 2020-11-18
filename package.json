@@ -25,6 +25,7 @@
     "path-is-absolute": "^1.0.0"
   },
   "devDependencies": {
+    "memfs": "^3.2.0",
     "mkdirp": "0",
     "rimraf": "^2.2.8",
     "tap": "^15.0.6",
