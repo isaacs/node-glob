@@ -123,6 +123,10 @@ function Glob (pattern, options, cb) {
     options = null
   }
 
+  if (options && options.fs) {
+    fs = options.fs
+  }
+
   if (options && options.sync) {
     if (cb)
       throw new TypeError('callback provided to sync glob')

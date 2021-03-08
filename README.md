@@ -276,6 +276,31 @@ the filesystem.
 * `absolute` Set to true to always receive absolute paths for matched
   files.  Unlike `realpath`, this also affects the values returned in
   the `match` event.
+* `fs` To provide a custom `fs` module like the in-memory file-system [memfs](https://github.com/streamich/memfs) often used for testing.
+  Example:
+  ```js
+  var glob = require("glob");
+  var vol = require("memfs").vol;
+
+  const json = {
+    "./README.md": "1",
+    "./src/index.js": "2",
+    "./node_modules/debug/index.js": "3",
+  };
+  vol.fromJSON(json, "/app");
+
+  var opt = {
+    cwd: "/app",
+    fs: vol,
+  };
+
+  glob("**/*.js", opt, function (er, files) {
+    if (er) {
+      console.log(er);
+    }
+    console.log(files);
+  });
+  ```
 
 ## Comparisons to other fnmatch/glob implementations
 
