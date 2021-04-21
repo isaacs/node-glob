@@ -43,7 +43,6 @@ module.exports = glob
 var fs = require('fs')
 var rp = require('fs.realpath')
 var minimatch = require('minimatch')
-var Minimatch = minimatch.Minimatch
 var inherits = require('inherits')
 var EE = require('events').EventEmitter
 var path = require('path')
@@ -51,12 +50,9 @@ var assert = require('assert')
 var isAbsolute = require('path-is-absolute')
 var globSync = require('./sync.js')
 var common = require('./common.js')
-var alphasort = common.alphasort
-var alphasorti = common.alphasorti
 var setopts = common.setopts
 var ownProp = common.ownProp
 var inflight = require('inflight')
-var util = require('util')
 var childrenIgnored = common.childrenIgnored
 var isIgnored = common.isIgnored
 
@@ -230,7 +226,7 @@ Glob.prototype._realpathSet = function (index, cb) {
     return cb()
 
   var set = this.matches[index] = Object.create(null)
-  found.forEach(function (p, i) {
+  found.forEach(function (p) {
     // If there's a problem with the stat, then it means that
     // one or more of the links in the realpath couldn't be
     // resolved.  just return the abs value in that case.
@@ -439,7 +435,6 @@ Glob.prototype._processReaddir2 = function (prefix, read, abs, remain, index, in
   remain.shift()
   for (var i = 0; i < len; i ++) {
     var e = matchedEntries[i]
-    var newPattern
     if (prefix) {
       if (prefix !== '/')
         e = prefix + '/' + e
@@ -543,7 +538,6 @@ Glob.prototype._readdir = function (abs, inGlobStar, cb) {
       return cb(null, c)
   }
 
-  var self = this
   fs.readdir(abs, readdirCb(this, abs, cb))
 }
 
@@ -731,7 +725,6 @@ Glob.prototype._stat = function (f, cb) {
     // if we know it exists, but not what it is.
   }
 
-  var exists
   var stat = this.statCache[abs]
   if (stat !== undefined) {
     if (stat === false)
