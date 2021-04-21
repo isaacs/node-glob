@@ -4,15 +4,10 @@ globSync.GlobSync = GlobSync
 var fs = require('fs')
 var rp = require('fs.realpath')
 var minimatch = require('minimatch')
-var Minimatch = minimatch.Minimatch
-var Glob = require('./glob.js').Glob
-var util = require('util')
 var path = require('path')
 var assert = require('assert')
 var isAbsolute = require('path-is-absolute')
 var common = require('./common.js')
-var alphasort = common.alphasort
-var alphasorti = common.alphasorti
 var setopts = common.setopts
 var ownProp = common.ownProp
 var childrenIgnored = common.childrenIgnored
@@ -246,7 +241,6 @@ GlobSync.prototype._readdirInGlobStar = function (abs) {
 
   var entries
   var lstat
-  var stat
   try {
     lstat = fs.lstatSync(abs)
   } catch (er) {
@@ -270,7 +264,6 @@ GlobSync.prototype._readdirInGlobStar = function (abs) {
 }
 
 GlobSync.prototype._readdir = function (abs, inGlobStar) {
-  var entries
 
   if (inGlobStar && !ownProp(this.symlinks, abs))
     return this._readdirInGlobStar(abs)
@@ -439,7 +432,6 @@ GlobSync.prototype._stat = function (f) {
     // if we know it exists, but not what it is.
   }
 
-  var exists
   var stat = this.statCache[abs]
   if (!stat) {
     var lstat
