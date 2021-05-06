@@ -51,10 +51,10 @@ tap.test("use a Glob object, and pause/resume it", function (t) {
     t.pass("reached glob end")
     globResults = cleanResults(globResults)
     matches = cleanResults(matches)
-    t.deepEqual(matches, globResults,
+    t.same(matches, globResults,
       "end event matches should be the same as match events")
 
-    t.deepEqual(matches, expect,
+    t.same(matches, expect,
       "glob matches should be the same as bash results")
 
     t.end()

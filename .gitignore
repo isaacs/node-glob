@@ -1,4 +1,5 @@
 .*.swp
+/*.tap
 node_modules/*
 v8.log
 profile.txt

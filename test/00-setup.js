@@ -5,8 +5,10 @@ require("./global-leakage.js")
 var mkdirp = require("mkdirp")
 var path = require("path")
 var i = 0
+process.env.TAP_BAIL = '1'
 var tap = require("tap")
 var fs = require("fs")
+tap.pipe(fs.createWriteStream(path.resolve(__dirname, '../00-setup.tap')))
 var rimraf = require("rimraf")
 
 var fixtureDir = path.resolve(__dirname, 'fixtures')
@@ -45,7 +47,7 @@ files.forEach(function (f) {
         return t.bailout()
       }
       fs.writeFile(f, "i like tests", function (er) {
-        t.ifError(er, "make file")
+        t.error(er, "make file")
         t.end()
       })
     })
@@ -140,7 +142,7 @@ tap.test("save fixtures", function (t) {
   var fname = path.resolve(__dirname, "bash-results.json")
   var data = JSON.stringify(bashOutput, null, 2) + "\n"
   fs.writeFile(fname, data, function (er) {
-    t.ifError(er)
+    t.error(er)
     t.end()
   })
 })

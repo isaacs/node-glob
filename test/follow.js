@@ -24,8 +24,8 @@ test('follow symlinks', function (t) {
       t.same(follow, syncFollow, 'sync and async follow should match')
       t.same(noFollow, syncNoFollow, 'sync and async noFollow should match')
       var long = 'a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c'
-      t.notEqual(follow.indexOf(long), -1, 'follow should have long entry')
-      t.notEqual(syncFollow.indexOf(long), -1, 'syncFollow should have long entry')
+      t.not(follow.indexOf(long), -1, 'follow should have long entry')
+      t.not(syncFollow.indexOf(long), -1, 'syncFollow should have long entry')
       t.end()
     })
   })
