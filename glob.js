@@ -43,7 +43,6 @@ module.exports = glob
 var fs = require('fs')
 var rp = require('fs.realpath')
 var minimatch = require('minimatch')
-var Minimatch = minimatch.Minimatch
 var inherits = require('inherits')
 var EE = require('events').EventEmitter
 var path = require('path')
@@ -54,7 +53,6 @@ var common = require('./common.js')
 var setopts = common.setopts
 var ownProp = common.ownProp
 var inflight = require('inflight')
-var util = require('util')
 var childrenIgnored = common.childrenIgnored
 var isIgnored = common.isIgnored
 
