@@ -43,7 +43,6 @@ module.exports = glob
 var fs = require('fs')
 var rp = require('fs.realpath')
 var minimatch = require('minimatch')
-var Minimatch = minimatch.Minimatch
 var inherits = require('inherits')
 var EE = require('events').EventEmitter
 var path = require('path')
@@ -54,7 +53,6 @@ var common = require('./common.js')
 var setopts = common.setopts
 var ownProp = common.ownProp
 var inflight = require('inflight')
-var util = require('util')
 var childrenIgnored = common.childrenIgnored
 var isIgnored = common.isIgnored
 
@@ -437,7 +435,6 @@ Glob.prototype._processReaddir2 = function (prefix, read, abs, remain, index, in
   remain.shift()
   for (var i = 0; i < len; i ++) {
     var e = matchedEntries[i]
-    var newPattern
     if (prefix) {
       if (prefix !== '/')
         e = prefix + '/' + e
@@ -541,7 +538,6 @@ Glob.prototype._readdir = function (abs, inGlobStar, cb) {
       return cb(null, c)
   }
 
-  var self = this
   fs.readdir(abs, readdirCb(this, abs, cb))
 }
 
@@ -729,7 +725,6 @@ Glob.prototype._stat = function (f, cb) {
     // if we know it exists, but not what it is.
   }
 
-  var exists
   var stat = this.statCache[abs]
   if (stat !== undefined) {
     if (stat === false)
