@@ -110,7 +110,7 @@ pattern.  If the pattern has a brace expansion, like `a/{b/c,x/y}`
 then that is considered magical, unless `nobrace:true` is set in the
 options.
 
-## glob(pattern, [options], cb)
+## glob(pattern, [options,] cb)
 
 * `pattern` `{String}` Pattern to be matched
 * `options` `{Object}`
@@ -140,7 +140,7 @@ var mg = new Glob(pattern, options, cb)
 It's an EventEmitter, and starts walking the filesystem to find matches
 immediately.
 
-### new glob.Glob(pattern, [options], [cb])
+### new glob.Glob(pattern, [options,] [cb])
 
 * `pattern` `{String}` pattern to search for
 * `options` `{Object}`
