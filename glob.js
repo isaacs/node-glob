@@ -40,8 +40,6 @@
 
 module.exports = glob
 
-var fs = require('fs')
-var rp = require('fs.realpath')
 var minimatch = require('minimatch')
 var Minimatch = minimatch.Minimatch
 var inherits = require('inherits')
@@ -130,7 +128,7 @@ function Glob (pattern, options, cb) {
   if (!(this instanceof Glob))
     return new Glob(pattern, options, cb)
 
-  setopts(this, pattern, options)
+  setopts(this, pattern, options, false)
   this._didRealPath = false
 
   // process each pattern in the minimatch set
@@ -233,7 +231,7 @@ Glob.prototype._realpathSet = function (index, cb) {
     // one or more of the links in the realpath couldn't be
     // resolved.  just return the abs value in that case.
     p = self._makeAbs(p)
-    rp.realpath(p, self.realpathCache, function (er, real) {
+    self.rp.realpath(p, self.realpathCache, function (er, real) {
       if (!er)
         set[real] = true
       else if (er.syscall === 'stat')
@@ -501,7 +499,7 @@ Glob.prototype._readdirInGlobStar = function (abs, cb) {
   var lstatcb = inflight(lstatkey, lstatcb_)
 
   if (lstatcb)
-    fs.lstat(abs, lstatcb)
+    self.fs.lstat(abs, lstatcb)
 
   function lstatcb_ (er, lstat) {
     if (er && er.code === 'ENOENT')
@@ -541,8 +539,7 @@ Glob.prototype._readdir = function (abs, inGlobStar, cb) {
       return cb(null, c)
   }
 
-  var self = this
-  fs.readdir(abs, readdirCb(this, abs, cb))
+  this.fs.readdir(abs, readdirCb(this, abs, cb))
 }
 
 function readdirCb (self, abs, cb) {
@@ -746,13 +743,13 @@ Glob.prototype._stat = function (f, cb) {
   var self = this
   var statcb = inflight('stat\0' + abs, lstatcb_)
   if (statcb)
-    fs.lstat(abs, statcb)
+    self.fs.lstat(abs, statcb)
 
   function lstatcb_ (er, lstat) {
     if (lstat && lstat.isSymbolicLink()) {
       // If it's a symlink, then treat it as the target, unless
       // the target does not exist, then treat it as a file.
-      return fs.stat(abs, function (er, stat) {
+      return self.fs.stat(abs, function (er, stat) {
         if (er)
           self._stat2(f, abs, null, lstat, cb)
         else

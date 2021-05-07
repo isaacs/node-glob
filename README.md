@@ -173,6 +173,8 @@ be immediately available on the `g.found` member.
 * `realpathCache` An optional object which is passed to `fs.realpath`
   to minimize unnecessary syscalls.  It is stored on the instantiated
   Glob object, and may be re-used.
+* `fs` By default `require('fs')` is used, but a custom filesystem
+  adapter may be provided as an option.
 
 ### Events
 
@@ -272,10 +274,14 @@ the filesystem.
 * `realpath` Set to true to call `fs.realpath` on all of the results.
   In the case of a symlink that cannot be resolved, the full absolute
   path to the matched entry is returned (though it will usually be a
-  broken symlink)
+  broken symlink). This option is forced to be `false` when a custom
+  filesystem adapter is provided in the `fs` option.
 * `absolute` Set to true to always receive absolute paths for matched
   files.  Unlike `realpath`, this also affects the values returned in
   the `match` event.
+* `fs` Provide custom implementations of the filesystem calls `readdir`,
+  `stat` and optionally `lstat`. With `glob.sync()`, their synchronous
+  counterparts are expected.
 
 ## Comparisons to other fnmatch/glob implementations
 
