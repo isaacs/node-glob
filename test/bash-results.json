@@ -136,5 +136,15 @@
     "a/symlink/a/b",
     "a/symlink/a/b/c",
     "a/symlink/a/b/c/a"
+  ],
+  "a/!(symlink)": [
+    "a/abcdef",
+    "a/abcfed",
+    "a/b",
+    "a/bc",
+    "a/c",
+    "a/cb",
+    "a/x",
+    "a/z"
   ]
 }
