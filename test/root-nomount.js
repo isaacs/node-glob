@@ -19,8 +19,8 @@ process.chdir(__dirname + '/fixtures')
 tap.test("changing root and searching for /b*/**", function (t) {
   t.test('.', function (t) {
     var g = glob('/b*/**', { root: '.', nomount: true }, function (er, matches) {
-      t.ifError(er)
-      t.like(matches, [])
+      t.error(er)
+      t.same(matches, [])
       cacheCheck(g, t)
       t.end()
     })
@@ -28,8 +28,8 @@ tap.test("changing root and searching for /b*/**", function (t) {
 
   t.test('a', function (t) {
     var g = glob('/b*/**', { root: path.resolve('a'), nomount: true }, function (er, matches) {
-      t.ifError(er)
-      t.like(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ])
+      t.error(er)
+      t.same(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ])
       cacheCheck(g, t)
       t.end()
     })
@@ -37,8 +37,8 @@ tap.test("changing root and searching for /b*/**", function (t) {
 
   t.test('root=a, cwd=a/b', function (t) {
     var g = glob('/b*/**', { root: 'a', cwd: path.resolve('a/b'), nomount: true }, function (er, matches) {
-      t.ifError(er)
-      t.like(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ])
+      t.error(er)
+      t.same(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ])
       cacheCheck(g, t)
       t.end()
     })
