@@ -34,6 +34,7 @@
   "tap": {
     "before": "test/00-setup.js",
     "after": "test/zz-cleanup.js",
+    "check-coverage": false,
     "jobs": 1
   },
   "scripts": {
