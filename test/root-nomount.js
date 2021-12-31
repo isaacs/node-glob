@@ -2,14 +2,13 @@ require("./global-leakage.js")
 var tap = require("tap")
 var glob = require('../')
 var path = require('path')
-var isAbsolute = require('path-is-absolute')
 
 function cacheCheck(g, t) {
   // verify that path cache keys are all absolute
   var caches = [ 'cache', 'statCache', 'symlinks' ]
   caches.forEach(function (c) {
     Object.keys(g[c]).forEach(function (p) {
-      t.ok(isAbsolute(p), p + ' should be absolute')
+      t.ok(path.isAbsolute(p), p + ' should be absolute')
     })
   })
 }

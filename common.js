@@ -13,7 +13,6 @@ function ownProp (obj, field) {
 var fs = require("fs")
 var path = require("path")
 var minimatch = require("minimatch")
-var isAbsolute = require("path-is-absolute")
 var Minimatch = minimatch.Minimatch
 
 function alphasort (a, b) {
@@ -101,7 +100,7 @@ function setopts (self, pattern, options) {
 
   // TODO: is an absolute `cwd` supposed to be resolved against `root`?
   // e.g. { cwd: '/test', root: __dirname } === path.join(__dirname, '/test')
-  self.cwdAbs = isAbsolute(self.cwd) ? self.cwd : makeAbs(self, self.cwd)
+  self.cwdAbs = path.isAbsolute(self.cwd) ? self.cwd : makeAbs(self, self.cwd)
   if (process.platform === "win32")
     self.cwdAbs = self.cwdAbs.replace(/\\/g, "/")
   self.nomount = !!options.nomount
@@ -200,7 +199,7 @@ function makeAbs (self, f) {
   var abs = f
   if (f.charAt(0) === '/') {
     abs = path.join(self.root, f)
-  } else if (isAbsolute(f) || f === '') {
+  } else if (path.isAbsolute(f) || f === '') {
     abs = f
   } else if (self.changedCwd) {
     abs = path.resolve(self.cwd, f)

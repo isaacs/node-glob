@@ -4,12 +4,12 @@ var glob = require('../')
 var common = require('../common.js')
 var pattern = 'a/b/**';
 var bashResults = require('./bash-results.json')
-var isAbsolute = require('path-is-absolute')
+var path = require('path')
 process.chdir(__dirname + '/fixtures')
 
 t.Test.prototype.addAssert('isAbsolute', 1, function (file, message, extra) {
   extra.found = file
-  return this.ok(isAbsolute(file), message || 'must be absolute', extra)
+  return this.ok(path.isAbsolute(file), message || 'must be absolute', extra)
 })
 
 var marks = [ true, false ]
@@ -41,7 +41,7 @@ marks.forEach(function (mark) {
 
       t.equal(results.length, bashResults[pattern].length, 'must match all files')
       results.forEach(function (m) {
-        t.ok(isAbsolute(m), 'must be absolute', { found: m })
+        t.ok(path.isAbsolute(m), 'must be absolute', { found: m })
       })
       t.end()
     })
