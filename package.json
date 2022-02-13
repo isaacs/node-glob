@@ -14,7 +14,7 @@
     "common.js"
   ],
   "engines": {
-    "node": "*"
+    "node": ">=10"
   },
   "dependencies": {
     "fs.realpath": "^1.0.0",
