@@ -1,7 +1,6 @@
 require("./global-leakage.js")
 var test = require("tap").test
 var glob = require('../')
-var common = require('../common.js')
 process.chdir(__dirname)
 
 // [pattern, options, expect]
@@ -17,15 +16,10 @@ cases.forEach(function (c) {
   var options = c[1] || {}
   options.nonull = true
   var expect = c[2].sort()
-  test(pattern + ' ' + JSON.stringify(options), function (t) {
-    var res = glob.sync(pattern, options).sort()
-    t.same(res, expect, 'sync results')
-    var g = glob(pattern, options, function (er, res) {
-      if (er)
-        throw er
-      res = res.sort()
-      t.same(res, expect, 'async results')
-      t.end()
-    })
+  test(pattern + ' ' + JSON.stringify(options), async t => {
+    var sync = glob.sync(pattern, options).sort()
+    t.same(sync, expect, 'sync results')
+    const res = (await glob(pattern, options)).sort()
+    t.same(res, expect, 'async results')
   })
 })

@@ -17,65 +17,47 @@ function cacheCheck(g, t) {
   })
 }
 
-t.test('.', function (t) {
-  var g = glob('/b*/**', { root: '.' }, function (er, matches) {
-    t.error(er)
-    t.same(matches, [])
-    cacheCheck(g, t)
-    t.end()
-  })
+t.test('.', async t => {
+  var g = new glob.Glob('/b*/**', { root: '.' })
+  t.same(await g.results, [])
+  cacheCheck(g, t)
 })
 
 
-t.test('a', function (t) {
-  var g = glob('/b*/**', { root: path.resolve('a') }, function (er, matches) {
-    t.error(er)
-    var wanted = [
-        '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f'
-      ].map(function (m) {
-        return path.join(path.resolve('a'), m).replace(/\\/g, '/')
-      })
-
-    t.same(matches, wanted)
-    cacheCheck(g, t)
-    t.end()
+t.test('a', async t => {
+  var g = new glob.Glob('/b*/**', { root: path.resolve('a') })
+  var wanted = [
+    '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f'
+  ].map(function (m) {
+    return path.join(path.resolve('a'), m).replace(/\\/g, '/')
   })
+
+  t.same(await g.results, wanted)
+  cacheCheck(g, t)
 })
 
-t.test('root=a, cwd=a/b', function (t) {
-  var g = glob('/b*/**', { root: 'a', cwd: path.resolve('a/b') }, function (er, matches) {
-    t.error(er)
-    t.same(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ].map(function (m) {
-      return path.join(path.resolve('a'), m).replace(/\\/g, '/')
-    }))
-    cacheCheck(g, t)
-    t.end()
-  })
+t.test('root=a, cwd=a/b', async t => {
+  var g = new glob.Glob('/b*/**', { root: 'a', cwd: path.resolve('a/b') })
+  t.same(await g.results, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ].map(function (m) {
+    return path.join(path.resolve('a'), m).replace(/\\/g, '/')
+  }))
+  cacheCheck(g, t)
 })
 
-t.test('combined with absolute option', function(t) {
-  var g = glob('/b*/**', { root: path.resolve('a'), absolute: true }, function (er, matches) {
-    t.error(er)
-    t.same(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ].map(function (m) {
-      return path.join(path.resolve('a'), m).replace(/\\/g, '/')
-    }))
-    cacheCheck(g, t)
-    t.end()
-  })
+t.test('combined with absolute option', async t => {
+  var g = new glob.Glob('/b*/**', { root: path.resolve('a'), absolute: true })
+  t.same(await g.results, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ].map(function (m) {
+    return path.join(path.resolve('a'), m).replace(/\\/g, '/')
+  }))
+  cacheCheck(g, t)
 })
 
-t.test('cwdAbs when root=a, absolute=true', function(t) {
-   var g = glob('/b*/**', { root: path.resolve('a'), absolute: true }, function (er, matches) {
-    t.error(er)
-    t.same(g.cwdAbs, process.cwd().replace(/\\/g, '/'))
-    t.end()
-  })
+t.test('cwdAbs when root=a, absolute=true', async t => {
+   var g = new glob.Glob('/b*/**', { root: path.resolve('a'), absolute: true })
+  t.same(g.cwdAbs, process.cwd().replace(/\\/g, '/'))
 })
 
-t.test('cwdAbs when root=a, absolute=true, cwd=__dirname', function(t) {
-   var g = glob('/b*/**', { root: path.resolve('a'), absolute: true, cwd: __dirname }, function (er, matches) {
-    t.error(er)
-    t.same(g.cwdAbs, __dirname.replace(/\\/g, '/'))
-    t.end()
-  })
+t.test('cwdAbs when root=a, absolute=true, cwd=__dirname', async t => {
+  var g = new glob.Glob('/b*/**', { root: path.resolve('a'), absolute: true, cwd: __dirname })
+  t.same(g.cwdAbs, __dirname.replace(/\\/g, '/'))
 })

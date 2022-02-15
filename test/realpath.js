@@ -79,15 +79,11 @@ cases.forEach(function (c) {
 
   opt.realpath = true
 
-  test(JSON.stringify(opt), function (t) {
+  test(JSON.stringify(opt), async t => {
     opt.realpath = true
     var sync = glob.sync(p, opt)
     t.same(sync, expect, 'sync')
-    glob(p, opt, function (er, async) {
-      if (er)
-        throw er
-      t.same(async, expect, 'async')
-      t.end()
-    })
+    const res = await glob(p, opt)
+    t.same(res, expect, 'async')
   })
 })

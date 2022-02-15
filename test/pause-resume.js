@@ -39,25 +39,24 @@ tap.test("use a Glob object, and pause/resume it", function (t) {
   var res = []
   var expect = bashResults[pattern]
 
-  g.on("match", function (m) {
+  g.on("data", m => {
     t.notOk(g.paused, "must not be paused")
     globResults.push(m)
     g.pause()
     t.ok(g.paused, "must be paused")
-    setTimeout(g.resume.bind(g), 10)
+    setTimeout(() => g.resume(), 10)
   })
 
-  g.on("end", function (matches) {
+  g.on("end", () => {
     t.pass("reached glob end")
     globResults = cleanResults(globResults)
-    matches = cleanResults(matches)
-    t.same(matches, globResults,
+    const found = cleanResults(g.found)
+    t.same(found, globResults,
       "end event matches should be the same as match events")
 
-    t.same(matches, expect,
+    t.same(found, expect,
       "glob matches should be the same as bash results")
 
     t.end()
   })
 })
-

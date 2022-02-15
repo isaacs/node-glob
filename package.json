@@ -7,11 +7,9 @@
     "type": "git",
     "url": "git://github.com/isaacs/node-glob.git"
   },
-  "main": "glob.js",
+  "main": "index.js",
   "files": [
-    "glob.js",
-    "sync.js",
-    "common.js"
+    "index.js"
   ],
   "engines": {
     "node": ">=10"

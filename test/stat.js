@@ -16,10 +16,10 @@ test('stat all the things', function(t) {
     stats.push(m)
     t.ok(st instanceof Stats)
   })
-  g.on('end', function(eof) {
+  g.on('end', function() {
     stats = stats.sort()
     matches = matches.sort()
-    eof = eof.sort()
+    const eof = g.found.sort()
     t.same(stats, matches)
     t.same(eof, matches)
     var cache = Object.keys(this.statCache)
@@ -33,4 +33,5 @@ test('stat all the things', function(t) {
 
     t.end()
   })
+  g.resume()
 })

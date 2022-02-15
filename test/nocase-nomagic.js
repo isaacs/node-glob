@@ -1,6 +1,6 @@
 require("./global-leakage.js")
 var fs = require('fs')
-var test = require('tap').test;
+const t = require('tap')
 var glob = require('../');
 
 var cwd = process.cwd()
@@ -9,7 +9,7 @@ if (/^[a-zA-Z]:[\\\/]/.test(cwd)) {
   drive = cwd.charAt(0).toLowerCase()
 }
 
-test('mock fs', function(t) {
+t.before(() => {
   var stat = fs.stat
   var statSync = fs.statSync
   var readdir = fs.readdir
@@ -68,13 +68,9 @@ test('mock fs', function(t) {
   fs.readdirSync = function(path) {
     return fakeReaddir(path) || readdirSync.call(fs, path)
   }
-
-  t.pass('mocked')
-  t.end()
 })
 
-test('nocase, nomagic', function(t) {
-  var n = 2
+t.test('nocase, nomagic', async t => {
   var want = [ '/TMP/A',
                '/TMP/a',
                '/tMP/A',
@@ -88,29 +84,25 @@ test('nocase, nomagic', function(t) {
       return drive+':' + p
     })
   }
-  glob('/tmp/a', { nocase: true }, function(er, res) {
-    if (er)
-      throw er
+  {
+    let res = await glob('/tmp/a', { nocase: true })
     if (process.platform.match(/^win/))
       res = res.map(function (r) {
         return r.replace(/\\/g, '/').replace(new RegExp('^' + drive + ':', 'i'), drive+':')
       })
     t.same(res.sort(), want)
-    if (--n === 0) t.end()
-  })
-  glob('/tmp/A', { nocase: true }, function(er, res) {
-    if (er)
-      throw er
+  }
+  {
+    let res = await glob('/tmp/A', { nocase: true })
     if (process.platform.match(/^win/))
       res = res.map(function (r) {
         return r.replace(/\\/g, '/').replace(new RegExp('^' + drive + ':', 'i'), drive+':')
       })
     t.same(res.sort(), want)
-    if (--n === 0) t.end()
-  })
+  }
 })
 
-test('nocase, with some magic', function(t) {
+t.test('nocase, with some magic', async t => {
   t.plan(2)
   var want = [ '/TMP/A',
                '/TMP/a',
@@ -126,24 +118,23 @@ test('nocase, with some magic', function(t) {
     })
   }
 
-  glob('/tmp/*', { nocase: true }, function(er, res) {
-    if (er)
-      throw er
+  {
+    let res = await glob('/tmp/*', { nocase: true })
     if (process.platform.match(/^win/)) {
       res = res.map(function (r) {
         return r.replace(/\\/g, '/').replace(new RegExp('^' + drive + ':', 'i'), drive+':')
       })
     }
     t.same(res.sort(), want)
-  })
-  glob('/tmp/*', { nocase: true }, function(er, res) {
-    if (er)
-      throw er
+  }
+
+  {
+    let res = await glob('/tmp/*', { nocase: true })
     if (process.platform.match(/^win/)) {
       res = res.map(function (r) {
         return r.replace(/\\/g, '/').replace(new RegExp('^' + drive + ':', 'i'), drive+':')
       })
     }
     t.same(res.sort(), want)
-  })
+  }
 })

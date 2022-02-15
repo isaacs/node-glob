@@ -17,31 +17,22 @@ function cacheCheck(g, t) {
 process.chdir(__dirname + '/fixtures')
 
 tap.test("changing root and searching for /b*/**", function (t) {
-  t.test('.', function (t) {
-    var g = glob('/b*/**', { root: '.', nomount: true }, function (er, matches) {
-      t.error(er)
-      t.same(matches, [])
-      cacheCheck(g, t)
-      t.end()
-    })
+  t.test('.', async t => {
+    var g = new glob.Glob('/b*/**', { root: '.', nomount: true })
+    t.same(await g.results, [])
+    cacheCheck(g, t)
   })
 
-  t.test('a', function (t) {
-    var g = glob('/b*/**', { root: path.resolve('a'), nomount: true }, function (er, matches) {
-      t.error(er)
-      t.same(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ])
-      cacheCheck(g, t)
-      t.end()
-    })
+  t.test('a', async t => {
+    var g = new glob.Glob('/b*/**', { root: path.resolve('a'), nomount: true })
+    t.same(await g.results, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ])
+    cacheCheck(g, t)
   })
 
-  t.test('root=a, cwd=a/b', function (t) {
-    var g = glob('/b*/**', { root: 'a', cwd: path.resolve('a/b'), nomount: true }, function (er, matches) {
-      t.error(er)
-      t.same(matches, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ])
-      cacheCheck(g, t)
-      t.end()
-    })
+  t.test('root=a, cwd=a/b', async t => {
+    var g = new glob.Glob('/b*/**', { root: 'a', cwd: path.resolve('a/b'), nomount: true })
+    t.same(await g.results, [ '/b', '/b/c', '/b/c/d', '/bc', '/bc/e', '/bc/e/f' ])
+    cacheCheck(g, t)
   })
 
   t.end()

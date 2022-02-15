@@ -22,7 +22,7 @@ var patterns = [
 ]
 
 var opts = [
-  null,
+  undefined,
   { nonull: true },
   { mark: true },
   { stat: true },
@@ -36,39 +36,36 @@ test('set up broken symlink', function (t) {
   t.end()
 })
 
-test('async test', function (t) {
-  var count = patterns.length * opts.length
+test('async test', async t => {
+  const count = patterns.length * opts.length
   t.plan(patterns.length)
-  patterns.forEach(function (pattern) {
-    t.test(pattern, function (t) {
+  const check = res => async t => {
+    t.equal(res.includes(link), true, { haystack: res, needle: link })
+  }
+  for (const pattern of patterns) {
+    t.test(pattern, async t => {
       t.plan(opts.length)
-
-      opts.forEach(function (opt) {
-        glob(pattern, opt, cb(opt))
-      })
-
-      function cb (opt) { return function (er, res) {
-        if (er)
-          throw er
-        var msg = pattern + ' ' + JSON.stringify(opt)
-        t.not(res.indexOf(link), -1, msg)
-      }}
+      for (const opt of opts) {
+        t.test(JSON.stringify(opt), check(await glob(pattern, opt)))
+      }
     })
-  })
+  }
 })
 
 test('sync test', function (t) {
+  const count = patterns.length * opts.length
   t.plan(patterns.length)
-  patterns.forEach(function (pattern) {
-    t.test(pattern, function (t) {
+  const check = res => async t => {
+    t.equal(res.includes(link), true, { haystack: res, needle: link })
+  }
+  for (const pattern of patterns) {
+    t.test(pattern, async t => {
       t.plan(opts.length)
-
-      opts.forEach(function (opt) {
-        var res = glob.sync(pattern, opt)
-        t.not(res.indexOf(link), -1, 'opt=' + JSON.stringify(opt))
-      })
+      for (const opt of opts) {
+        t.test(JSON.stringify(opt), check(glob.sync(pattern, opt)))
+      }
     })
-  })
+  }
 })
 
 test('cleanup', function (t) {

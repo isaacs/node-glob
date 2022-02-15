@@ -40,26 +40,15 @@ globs.forEach(function (pattern) {
       }))
     return
 
-  tap.test(pattern, function (t) {
-    var g = glob(pattern, function (er, matches) {
-      if (er)
-        throw er
-
-      // sort and unmark, just to match the shell results
-      matches = cleanResults(matches)
-      t.same(matches, expect, pattern)
-
-      // verify that path cache keys are all absolute
-      cacheCheck(g, t)
-      t.end()
-    })
+  tap.test(pattern, async t => {
+    // sort and unmark, just to match the shell results
+    const matches = cleanResults(await glob(pattern))
+    t.same(matches, expect, 'should match shell')
   })
 
-  tap.test(pattern + " sync", function (t) {
-    var matches = cleanResults(glob.sync(pattern))
-
-    t.same(matches, expect, "should match shell (sync)")
-    t.end()
+  tap.test(`${pattern} sync`, async t => {
+    const matches = cleanResults(glob.sync(pattern))
+    t.same(matches, expect, 'should match shell (sync)')
   })
 })
 

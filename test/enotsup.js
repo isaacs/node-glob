@@ -41,7 +41,6 @@ fs.readdir = function (p, cb) {
 
 var glob = require('../')
 var test = require('tap').test
-var common = require('../common.js')
 process.chdir(__dirname + '/fixtures')
 
 var pattern = 'a/**/h'
@@ -49,17 +48,13 @@ var expect = [ 'a/abcdef/g/h', 'a/abcfed/g/h' ]
 
 var options = { strict: true, silent: false }
 
-test(pattern + ' ' + JSON.stringify(options), function (t) {
-  var res = glob.sync(pattern, options).sort()
-  t.same(res, expect, 'sync results')
+test(pattern + ' ' + JSON.stringify(options), async t => {
+  const resSync = glob.sync(pattern, options).sort()
+  t.same(resSync, expect, 'sync results')
   t.ok(sawSyncENOTSUP, 'saw sync ENOTSUP')
 
-  var g = glob(pattern, options, function (er, res) {
-    if (er)
-      throw er
-    t.ok(sawAsyncENOTSUP, 'saw async ENOTSUP')
-    res = res.sort()
-    t.same(res, expect, 'async results')
-    t.end()
-  })
+  const g = new glob.Glob(pattern, options)
+  const res = await g.results
+  t.ok(sawAsyncENOTSUP, 'saw async ENOTSUP')
+  t.same(res.sort(), expect, 'async results')
 })

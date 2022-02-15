@@ -7,12 +7,6 @@ glob.GlobSync.prototype._process = glob.Glob.prototype._process = function () {
   throw new Error('should not call _process() in these tests')
 }
 
-test("create glob object without processing", function (t) {
-  t.ok(glob('a', {noprocess:true}) instanceof glob.Glob)
-  t.ok(glob.GlobSync('a', {noprocess:true}) instanceof glob.GlobSync)
-  t.end()
-})
-
 test("non-string pattern is evil magic", function (t) {
   var patterns = [ 0, null, 12, {x:1}, undefined, /x/, NaN ]
   patterns.forEach(function (p) {

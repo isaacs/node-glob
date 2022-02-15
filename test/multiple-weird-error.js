@@ -1,15 +1,13 @@
-var t = require('tap')
-var fs = require('fs')
-fs.readdir = function(path, cb) { cb(new Error('expected')) }
-var glob = require('../')
+const t = require('tap')
+const fs = require('fs')
+const expected = new Error('expected')
+fs.readdir = (path, cb) => cb(expected)
+const glob = require('../')
 
 // also test that silent:true is actually silent!
 console.error = function () { throw 'SILENCE, INSECT!' }
 
-t.plan(2)
-glob('*', { silent: true }, function(err, files) {
-  t.ok(err, 'got first error')
-})
-glob('*', { silent: true }, function(err, files) {
-  t.ok(err, 'got second error')
-})
+t.plan(3)
+t.rejects(() => glob('*', { silent: true }), expected)
+t.rejects(() => glob('*', { silent: true, strict: true }), expected)
+t.resolves(() => glob('*', { silent: true, strict: false }))

@@ -18,71 +18,54 @@ function cacheCheck(g, t) {
 }
 
 tap.test("changing cwd and searching for **/d", function (t) {
-  t.test('.', function (t) {
-    var g = glob('**/d', function (er, matches) {
-      t.error(er)
-      t.match(matches, [ 'a/b/c/d', 'a/c/d' ])
-      cacheCheck(g, t)
-      t.end()
-    })
+  t.test('.', async t => {
+    const g = new glob.Glob('**/d')
+    t.match(await g.results, [ 'a/b/c/d', 'a/c/d' ])
+    cacheCheck(g, t)
+    t.end()
   })
 
-  t.test('a', function (t) {
-    var g = glob('**/d', {cwd:path.resolve('a')}, function (er, matches) {
-      t.error(er)
-      t.match(matches, [ 'b/c/d', 'c/d' ])
-      cacheCheck(g, t)
-      t.end()
-    })
+  t.test('a', async t => {
+    const g = new glob.Glob('**/d', {cwd:path.resolve('a')})
+    t.match(await g.results, [ 'b/c/d', 'c/d' ])
+    cacheCheck(g, t)
   })
 
-  t.test('a/b', function (t) {
-    var g = glob('**/d', {cwd:path.resolve('a/b')}, function (er, matches) {
-      t.error(er)
-      t.match(matches, [ 'c/d' ])
-      cacheCheck(g, t)
-      t.end()
-    })
+  t.test('a/b', async t => {
+    const g = new glob.Glob('**/d', {cwd:path.resolve('a/b')})
+    t.match(await g.results, [ 'c/d' ])
+    cacheCheck(g, t)
   })
 
-  t.test('a/b/', function (t) {
-    var g = glob('**/d', {cwd:path.resolve('a/b/')}, function (er, matches) {
-      t.error(er)
-      t.match(matches, [ 'c/d' ])
-      cacheCheck(g, t)
-      t.end()
-    })
+  t.test('a/b/', async t => {
+    const g = new glob.Glob('**/d', {cwd:path.resolve('a/b/')})
+    t.match(await g.results, [ 'c/d' ])
+    cacheCheck(g, t)
   })
 
-  t.test('.', function (t) {
-    var g = glob('**/d', {cwd: process.cwd()}, function (er, matches) {
-      t.error(er)
-      t.match(matches, [ 'a/b/c/d', 'a/c/d' ])
-      cacheCheck(g, t)
-      t.end()
-    })
+  t.test('.', async t => {
+    const g = new glob.Glob('**/d', {cwd: process.cwd()})
+    t.match(await g.results, [ 'a/b/c/d', 'a/c/d' ])
+    cacheCheck(g, t)
   })
 
   t.end()
 })
 
-tap.test('non-dir cwd should raise error', function (t) {
-  var notdir = 'a/b/c/d'
-  var notdirRE = /a[\\\/]b[\\\/]c[\\\/]d/
-  var abs = path.resolve(notdir)
-  var expect = new Error('ENOTDIR invalid cwd ' + abs)
+tap.test('non-dir cwd should raise error', async t => {
+  const notdir = 'a/b/c/d'
+  const notdirRE = /a[\\\/]b[\\\/]c[\\\/]d/
+  const abs = path.resolve(notdir)
+  const expect = new Error('ENOTDIR invalid cwd ' + abs)
   expect.code = 'ENOTDIR'
   expect.path = notdirRE
   expect.stack = undefined
-  var msg = 'raise error when cwd is not a dir'
+  const msg = 'raise error when cwd is not a dir'
 
   t.throws(function () {
     glob.sync('*', { cwd: notdir })
   }, expect)
-  glob('*', { cwd: notdir }, function (er, results) {
-    t.match(er, expect)
-    t.end()
-  })
+  await t.rejects(glob('*', { cwd: notdir }), expect)
 })
 
 tap.test('cd -', function (t) {

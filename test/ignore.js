@@ -2,7 +2,7 @@ require('./global-leakage.js')
 // Ignore option test
 // Show that glob ignores results matching pattern on ignore option
 
-var glob = require('../glob.js')
+var glob = require('../')
 var test = require('tap').test
 
 // [pattern, ignore, expect, opt (object) or cwd (string)]
@@ -46,12 +46,12 @@ cases.forEach(function (c, i) {
   var ignore = c[1]
   var expect = c[2].sort()
   var opt = c[3]
-  var name = i + ' ' + pattern + ' ' + JSON.stringify(ignore)
+  var name = i + ' ' + pattern + ' ignore=' + JSON.stringify(ignore)
   if (typeof opt === 'string')
     opt = { cwd: opt }
 
   if (opt)
-    name += ' ' + JSON.stringify(opt)
+    name += ' opt=' + JSON.stringify(opt)
   else
     opt = {}
 
@@ -59,25 +59,22 @@ cases.forEach(function (c, i) {
 
   opt.ignore = ignore
 
-  test(name, function (t) {
-    glob(pattern, opt, function (er, res) {
-      if (er)
-        throw er
+  test(name, async t => {
+    const g = new glob.Glob(pattern, opt)
+    g.on('match', p => matches.push(p))
 
-      if (process.platform === 'win32') {
-        expect = expect.filter(function (f) {
-          return !/\bsymlink\b/.test(f)
-        })
-      }
+    if (process.platform === 'win32') {
+      expect = expect.filter(function (f) {
+        return !/\bsymlink\b/.test(f)
+      })
+    }
+    g.resume()
+    const res = await g.results
 
-      t.same(res.sort(), expect, 'async')
-      t.same(matches.sort(), expect, 'match events')
-      res = glob.sync(pattern, opt)
-      t.same(res.sort(), expect, 'sync')
-      t.end()
-    }).on('match', function (p) {
-      matches.push(p)
-    })
+    t.same(res.sort(), expect, 'async')
+    t.same(matches.sort(), expect, 'match events')
+    const sync = glob.sync(pattern, opt)
+    t.same(sync.sort(), expect, 'sync')
   })
 })
 
@@ -96,12 +93,9 @@ test('race condition', function (t) {
           if (cwd)
             opt.cwd = cwd
           var expect = ignore ? [] : [ 'fixtures/a' ]
-          t.test(JSON.stringify(opt), function (t) {
-            t.plan(2)
+          t.test(JSON.stringify(opt), async t => {
             t.same(glob.sync(pattern, opt), expect)
-            glob(pattern, opt).on('end', function (res) {
-              t.same(res, expect)
-            })
+            t.same(await glob(pattern, opt), expect)
           })
         })
       })

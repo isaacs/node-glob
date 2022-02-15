@@ -52,16 +52,12 @@ cases.forEach(function (c) {
   var options = c[1] || {}
   options.nodir = true
   var expect = c[2].sort()
-  test(pattern + ' ' + JSON.stringify(options), function (t) {
-    var res = glob.sync(pattern, options).sort()
-    t.same(res, expect, 'sync results')
-    var g = glob(pattern, options, function (er, res) {
-      if (er)
-        throw er
-      res = res.sort()
-      t.same(res, expect, 'async results')
-      cacheCheck(g, t)
-      t.end()
-    })
+  test(pattern + ' ' + JSON.stringify(options), async t => {
+    const sync = glob.sync(pattern, options).sort()
+    t.same(sync, expect, 'sync results')
+    const g = new glob.Glob(pattern, options)
+    const res = (await g.results).sort()
+    t.same(res, expect, 'async results')
+    cacheCheck(g, t)
   })
 })

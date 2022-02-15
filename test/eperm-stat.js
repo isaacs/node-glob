@@ -11,19 +11,31 @@ var expect = [
   'a/abcfed/g/h'
 ]
 
-var lstat = fs.lstat
-var lstatSync = fs.lstatSync
-var badPaths = /\ba[\\\/]?$|\babcdef\b/
+const {lstat, lstatSync, stat, statSync} = fs
+const badPaths = /\ba[\\\/]?$|\babcdef\b/
 
 fs.lstat = function (path, cb) {
   // synthetically generate a non-ENOENT error
   if (badPaths.test(path)) {
     var er = new Error('synthetic')
     er.code = 'EPERM'
+    er.syscall = 'lstat'
     return process.nextTick(cb.bind(null, er))
   }
 
   return lstat.call(fs, path, cb)
+}
+
+fs.stat = function (path, cb) {
+  // synthetically generate a non-ENOENT error
+  if (badPaths.test(path)) {
+    var er = new Error('synthetic')
+    er.code = 'EPERM'
+    er.syscall = 'stat'
+    return process.nextTick(cb.bind(null, er))
+  }
+
+  return stat.call(fs, path, cb)
 }
 
 fs.lstatSync = function (path) {
@@ -31,10 +43,23 @@ fs.lstatSync = function (path) {
   if (badPaths.test(path)) {
     var er = new Error('synthetic')
     er.code = 'EPERM'
+    er.syscall = 'lstat'
     throw er
   }
 
   return lstatSync.call(fs, path)
+}
+
+fs.statSync = function (path) {
+  // synthetically generate a non-ENOENT error
+  if (badPaths.test(path)) {
+    var er = new Error('synthetic')
+    er.code = 'EPERM'
+    er.syscall = 'stat'
+    throw er
+  }
+
+  return statSync.call(fs, path)
 }
 
 var glob = require('../')
@@ -42,19 +67,14 @@ var t = require('tap')
 
 t.test('stat errors other than ENOENT are ok', function (t) {
   t.plan(2)
-  t.test('async', function (t) {
-    glob('a/*abc*/**', { stat: true, cwd: dir }, function (er, matches) {
-      if (er)
-        throw er
-      t.same(matches, expect)
-      t.end()
-    })
+  t.test('async', async t => {
+    const matches = await glob('a/*abc*/**', { stat: true, cwd: dir })
+    t.same(matches, expect)
   })
 
-  t.test('sync', function (t) {
-    var matches = glob.sync('a/*abc*/**', { stat: true, cwd: dir })
+  t.test('sync', async t => {
+    const matches = glob.sync('a/*abc*/**', { stat: true, cwd: dir })
     t.same(matches, expect)
-    t.end()
   })
 })
 
@@ -88,25 +108,11 @@ t.test('globstar with error in root', function (t) {
     'a/z'
   ]
   if (process.platform === 'win32') {
-    expect = expect.filter(function(path) {
-      return path.indexOf('/symlink') === -1
-    })
+    expect = expect.filter(p => !p.includes('/symlink'))
   }
 
   var pattern = 'a/**'
   t.plan(2)
-  t.test('async', function (t) {
-    glob(pattern, { cwd: dir }, function (er, matches) {
-      if (er)
-        throw er
-      t.same(matches, expect)
-      t.end()
-    })
-  })
-
-  t.test('sync', function (t) {
-    var matches = glob.sync(pattern, { cwd: dir })
-    t.same(matches, expect)
-    t.end()
-  })
+  t.test('async', async t => t.same(await glob(pattern, { cwd: dir }), expect))
+  t.test('sync', async t => t.same(glob.sync(pattern, { cwd: dir }), expect))
 })

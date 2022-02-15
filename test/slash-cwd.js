@@ -8,13 +8,9 @@ var cwd = __dirname
 var opt = { cwd: cwd }
 process.chdir(__dirname + '/..')
 
-test('slashes only match directories', function (t) {
-  var sync = glob.sync(pattern, { cwd: cwd })
+test('slashes only match directories', async t => {
+  var sync = glob.sync(pattern, { cwd })
   t.same(sync, expect, 'sync test')
-  glob(pattern, { cwd: cwd }, function (er, async) {
-    if (er)
-      throw er
-    t.same(async, expect, 'async test')
-    t.end()
-  })
+  const res = await glob(pattern, { cwd })
+  t.same(res, expect, 'async test')
 })
