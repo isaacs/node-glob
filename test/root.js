@@ -52,12 +52,12 @@ t.test('combined with absolute option', async t => {
   cacheCheck(g, t)
 })
 
-t.test('cwdAbs when root=a, absolute=true', async t => {
+t.test('cwd when root=a, absolute=true', async t => {
    var g = new glob.Glob('/b*/**', { root: path.resolve('a'), absolute: true })
-  t.same(g.cwdAbs, process.cwd().replace(/\\/g, '/'))
+  t.same(g.cwd, process.cwd().replace(/\\/g, '/'))
 })
 
-t.test('cwdAbs when root=a, absolute=true, cwd=__dirname', async t => {
+t.test('cwd when root=a, absolute=true, cwd=__dirname', async t => {
   var g = new glob.Glob('/b*/**', { root: path.resolve('a'), absolute: true, cwd: __dirname })
-  t.same(g.cwdAbs, __dirname.replace(/\\/g, '/'))
+  t.same(g.cwd, __dirname.replace(/\\/g, '/'))
 })

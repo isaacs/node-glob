@@ -47,7 +47,7 @@ echo
 echo Node glob async timing:
 time node -e '
   var glob=require(process.argv[1]);
-  glob("**/*.txt", function (er, files) {
+  glob("**/*.txt").then(function (files) {
     console.log(files.length)
   })' "$wd"
 echo

@@ -31,8 +31,7 @@
   },
   "tap": {
     "before": "test/00-setup.js",
-    "after": "test/zz-cleanup.js",
-    "jobs": 1
+    "after": "test/zz-cleanup.js"
   },
   "scripts": {
     "prepublish": "npm run benchclean",

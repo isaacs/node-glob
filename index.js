@@ -1,5 +1,3 @@
-// XXX this.symlinks should be a Set
-// XXX this.cache should be a Map
 // XXX use readdir with {withFileTypes:true} to skip a stat
 // XXX use streaming fs.Dir reading rather than readdir(), to support
 // folders containing very many entries.
@@ -89,13 +87,14 @@ class Glob extends Minipass {
     this.absolute = !!options.absolute
     this.fs = options.fs || fs
     this.maxLength = options.maxLength || Infinity
-    this.cache = options.cache || Object.create(null)
+    this.cache = options.cache || new Map()
     this.statCache = options.statCache || Object.create(null)
-    this.symlinks = options.symlinks || Object.create(null)
+    this.symlinks = options.symlinks || new Map()
+    this.absCache = options.absCache || Object.create(null)
 
-    this.statInflight = new Map()
-    this.readdirInflight = new Map()
-    this.lstatInflight = new Map()
+    this.statInflight = options.statInflight || new Map()
+    this.readdirInflight = options.readdirInflight || new Map()
+    this.lstatInflight = options.lstatInflight || new Map()
 
     this.ignore = options.ignore || []
     if (!Array.isArray(this.ignore)) {
@@ -113,9 +112,8 @@ class Glob extends Minipass {
     if (isWindows) {
       this.root = this.root.replace(/\\/g, '/')
     }
-    this.cwdAbs = isAbsolute(this.cwd) ? this.cwd : this.makeAbs(this.cwd)
     if (isWindows) {
-      this.cwdAbs = this.cwdAbs.replace(/\\/g, '/')
+      this.cwd = this.cwd.replace(/\\/g, '/')
     }
     this.nomount = !!options.nomount
 
@@ -165,11 +163,16 @@ class Glob extends Minipass {
   }
 
   makeAbs (f) {
-    const abs = f.charAt(0) === '/' ? join(this.root, f)
+    if (this.absCache[f]) {
+      return this.absCache[f]
+    }
+    const abs_ = f.charAt(0) === '/' ? join(this.root, f)
       : isAbsolute(f) || f === '' ? f
       : this.changedCwd ? resolve(this.cwd, f)
       : resolve(f)
-    return isWindows ? abs.replace(/\\/g, '/') : abs
+    const abs = isWindows ? abs_.replace(/\\/g, '/') : abs_
+    this.absCache[f] = abs
+    return abs
   }
 
   write () {
@@ -304,7 +307,8 @@ class Glob extends Minipass {
     }
     const st = await this.doStat(prefix)
     const abs = this.makeAbs(prefix)
-    const exists = st !== false && this.cache[abs] !== false || this.symlinks[abs]
+    const exists = st !== false && this.cache.get(abs) !== false ||
+      this.symlinks.get(abs)
     this.processSimple2(prefix, index, exists)
   }
   processSimple2 (prefix, index, exists) {
@@ -335,6 +339,7 @@ class Glob extends Minipass {
 
   abort () {
     this.destroy()
+    this.emit('abort')
   }
 
   emitMatch (index, e) {
@@ -355,7 +360,7 @@ class Glob extends Minipass {
       return
     }
     if (this.nodir) {
-      const c = this.cache[abs]
+      const c = this.cache.get(abs)
       if (c === 'DIR' || Array.isArray(c)) {
         return
       }
@@ -412,7 +417,7 @@ class Glob extends Minipass {
 
     checks.push([noGlobStar, false])
 
-    const isSym = this.symlinks[abs]
+    const isSym = this.symlinks.get(abs)
     const len = entries.length
 
     // if it's a symlink, and we're in a globstar, then stop
@@ -575,8 +580,8 @@ class Glob extends Minipass {
       return false
     }
 
-    if (!this.stat && this.cache[abs] !== undefined) {
-      let c = this.cache[abs]
+    let c
+    if (!this.stat && (c = this.cache.get(abs)) !== undefined) {
       if (Array.isArray(c)) {
         c = 'DIR'
       }
@@ -629,7 +634,7 @@ class Glob extends Minipass {
     if (er && (er.code === 'ENOENT' || er.code === 'ENOTDIR')) {
       this.statCache[abs] = false
       // if it's a broken symlink, we treat that as a normal non-directory
-      return this.symlinks[abs] ? 'FILE' : false
+      return this.symlinks.get(abs) ? 'FILE' : false
     }
 
     const needDir = f.slice(-1) === '/'
@@ -638,7 +643,9 @@ class Glob extends Minipass {
     let c = !st ? true
       : st.isDirectory() ? 'DIR'
       : 'FILE'
-    this.cache[abs] = this.cache[abs] || c
+    if (!this.cache.has(abs)) {
+      this.cache.set(abs, c)
+    }
 
     if (needDir && c === 'FILE') {
       return false
@@ -650,10 +657,10 @@ class Glob extends Minipass {
     if (this.destroyed) {
       return
     }
-    if (inGlobStar && this.symlinks[abs] === undefined && !this.follow) {
+    if (inGlobStar && !this.symlinks.has(abs) && !this.follow) {
       return this.readdirInGlobStar(abs)
     }
-    const c = this.cache[abs]
+    const c = this.cache.get(abs)
     if (c === false || c === 'FILE') {
       return []
     } else if (Array.isArray(c)) {
@@ -688,13 +695,13 @@ class Glob extends Minipass {
       return
     }
     if (er && (er.code === 'ENOENT' || er.code === 'ENOTDIR')) {
-      this.cache[abs] = false
+      this.cache.set(abs, false)
       return false
     }
     const isSym = st && st.isSymbolicLink()
-    this.symlinks[abs] = !!isSym
+    this.symlinks.set(abs, !!isSym)
     if (!isSym && st && !st.isDirectory()) {
-      this.cache[abs] = 'FILE'
+      this.cache.set(abs, 'FILE')
     }
     return st
   }
@@ -704,7 +711,7 @@ class Glob extends Minipass {
       return
     }
     const st = await this.doLstat(abs)
-    if (this.symlinks[abs] || !st || st.isDirectory()) {
+    if (this.symlinks.get(abs) || !st || st.isDirectory()) {
       return this.doReaddir(abs, false)
     }
   }
@@ -714,8 +721,8 @@ class Glob extends Minipass {
     switch (er.code) {
       case 'ENOTSUP': // https://github.com/isaacs/node-glob/issues/205
       case 'ENOTDIR': // totally normal. means it *does* exist.
-        this.cache[abs] = 'FILE'
-        if (abs === this.cwdAbs) {
+        this.cache.set(abs, 'FILE')
+        if (abs === this.cwd) {
           var error = new Error(er.code + ' invalid cwd ' + this.cwd)
           error.path = this.cwd
           error.code = er.code
@@ -727,11 +734,11 @@ class Glob extends Minipass {
       case 'ELOOP':
       case 'ENAMETOOLONG':
       case 'UNKNOWN':
-        this.cache[abs] = false
+        this.cache.set(abs, false)
         break
 
       default: // some unusual error.  Treat as failure.
-        this.cache[abs] = false
+        this.cache.set(abs, false)
         if (this.strict) {
           this.emit('error', er)
         }
@@ -751,10 +758,10 @@ class Glob extends Minipass {
         } else {
           e = abs + '/' + e
         }
-        this.cache[e] = true
+        this.cache.set(e, true)
       }
     }
-    this.cache[abs] = entries
+    this.cache.set(abs, entries)
     return entries
   }
 
@@ -801,7 +808,7 @@ class Glob extends Minipass {
       if (this.nodir) {
         all = all.filter(e => {
           let notDir = !(/\/$/.test(e))
-          const c = this.cache[e] || this.cache[this.makeAbs(e)]
+          const c = this.cache.get(e) || this.cache.get(this.makeAbs(e))
           if (notDir && c) {
             notDir = c !== 'DIR' && !Array.isArray(c)
           }
@@ -841,7 +848,7 @@ class Glob extends Minipass {
 
   markMatch (p) {
     const abs = this.makeAbs(p)
-    const c = this.cache[abs]
+    const c = this.cache.get(abs)
     let m = p
     if (c) {
       const isDir = c === 'DIR' || Array.isArray(c)
@@ -856,7 +863,7 @@ class Glob extends Minipass {
       if (m !== p) {
         const mabs = this.makeAbs(m)
         this.statCache[mabs] = this.statCache[abs]
-        this.cache[mabs] = this.cache[abs]
+        this.cache.set(mabs, this.cache.get(abs))
       }
     }
     return m
@@ -920,7 +927,8 @@ class GlobSync extends Glob {
     }
     const st = this.doStat(prefix)
     const abs = this.makeAbs(prefix)
-    const exists = st !== false && this.cache[abs] !== false || this.symlinks[abs]
+    const exists = st !== false && this.cache.get(abs) !== false ||
+      this.symlinks.get(abs)
     this.processSimple2(prefix, index, exists)
   }
   processGlobStar (prefix, read, abs, remain, index, inGlobStar) {
@@ -956,10 +964,10 @@ class GlobSync extends Glob {
     return this.doStat3(f, abs, er, st)
   }
   doReaddir (abs, inGlobStar) {
-    if (inGlobStar && this.symlinks[abs] === undefined && !this.follow) {
+    if (inGlobStar && !this.symlinks.has(abs) && !this.follow) {
       return this.readdirInGlobStar(abs)
     }
-    const c = this.cache[abs]
+    const c = this.cache.get(abs)
     if (c === false || c === 'FILE') {
       // console.error('FALSE OR FILE', abs, c)
       return []
@@ -990,7 +998,7 @@ class GlobSync extends Glob {
   }
   readdirInGlobStar (abs) {
     const st = this.doLstat(abs)
-    if (this.symlinks[abs] || !st || st.isDirectory()) {
+    if (this.symlinks.get(abs) || !st || st.isDirectory()) {
       return this.doReaddir(abs, false)
     }
   }

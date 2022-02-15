@@ -1,24 +1,28 @@
-var fs = require('fs')
-var test = require('tap').test
-var glob = require('../')
-var mkdirp = require('mkdirp')
+const t = require('tap')
+const glob = require('../')
 
 if (process.platform === 'win32')
   return require('tap').plan(0, 'skip on windows')
 
-process.chdir(__dirname)
+const dir = t.testdir({
+  a: {
+    'broken-link': {
+      link: t.fixture('symlink', 'this-does-not-exist'),
+    },
+  },
+})
 
-var link = 'fixtures/a/broken-link/link'
+var link = dir + '/a/broken-link/link'
 
 var patterns = [
-  'fixtures/a/broken-link/*',
-  'fixtures/a/broken-link/**',
-  'fixtures/a/broken-link/**/link',
-  'fixtures/a/broken-link/**/*',
-  'fixtures/a/broken-link/link',
-  'fixtures/a/broken-link/{link,asdf}',
-  'fixtures/a/broken-link/+(link|asdf)',
-  'fixtures/a/broken-link/!(asdf)'
+  dir + '/a/broken-link/*',
+  dir + '/a/broken-link/**',
+  dir + '/a/broken-link/**/link',
+  dir + '/a/broken-link/**/*',
+  dir + '/a/broken-link/link',
+  dir + '/a/broken-link/{link,asdf}',
+  dir + '/a/broken-link/+(link|asdf)',
+  dir + '/a/broken-link/!(asdf)'
 ]
 
 var opts = [
@@ -29,14 +33,7 @@ var opts = [
   { follow: true }
 ]
 
-test('set up broken symlink', function (t) {
-  cleanup()
-  mkdirp.sync('fixtures/a/broken-link')
-  fs.symlinkSync('this-does-not-exist', 'fixtures/a/broken-link/link')
-  t.end()
-})
-
-test('async test', async t => {
+t.test('async test', async t => {
   const count = patterns.length * opts.length
   t.plan(patterns.length)
   const check = res => async t => {
@@ -52,7 +49,7 @@ test('async test', async t => {
   }
 })
 
-test('sync test', function (t) {
+t.test('sync test', function (t) {
   const count = patterns.length * opts.length
   t.plan(patterns.length)
   const check = res => async t => {
@@ -67,13 +64,3 @@ test('sync test', function (t) {
     })
   }
 })
-
-test('cleanup', function (t) {
-  cleanup()
-  t.end()
-})
-
-function cleanup () {
-  try { fs.unlinkSync('fixtures/a/broken-link/link') } catch (e) {}
-  try { fs.rmdirSync('fixtures/a/broken-link') } catch (e) {}
-}
