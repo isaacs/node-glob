@@ -135,15 +135,11 @@ class Glob extends Minipass {
     return new Promise(async (res, rej) => {
       this.on('error', rej)
       this.resume()
-      try {
-        await this.promise().catch(() => {})
-        Object.defineProperty(this, 'results', {
-          value: Promise.resolve(this.found),
-        })
-        res(this.found)
-      } catch (er) {
-        rej(er)
-      }
+      await this.promise().catch(() => {})
+      Object.defineProperty(this, 'results', {
+        value: Promise.resolve(this.found),
+      })
+      res(this.found)
     })
   }
 
@@ -235,12 +231,9 @@ class Glob extends Minipass {
       return
     }
     const matchset = this.matches[index]
-    if (!matchset) {
-      return
-    }
     const found = Object.keys(matchset)
     const n = found.length
-    if (found === 0) {
+    if (n === 0) {
       return
     }
     const set = this.matches[index] = Object.create(null)
@@ -894,12 +887,9 @@ class GlobSync extends Glob {
   }
   realpathSet (index) {
     const matchset = this.matches[index]
-    if (!matchset) {
-      return
-    }
     const found = Object.keys(matchset)
     const n = found.length
-    if (found === 0) {
+    if (n === 0) {
       return
     }
     const set = this.matches[index] = Object.create(null)
