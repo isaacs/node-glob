@@ -6,9 +6,10 @@ var mkdirp = require("mkdirp")
 var path = require("path")
 var i = 0
 process.env.TAP_BAIL = '1'
-var tap = require("tap")
+var t = require("tap")
 var fs = require("fs")
-tap.pipe(fs.createWriteStream(path.resolve(__dirname, '../00-setup.tap')))
+const { writeFile, symlink } = fs.promises
+t.pipe(fs.createWriteStream(path.resolve(__dirname, '../00-setup.tap')))
 var rimraf = require("rimraf")
 
 var fixtureDir = path.resolve(__dirname, 'fixtures')
@@ -32,50 +33,34 @@ files = files.map(function (f) {
   return path.resolve(fixtureDir, f)
 })
 
-tap.test("remove fixtures", function (t) {
+t.test("remove fixtures", function (t) {
   rimraf.sync(fixtureDir)
   t.end()
 })
 
-files.forEach(function (f) {
-  tap.test(f, function (t) {
+t.test('make all files', async t => {
+  await Promise.all(files.map(async f => {
     f = path.resolve(fixtureDir, f)
-    var d = path.dirname(f)
-    mkdirp(d, '0755', function (er) {
-      if (er) {
-        t.fail(er)
-        return t.bailout()
-      }
-      fs.writeFile(f, "i like tests", function (er) {
-        t.error(er, "make file")
-        t.end()
-      })
-    })
-  })
+    const d = path.dirname(f)
+    await mkdirp(d)
+    await writeFile(f, 'i like tests')
+  }))
 })
 
 if (process.platform !== "win32") {
-  tap.test("symlinky", function (t) {
+  t.test("symlinky", async t => {
     var d = path.dirname(symlinkTo)
-    mkdirp(d, '0755', function (er) {
-      if (er)
-        throw er
-      fs.symlinkSync(symlinkFrom, symlinkTo, "dir")
-      t.end()
-    })
+    await mkdirp(d)
+    await symlink(symlinkFrom, symlinkTo, "dir")
   })
 }
 
-;["foo","bar","baz","asdf","quux","qwer","rewq"].forEach(function (w) {
-  w = "/tmp/glob-test/" + w
-  tap.test("create " + w, function (t) {
-    mkdirp(w, function (er) {
-      if (er)
-        throw er
-      t.pass(w)
-      t.end()
-    })
-  })
+t.test('files in /tmp', async t => {
+  const files = ["foo","bar","baz","asdf","quux","qwer","rewq"]
+  await Promise.all(files.map(async w => {
+    w = "/tmp/glob-test/" + w
+    await mkdirp(w)
+  }))
 })
 
 // generate the bash pattern test-fixtures if possible
@@ -96,7 +81,7 @@ var globs =
   ,"a/abc{fed,def}/g/h"
   ,"a/abc{fed/g,def}/**/"
   ,"a/abc{fed/g,def}/**///**/"
-  ,"**/a/**/"
+  ,"./**/a/**/" // https://savannah.gnu.org/support/index.php?110610
   ,"+(a|b|c)/a{/,bc*}/**"
   ,"*/*/*/f"
   ,"**/f"
@@ -110,7 +95,7 @@ var bashOutput = {}
 var fs = require("fs")
 
 globs.forEach(function (pattern) {
-  tap.test("generate fixture " + pattern, function (t) {
+  t.test("generate fixture " + pattern, function (t) {
     var opts = [
       "-O", "globstar",
       "-O", "extglob",
@@ -138,7 +123,7 @@ globs.forEach(function (pattern) {
   })
 })
 
-tap.test("save fixtures", function (t) {
+t.test("save fixtures", function (t) {
   var fname = path.resolve(__dirname, "bash-results.json")
   var data = JSON.stringify(bashOutput, null, 2) + "\n"
   fs.writeFile(fname, data, function (er) {
@@ -163,16 +148,7 @@ function cleanResults (m) {
 }
 
 function flatten (chunks) {
-  var s = 0
-  chunks.forEach(function (c) { s += c.length })
-  var out = new Buffer(s)
-  s = 0
-  chunks.forEach(function (c) {
-    c.copy(out, s)
-    s += c.length
-  })
-
-  return out.toString().trim()
+  return Buffer.concat(chunks).toString().trim()
 }
 
 function alphasort (a, b) {

@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "memfs": "^3.2.0",
-    "mkdirp": "0",
+    "mkdirp": "^1.0.4",
     "rimraf": "^2.2.8",
     "tap": "^15.0.6",
     "tick": "0.0.6"
