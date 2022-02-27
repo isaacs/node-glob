@@ -34,6 +34,10 @@
   "tap": {
     "before": "test/00-setup.js",
     "after": "test/zz-cleanup.js",
+    "statements": 90,
+    "branches": 90,
+    "functions": 90,
+    "lines": 90,
     "jobs": 1
   },
   "scripts": {

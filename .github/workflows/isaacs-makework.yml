@@ -1,0 +1,37 @@
+name: "various tidying up tasks to silence nagging"
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  makework:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Use Node.js
+        uses: actions/setup-node@v2.1.4
+        with:
+          node-version: 16.x
+      - name: put repo in package.json
+        run: node .github/workflows/package-json-repo.js
+      - name: check in package.json if modified
+        run: |
+          bash -x .github/workflows/commit-if-modified.sh \
+            "package-json-repo-bot@example.com" \
+            "package.json Repo Bot" \
+            "chore: add repo to package.json" \
+            package.json package-lock.json
+      - name: put all dates in license copyright line
+        run: bash .github/workflows/copyright-year.sh
+      - name: check in licenses if modified
+        run: |
+          bash .github/workflows/commit-if-modified.sh \
+            "license-year-bot@example.com" \
+            "License Year Bot" \
+            "chore: add copyright year to license" \
+            LICENSE*
