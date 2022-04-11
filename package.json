@@ -18,18 +18,18 @@
   },
   "dependencies": {
     "fs.realpath": "^1.0.0",
-    "inflight": "^1.0.4",
+    "inflight": "^1.0.6",
     "inherits": "2",
-    "minimatch": "^3.1.1",
-    "once": "^1.3.0",
-    "path-is-absolute": "^1.0.0"
+    "minimatch": "^5.0.1",
+    "once": "^1.4.0",
+    "path-is-absolute": "^1.0.1"
   },
   "devDependencies": {
-    "memfs": "^3.2.0",
+    "memfs": "^3.4.1",
     "mkdirp": "0",
-    "rimraf": "^2.2.8",
-    "tap": "^15.0.6",
-    "tick": "0.0.6"
+    "rimraf": "^3.0.2",
+    "tap": "^16.0.1",
+    "tick": "0.1.1"
   },
   "tap": {
     "before": "test/00-setup.js",
