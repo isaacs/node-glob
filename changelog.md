@@ -1,3 +1,18 @@
+## 8.0
+
+- Only support node v12 and higher
+
+## 7.2
+
+- Add fs option to allow passing virtual filesystem
+
+## 7.1
+
+- Ignore stat errors that are not `ENOENT` to work around Windows issues.
+- Support using root and absolute options together
+- Bring back lumpy space princess
+- force 'en' locale in string sorting
+
 ## 7.0
 
 - Raise error if `options.cwd` is specified, and not a directory
