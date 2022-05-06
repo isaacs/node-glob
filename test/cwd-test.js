@@ -69,7 +69,7 @@ tap.test("changing cwd and searching for **/d", function (t) {
 tap.test('non-dir cwd should raise error', function (t) {
   var notdir = 'a/b/c/d'
   var notdirRE = /a[\\\/]b[\\\/]c[\\\/]d/
-  var abs = path.resolve(notdir)
+  var abs = path.resolve(notdir).split('\\').join('/')
   var expect = new Error('ENOTDIR invalid cwd ' + abs)
   expect.code = 'ENOTDIR'
   expect.path = notdirRE
