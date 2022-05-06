@@ -7,7 +7,7 @@ var bashResults = require("./bash-results.json")
 var globs = Object.keys(bashResults)
 var glob = require("../")
 var path = require("path")
-var isAbsolute = require("path-is-absolute")
+var isAbsolute = require("path").isAbsolute
 
 // run from the root of the project
 // this is usually where you're at anyway, but be sure.

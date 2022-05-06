@@ -4,7 +4,7 @@ var glob = require('../')
 var common = require('../common.js')
 var pattern = 'a/b/**';
 var bashResults = require('./bash-results.json')
-var isAbsolute = require('path-is-absolute')
+var isAbsolute = require('path').isAbsolute
 process.chdir(__dirname + '/fixtures')
 
 t.Test.prototype.addAssert('isAbsolute', 1, function (file, message, extra) {
