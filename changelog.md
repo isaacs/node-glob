@@ -1,3 +1,7 @@
+## 8.1
+
+- Add `windowsPathsNoEscape` option
+
 ## 8.0
 
 - Only support node v12 and higher

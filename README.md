@@ -210,10 +210,26 @@ parallel glob operations will be sped up by sharing information about
 the filesystem.
 
 * `cwd` The current working directory in which to search.  Defaults
-  to `process.cwd()`.
+  to `process.cwd()`.  This option is always coerced to use
+  forward-slashes as a path separator, because it is not tested
+  as a glob pattern, so there is no need to escape anything.
 * `root` The place where patterns starting with `/` will be mounted
   onto.  Defaults to `path.resolve(options.cwd, "/")` (`/` on Unix
-  systems, and `C:\` or some such on Windows.)
+  systems, and `C:\` or some such on Windows.)  This option is
+  always coerced to use forward-slashes as a path separator,
+  because it is not tested as a glob pattern, so there is no need
+  to escape anything.
+* `windowsPathsNoEscape` Use `\\` as a path separator _only_, and
+  _never_ as an escape character.  If set, all `\\` characters
+  are replaced with `/` in the pattern.  Note that this makes it
+  **impossible** to match against paths containing literal glob
+  pattern characters, but allows matching with patterns constructed
+  using `path.join()` and `path.resolve()` on Windows platforms,
+  mimicking the (buggy!) behavior of Glob v7 and before on
+  Windows.  Please use with caution, and be mindful of [the caveat
+  below about Windows paths](#windows).  (For legacy reasons,
+  this is also set if `allowWindowsEscape` is set to the exact
+  value `false`.)
 * `dot` Include `.dot` files in normal matches and `globstar` matches.
   Note that an explicit dot in a portion of the pattern will always
   match dot files.
@@ -331,6 +347,11 @@ be interpreted as escape characters, not path separators.
 Results from absolute patterns such as `/foo/*` are mounted onto the
 root setting using `path.join`.  On windows, this will by default result
 in `/foo/*` matching `C:\foo\bar.txt`.
+
+To automatically coerce all `\` characters to `/` in pattern
+strings, **thus making it impossible to escape literal glob
+characters**, you may set the `windowsPathsNoEscape` option to
+`true`.
 
 ## Race Conditions
 
