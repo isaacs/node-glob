@@ -3,6 +3,9 @@
   "name": "glob",
   "description": "a little globber",
   "version": "7.2.1",
+  "publishConfig": {
+    "tag": "v7-legacy"
+  },
   "repository": {
     "type": "git",
     "url": "git://github.com/isaacs/node-glob.git"
