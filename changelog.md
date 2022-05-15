@@ -1,3 +1,7 @@
+## 8.1
+
+- Add `pathsep` option
+
 ## 8.0
 
 - Only support node v12 and higher

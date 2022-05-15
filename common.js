@@ -83,6 +83,11 @@ function setopts (self, pattern, options) {
   self.statCache = options.statCache || Object.create(null)
   self.symlinks = options.symlinks || Object.create(null)
 
+  // avoiding empty strings
+  if (!!options.pathsep) {
+    pattern = pattern.split(options.pathsep).join("/")
+  }
+
   setupIgnores(self, options)
 
   self.changedCwd = false

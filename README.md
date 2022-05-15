@@ -243,6 +243,9 @@ the filesystem.
 * `symlinks` A cache of known symbolic links.  You may pass in a
   previously generated `symlinks` object to save `lstat` calls when
   resolving `**` matches.
+* `pathsep` The separator used in the pattern. Setting this to the
+  literal character `\` will result in unexpected behavior when escaping
+  literal glob characters.
 * `sync` DEPRECATED: use `glob.sync(pattern, opts)` instead.
 * `nounique` In some cases, brace-expanded patterns can result in the
   same file showing up multiple times in the result set.  By default,
@@ -331,6 +334,10 @@ be interpreted as escape characters, not path separators.
 Results from absolute patterns such as `/foo/*` are mounted onto the
 root setting using `path.join`.  On windows, this will by default result
 in `/foo/*` matching `C:\foo\bar.txt`.
+
+To have glob coerce the separator used in pattern strings to `/`, **thus
+making it impossible to use the separator to escape literal glob characters**,
+you may set the `pathSep` option to the separator used.
 
 ## Race Conditions
 
