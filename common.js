@@ -111,7 +111,7 @@ function setopts (self, pattern, options) {
   options.nonegate = true
   options.nocomment = true
   // always treat \ in patterns as escapes, not path separators
-  options.allowWindowsEscape = true
+  options.allowWindowsEscape = false
 
   self.minimatch = new Minimatch(pattern, options)
   self.options = self.minimatch.options
