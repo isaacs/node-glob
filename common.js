@@ -68,6 +68,11 @@ function setopts (self, pattern, options) {
   self.nodir = !!options.nodir
   if (self.nodir)
     self.mark = true
+  self.supportWindowsPaths = !!options.supportWindowsPaths
+  if (self.supportWindowsPaths) {
+    options.pathSep = undefined
+    pattern = pattern.replace(/\\/g, "/")
+  }
   self.sync = !!options.sync
   self.nounique = !!options.nounique
   self.nonull = !!options.nonull

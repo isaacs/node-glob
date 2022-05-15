@@ -240,6 +240,9 @@ the filesystem.
   to set this, you may pass the statCache from one glob() call to the
   options object of another, if you know that the filesystem will not
   change between calls.  (See "Race Conditions" below.)
+* `supportWindowsPaths` Supports both `/` and `\` as path separators.
+  Because the option replaces backslashes with forward slashes, any
+  escaped literal glob characters will result in unexpected behavior.
 * `symlinks` A cache of known symbolic links.  You may pass in a
   previously generated `symlinks` object to save `lstat` calls when
   resolving `**` matches.
@@ -331,6 +334,11 @@ be interpreted as escape characters, not path separators.
 Results from absolute patterns such as `/foo/*` are mounted onto the
 root setting using `path.join`.  On windows, this will by default result
 in `/foo/*` matching `C:\foo\bar.txt`.
+
+Alternatively, you may set the `supportWindowsPaths` option to make glob
+coerce backslashes to forward slashes. Keep in mind that
+`supportWindowsPaths` will result in unexpected behavior when escaping
+literal glob characters.
 
 ## Race Conditions
 
