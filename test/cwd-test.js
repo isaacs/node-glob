@@ -4,7 +4,7 @@ var tap = require("tap")
 var origCwd = process.cwd()
 process.chdir(__dirname + '/fixtures')
 var path = require('path')
-var isAbsolute = require('path-is-absolute')
+var isAbsolute = require('path').isAbsolute
 var glob = require('../')
 
 function cacheCheck(g, t) {
@@ -20,8 +20,8 @@ function cacheCheck(g, t) {
 tap.test("changing cwd and searching for **/d", function (t) {
   t.test('.', function (t) {
     var g = glob('**/d', function (er, matches) {
-      t.ifError(er)
-      t.like(matches, [ 'a/b/c/d', 'a/c/d' ])
+      t.error(er)
+      t.match(matches, [ 'a/b/c/d', 'a/c/d' ])
       cacheCheck(g, t)
       t.end()
     })
@@ -29,8 +29,8 @@ tap.test("changing cwd and searching for **/d", function (t) {
 
   t.test('a', function (t) {
     var g = glob('**/d', {cwd:path.resolve('a')}, function (er, matches) {
-      t.ifError(er)
-      t.like(matches, [ 'b/c/d', 'c/d' ])
+      t.error(er)
+      t.match(matches, [ 'b/c/d', 'c/d' ])
       cacheCheck(g, t)
       t.end()
     })
@@ -38,8 +38,8 @@ tap.test("changing cwd and searching for **/d", function (t) {
 
   t.test('a/b', function (t) {
     var g = glob('**/d', {cwd:path.resolve('a/b')}, function (er, matches) {
-      t.ifError(er)
-      t.like(matches, [ 'c/d' ])
+      t.error(er)
+      t.match(matches, [ 'c/d' ])
       cacheCheck(g, t)
       t.end()
     })
@@ -47,8 +47,8 @@ tap.test("changing cwd and searching for **/d", function (t) {
 
   t.test('a/b/', function (t) {
     var g = glob('**/d', {cwd:path.resolve('a/b/')}, function (er, matches) {
-      t.ifError(er)
-      t.like(matches, [ 'c/d' ])
+      t.error(er)
+      t.match(matches, [ 'c/d' ])
       cacheCheck(g, t)
       t.end()
     })
@@ -56,8 +56,8 @@ tap.test("changing cwd and searching for **/d", function (t) {
 
   t.test('.', function (t) {
     var g = glob('**/d', {cwd: process.cwd()}, function (er, matches) {
-      t.ifError(er)
-      t.like(matches, [ 'a/b/c/d', 'a/c/d' ])
+      t.error(er)
+      t.match(matches, [ 'a/b/c/d', 'a/c/d' ])
       cacheCheck(g, t)
       t.end()
     })
@@ -69,7 +69,7 @@ tap.test("changing cwd and searching for **/d", function (t) {
 tap.test('non-dir cwd should raise error', function (t) {
   var notdir = 'a/b/c/d'
   var notdirRE = /a[\\\/]b[\\\/]c[\\\/]d/
-  var abs = path.resolve(notdir)
+  var abs = path.resolve(notdir).split('\\').join('/')
   var expect = new Error('ENOTDIR invalid cwd ' + abs)
   expect.code = 'ENOTDIR'
   expect.path = notdirRE

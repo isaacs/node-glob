@@ -16,9 +16,9 @@
     "a/b/c",
     "a/b/c/d"
   ],
-  "**/g": [
-    "a/abcdef/g",
-    "a/abcfed/g"
+  "./**/g": [
+    "./a/abcdef/g",
+    "./a/abcfed/g"
   ],
   "a/abc{fed,def}/g/h": [
     "a/abcdef/g/h",
@@ -34,30 +34,30 @@
     "a/abcdef/g",
     "a/abcfed/g"
   ],
-  "**/a/**/": [
-    "a",
-    "a/abcdef",
-    "a/abcdef/g",
-    "a/abcfed",
-    "a/abcfed/g",
-    "a/b",
-    "a/b/c",
-    "a/bc",
-    "a/bc/e",
-    "a/c",
-    "a/c/d",
-    "a/c/d/c",
-    "a/cb",
-    "a/cb/e",
-    "a/symlink",
-    "a/symlink/a",
-    "a/symlink/a/b",
-    "a/symlink/a/b/c",
-    "a/symlink/a/b/c/a",
-    "a/symlink/a/b/c/a/b",
-    "a/symlink/a/b/c/a/b/c",
-    "a/x",
-    "a/z"
+  "./**/a/**/": [
+    "./a",
+    "./a/abcdef",
+    "./a/abcdef/g",
+    "./a/abcfed",
+    "./a/abcfed/g",
+    "./a/b",
+    "./a/b/c",
+    "./a/bc",
+    "./a/bc/e",
+    "./a/c",
+    "./a/c/d",
+    "./a/c/d/c",
+    "./a/cb",
+    "./a/cb/e",
+    "./a/symlink",
+    "./a/symlink/a",
+    "./a/symlink/a/b",
+    "./a/symlink/a/b/c",
+    "./a/symlink/a/b/c/a",
+    "./a/symlink/a/b/c/a/b",
+    "./a/symlink/a/b/c/a/b/c",
+    "./a/x",
+    "./a/z"
   ],
   "+(a|b|c)/a{/,bc*}/**": [
     "a/abcdef",
@@ -71,9 +71,9 @@
     "a/bc/e/f",
     "a/cb/e/f"
   ],
-  "**/f": [
-    "a/bc/e/f",
-    "a/cb/e/f"
+  "./**/f": [
+    "./a/bc/e/f",
+    "./a/cb/e/f"
   ],
   "a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/**/b/c/**": [
     "a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c",

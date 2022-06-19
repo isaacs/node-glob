@@ -90,7 +90,7 @@ test("mark, no / on pattern", function (t) {
     t.same(glob.sync(pattern, opt), expect)
     t.end()
   }).on('match', function(m) {
-    t.similar(m, /\/$/)
+    t.match(m, /\/$/)
   })
 })
 
@@ -118,7 +118,7 @@ test("mark=false, no / on pattern", function (t) {
     t.same(glob.sync(pattern, opt), expect)
     t.end()
   }).on('match', function(m) {
-    t.similar(m, /[^\/]$/)
+    t.match(m, /[^\/]$/)
   })
 })
 
@@ -146,7 +146,7 @@ test("mark=true, / on pattern", function (t) {
     t.same(glob.sync(pattern, opt), expect)
     t.end()
   }).on('match', function(m) {
-    t.similar(m, /\/$/)
+    t.match(m, /\/$/)
   })
 })
 
@@ -173,7 +173,7 @@ test("mark=false, / on pattern", function (t) {
     t.same(glob.sync(pattern, opt), expect)
     t.end()
   }).on('match', function(m) {
-    t.similar(m, /\/$/)
+    t.match(m, /\/$/)
   })
 })
 

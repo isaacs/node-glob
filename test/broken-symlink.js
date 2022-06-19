@@ -51,7 +51,7 @@ test('async test', function (t) {
         if (er)
           throw er
         var msg = pattern + ' ' + JSON.stringify(opt)
-        t.notEqual(res.indexOf(link), -1, msg)
+        t.not(res.indexOf(link), -1, msg)
       }}
     })
   })
@@ -65,7 +65,7 @@ test('sync test', function (t) {
 
       opts.forEach(function (opt) {
         var res = glob.sync(pattern, opt)
-        t.notEqual(res.indexOf(link), -1, 'opt=' + JSON.stringify(opt))
+        t.not(res.indexOf(link), -1, 'opt=' + JSON.stringify(opt))
       })
     })
   })

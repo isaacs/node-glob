@@ -1,3 +1,30 @@
+## 8.0
+
+- Only support node v12 and higher
+- `\` is now **only** used as an escape character, and never as a
+  path separator in glob patterns, so that Windows users have a
+  way to match against filenames containing literal glob pattern
+  characters.
+- Glob pattern paths **must** use forward-slashes as path
+  separators, since `\` is an escape character to match literal
+  glob pattern characters.
+- (8.0.2) `cwd` and `root` will always be automatically coerced
+  to use `/` as path separators on Windows, as they cannot
+  contain glob patterns anyway, and are often supplied by
+  `path.resolve()` and other methods that will use `\` path
+  separators by default.
+
+## 7.2
+
+- Add fs option to allow passing virtual filesystem
+
+## 7.1
+
+- Ignore stat errors that are not `ENOENT` to work around Windows issues.
+- Support using root and absolute options together
+- Bring back lumpy space princess
+- force 'en' locale in string sorting
+
 ## 7.0
 
 - Raise error if `options.cwd` is specified, and not a directory
