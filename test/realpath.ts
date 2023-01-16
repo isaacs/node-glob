@@ -12,58 +12,67 @@ if (process.platform === 'win32')
 // options, results
 // realpath:true set on each option
 var cases = [
-  [ {},
-    [ 'a/symlink', 'a/symlink/a', 'a/symlink/a/b' ] ],
+  [{}, ['a/symlink', 'a/symlink/a', 'a/symlink/a/b']],
 
-  [ { mark: true },
-    [ 'a/symlink/', 'a/symlink/a/', 'a/symlink/a/b/' ] ],
+  [{ mark: true }, ['a/symlink/', 'a/symlink/a/', 'a/symlink/a/b/']],
 
-  [ { stat: true },
-    [ 'a/symlink', 'a/symlink/a', 'a/symlink/a/b' ] ],
+  [{ stat: true }, ['a/symlink', 'a/symlink/a', 'a/symlink/a/b']],
 
-  [ { follow: true },
-    [ 'a/symlink', 'a/symlink/a', 'a/symlink/a/b' ] ],
+  [{ follow: true }, ['a/symlink', 'a/symlink/a', 'a/symlink/a/b']],
 
-  [ { cwd: 'a' },
-    [ 'symlink', 'symlink/a', 'symlink/a/b' ],
-    pattern.substr(2) ],
+  [
+    { cwd: 'a' },
+    ['symlink', 'symlink/a', 'symlink/a/b'],
+    pattern.substr(2),
+  ],
 
-  [ { cwd: 'a' },
-    [],
-    'no one here but us chickens' ],
+  [{ cwd: 'a' }, [], 'no one here but us chickens'],
 
-  [ { nonull: true },
-    [ 'no one here but us chickens',
-      'no one here but us sheep' ],
-    'no one here but us {chickens,sheep}' ],
+  [
+    { nonull: true },
+    ['no one here but us chickens', 'no one here but us sheep'],
+    'no one here but us {chickens,sheep}',
+  ],
 
-  [ { nounique: true },
-    [ 'a/symlink',
+  [
+    { nounique: true },
+    [
+      'a/symlink',
       'a/symlink',
       'a/symlink',
       'a/symlink/a',
       'a/symlink/a',
       'a/symlink/a/b',
-      'a/symlink/a/b' ] ],
+      'a/symlink/a/b',
+    ],
+  ],
 
-  [ { nounique: true, mark: true },
-    [ 'a/symlink/',
+  [
+    { nounique: true, mark: true },
+    [
+      'a/symlink/',
       'a/symlink/',
       'a/symlink/',
       'a/symlink/a/',
       'a/symlink/a/',
       'a/symlink/a/b/',
-      'a/symlink/a/b/' ] ],
+      'a/symlink/a/b/',
+    ],
+  ],
 
-  [ { nounique: true, mark: true, follow: true },
-    [ 'a/symlink/',
+  [
+    { nounique: true, mark: true, follow: true },
+    [
+      'a/symlink/',
       'a/symlink/',
       'a/symlink/',
       'a/symlink/a/',
       'a/symlink/a/',
       'a/symlink/a/',
       'a/symlink/a/b/',
-      'a/symlink/a/b/' ] ],
+      'a/symlink/a/b/',
+    ],
+  ],
 ]
 
 cases.forEach(function (c) {
@@ -84,8 +93,7 @@ cases.forEach(function (c) {
     var sync = glob.sync(p, opt)
     t.same(sync, expect, 'sync')
     glob(p, opt, function (er, async) {
-      if (er)
-        throw er
+      if (er) throw er
       t.same(async, expect, 'async')
       t.end()
     })

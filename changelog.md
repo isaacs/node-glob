@@ -7,21 +7,23 @@ This is a full rewrite.
 - Hybrid module distribution.
 - Full TypeScript support.
 - Removed `root` option and mounting behavior.
-- Removed `stat` option.
-- Simplified `cwd` behavior.  Now it simply serves as the initial
+- Removed `stat` option. It's slow and pointless. (Could bring
+  back easily if there's demand.)
+- Simplified `cwd` behavior. Now it just serves as the initial
   argument to `fs.readdir`.
 - Removed all stat calls, in favor of using `withFileTypes:true`
   with `fs.readdir()`.
 - Consolidated all caching to a single object that only caches
-  directory entries and `readdir` errors.
+  directory entries and `readdir` errors. We can actually get
+  everything we need from just that.
 - Removed EventEmitter behavior from exported `Glob` class.
 - Consolidated sync and async `Glob` class behavior into a single
   class with `process()` and `processSync()` methods.
-- Removed `silent` option.  Any readdir errors are simply treated as
-  "the directory could not be read", and it is treated as a
-  normal file entry instead, like shells do.
-- Removed `fs` option.  This module only operates on the real
-  filesystem.
+- Removed `silent` and `strict` options. Any readdir errors are
+  simply treated as "the directory could not be read", and it is
+  treated as a normal file entry instead, like shells do.
+- Removed `fs` option. This module only operates on the real
+  filesystem. (Could bring back if there's demand for it.)
 - Only support node 16 and higher.
 
 ## 8.1

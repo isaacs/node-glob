@@ -2,7 +2,10 @@ const t = require('tap')
 const g = require('../')
 
 const platforms = ['win32', 'posix']
-const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform')
+const originalPlatform = Object.getOwnPropertyDescriptor(
+  process,
+  'platform'
+)
 for (const p of platforms) {
   t.test(p, t => {
     Object.defineProperty(process, 'platform', {
@@ -27,17 +30,20 @@ for (const p of platforms) {
       noprocess: true,
     })
 
-    t.strictSame([
-      def.pattern,
-      nowinpath.pattern,
-      winpath.pattern,
-      winpathLegacy.pattern,
-    ], [
-      '/a/b/c/x\\[a-b\\]y\\*',
-      '/a/b/c/x\\[a-b\\]y\\*',
-      '/a/b/c/x/[a-b/]y/*',
-      '/a/b/c/x/[a-b/]y/*',
-    ])
+    t.strictSame(
+      [
+        def.pattern,
+        nowinpath.pattern,
+        winpath.pattern,
+        winpathLegacy.pattern,
+      ],
+      [
+        '/a/b/c/x\\[a-b\\]y\\*',
+        '/a/b/c/x\\[a-b\\]y\\*',
+        '/a/b/c/x/[a-b/]y/*',
+        '/a/b/c/x/[a-b/]y/*',
+      ]
+    )
     t.end()
   })
 }

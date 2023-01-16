@@ -1,7 +1,7 @@
-require("./global-leakage.js")
+require('./global-leakage.js')
 var memfs = require('memfs')
 var test = require('tap').test
-var glob = require("../glob.js")
+var glob = require('../glob.js')
 
 test('fs-compatible file system can be used', function (t) {
   var volJson = {

@@ -1,15 +1,15 @@
-require("./global-leakage.js")
-var test = require("tap").test
+require('./global-leakage.js')
+var test = require('tap').test
 var glob = require('../')
 var common = require('../common.js')
 process.chdir(__dirname)
 
 // [pattern, options, expect]
 var cases = [
-  [ 'a/*NOFILE*/**/', {}, [ 'a/*NOFILE*/**/' ] ],
-  [ '*/*', { cwd: 'NODIR' }, [ '*/*' ] ],
-  [ 'NOFILE', {}, [ 'NOFILE' ] ],
-  [ 'NOFILE', { cwd: 'NODIR' }, [ 'NOFILE' ] ]
+  ['a/*NOFILE*/**/', {}, ['a/*NOFILE*/**/']],
+  ['*/*', { cwd: 'NODIR' }, ['*/*']],
+  ['NOFILE', {}, ['NOFILE']],
+  ['NOFILE', { cwd: 'NODIR' }, ['NOFILE']],
 ]
 
 cases.forEach(function (c) {
@@ -21,8 +21,7 @@ cases.forEach(function (c) {
     var res = glob.sync(pattern, options).sort()
     t.same(res, expect, 'sync results')
     var g = glob(pattern, options, function (er, res) {
-      if (er)
-        throw er
+      if (er) throw er
       res = res.sort()
       t.same(res, expect, 'async results')
       t.end()

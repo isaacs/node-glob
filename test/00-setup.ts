@@ -51,7 +51,9 @@ if (process.platform !== 'win32') {
   })
 }
 
-;['foo', 'bar', 'baz', 'asdf', 'quux', 'qwer', 'rewq'].forEach(function (w) {
+;['foo', 'bar', 'baz', 'asdf', 'quux', 'qwer', 'rewq'].forEach(function (
+  w
+) {
   w = '/tmp/glob-test/' + w
   t.test('create ' + w, async t => {
     await mkdirp(w)
@@ -146,7 +148,8 @@ export const bashResults:{ [path: string]: string[] } = ${
       })
   }
 
-  const flatten = (chunks: Buffer[]) => Buffer.concat(chunks).toString().trim()
+  const flatten = (chunks: Buffer[]) =>
+    Buffer.concat(chunks).toString().trim()
 
   const alphasort = (a: string, b: string) =>
     a.toLowerCase().localeCompare(b.toLowerCase(), 'en')

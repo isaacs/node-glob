@@ -1,21 +1,18 @@
-require("./global-leakage.js")
-var test = require('tap').test
-var glob = require("../glob.js")
+import t from 'tap'
+import glob from '../'
 
 // Patterns that cannot match anything
-var patterns = [
+const patterns = [
   '# comment',
   ' ',
   '\n',
-  'just doesnt happen to match anything so this is a control'
+  'just doesnt happen to match anything so this is a control',
 ]
 
-patterns.forEach(function (p) {
-  test(JSON.stringify(p), function (t) {
-    glob(p, function (e, f) {
-      t.equal(e, null, 'no error')
-      t.same(f, [], 'no returned values')
-      t.end()
-    })
+t.plan(patterns.length)
+for (const p of patterns) {
+  t.test(JSON.stringify(p), async t => {
+    const f = await glob(p)
+    t.same(f, [], 'no returned values')
   })
-})
+}

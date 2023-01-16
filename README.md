@@ -365,4 +365,5 @@ npm run bench
 # to profile javascript
 npm run prof
 ```
+
 ![](oh-my-glob.gif)

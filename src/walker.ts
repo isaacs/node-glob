@@ -21,9 +21,14 @@ import { resolve } from 'path'
 import { Ignore } from './ignore.js'
 import { GlobCache, Readdir } from './readdir.js'
 
+import { join } from 'path'
+
 // a single minimatch set entry with 1 or more parts
 type ParseReturnFiltered = string | RegExp | typeof GLOBSTAR
-export type Pattern = [p: ParseReturnFiltered, ...rest: ParseReturnFiltered[]]
+export type Pattern = [
+  p: ParseReturnFiltered,
+  ...rest: ParseReturnFiltered[]
+]
 
 type Children = (GlobWalker | string)[]
 
@@ -37,6 +42,7 @@ export interface GlobWalkerOptions {
   ignore?: string | string[] | Ignore
   dot?: boolean
   absolute?: boolean
+  cwd?: string
 }
 
 export class GlobWalker {
@@ -51,6 +57,8 @@ export class GlobWalker {
   dot: boolean
   ignore?: Ignore
   cache: GlobCache
+  cwd: string
+  start: string
 
   constructor(
     pattern: Pattern,
@@ -67,15 +75,14 @@ export class GlobWalker {
       rd,
       cache,
       ignore,
+      cwd = '',
     } = options
 
     // if the pattern starts with a bunch of strings, then skip ahead
     this.pattern = [...pattern]
     this.path = path
-    while (this.pattern.length > 1 && typeof this.pattern[0] === 'string') {
-      this.path = this.join(this.pattern[0])
-      this.pattern.shift()
-    }
+    this.cwd = cwd
+    this.start = this.setStart()
     this.follow = follow
     this.realpath = realpath
     this.absolute = absolute
@@ -93,26 +100,51 @@ export class GlobWalker {
     }
   }
 
+  setStart() {
+    const [first, ...rest] = this.pattern
+    // a pattern like /a/s/d/f discards the cwd
+    // a pattern like / (or c:/ on windows) can only match the root
+    const setAbs =
+      typeof first === 'string' &&
+      (first === '' ||
+        (process.platform === 'win32' && /^[a-z]:$/i.test(first)))
+    if (setAbs) {
+      this.pattern = rest as Pattern
+      this.cwd = '/'
+      this.path = '/'
+    }
+    while (
+      this.pattern.length > 1 &&
+      typeof this.pattern[0] === 'string'
+    ) {
+      this.path = this.join(this.pattern[0])
+      this.pattern.shift()
+    }
+    return join(this.cwd, this.path) || '.'
+  }
+
   child(pattern: Pattern, path: string) {
     return new GlobWalker(pattern, path, this)
   }
 
   async walk(): Promise<string[]> {
-    if (this.ignore && this.ignore.childrenIgnored(this.path)) {
+    if (this.ignore?.childrenIgnored(this.path)) {
       return []
     }
     let entries: Dirent[]
     // if it's not a directory, or we can't read it, then
     // that means no match, because we still have pattern to consume
     try {
-      entries = await this.rd.readdir(this.path || '.')
-    } catch (_) {
+      entries = await this.rd.readdir(this.start)
+    } catch (er) {
       return []
     }
     const children = this.getChildren(entries)
     const matches: (string | string[])[] = await Promise.all(
       children.map(async c =>
-        typeof c === 'string' ? this.finish(await this.doRealpath(c)) : c.walk()
+        typeof c === 'string'
+          ? this.finish(await this.doRealpath(c))
+          : c.walk()
       )
     )
     const flat = matches.reduce((set: string[], m) => set.concat(m), [])
@@ -176,8 +208,8 @@ export class GlobWalker {
     // if it's not a directory, or we can't read it, then
     // that means no match, because we still have pattern to consume
     try {
-      entries = this.rd.readdirSync(this.path || '.')
-    } catch (e) {
+      entries = this.rd.readdirSync(this.start)
+    } catch (er) {
       return []
     }
     const children = this.getChildren(entries)
@@ -235,12 +267,16 @@ export class GlobWalker {
     }
 
     for (const e of entries) {
+      if (!e.name) {
+        console.error('wat?', this.start, e)
+      }
       if (!this.dot && e.name.startsWith('.')) {
         continue
       }
       const path = this.join(e.name)
       // ** does not traverse symlinks, unless follow:true is set.
-      const traverse = e.isDirectory() || (this.follow && e.isSymbolicLink())
+      const traverse =
+        e.isDirectory() || (this.follow && e.isSymbolicLink())
       if (traverse) {
         children.push(this.child(this.pattern, path))
       }

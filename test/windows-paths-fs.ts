@@ -28,10 +28,11 @@ t.test('treat backslash as escape', async t => {
   }
   for (const [pattern, expect] of Object.entries(cases)) {
     t.test(pattern, t => {
-      const s = glob.sync(pattern, { cwd: dir })
+      const s = glob
+        .sync(pattern, { cwd: dir })
         .map(s => s.replace(/\\/g, '/'))
       t.strictSame(s, expect, 'sync')
-      glob(pattern, {cwd: dir}, (er, s) => {
+      glob(pattern, { cwd: dir }, (er, s) => {
         if (er) {
           throw er
         }
@@ -45,7 +46,7 @@ t.test('treat backslash as escape', async t => {
 
 t.test('treat backslash as separator', async t => {
   Object.defineProperty(process, 'platform', {
-    value: 'win32'
+    value: 'win32',
   })
   const cases = {
     'a[x]b/y': [],
@@ -54,10 +55,11 @@ t.test('treat backslash as separator', async t => {
   }
   for (const [pattern, expect] of Object.entries(cases)) {
     t.test(pattern, t => {
-      const s = glob.sync(pattern, { cwd: dir, windowsPathsNoEscape: true })
+      const s = glob
+        .sync(pattern, { cwd: dir, windowsPathsNoEscape: true })
         .map(s => s.replace(/\\/g, '/'))
       t.strictSame(s, expect, 'sync')
-      glob(pattern, {cwd: dir, windowsPathsNoEscape: true}, (er, s) => {
+      glob(pattern, { cwd: dir, windowsPathsNoEscape: true }, (er, s) => {
         if (er) {
           throw er
         }
