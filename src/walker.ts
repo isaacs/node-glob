@@ -156,7 +156,7 @@ export class GlobWalker {
       return []
     }
     if (this.nodir || this.mark) {
-      const isDir = this.rd.isDirectory(p)
+      const isDir = this.rd.isDirectory(this.join(p, this.cwd))
       if (isDir) {
         if (this.nodir) {
           return []
@@ -222,12 +222,12 @@ export class GlobWalker {
     return this.ignore ? flat.filter(f => !this.ignore?.ignored(f)) : flat
   }
 
-  join(p: string) {
-    return this.path === ''
+  join(p: string, base: string = this.path) {
+    return base === ''
       ? p
-      : this.path === '/'
-      ? `${this.path}${p}`
-      : `${this.path}/${p}`
+      : base.substring(base.length - 1) === '/'
+      ? `${base}${p}`
+      : `${base}/${p}`
   }
 
   getChildrenString(

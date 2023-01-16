@@ -1,203 +1,162 @@
-require('./global-leakage.js')
-var test = require('tap').test
-var glob = require('../')
+import t from 'tap'
+import glob from '../'
 process.chdir(__dirname + '/fixtures')
 
-// expose timing issues
-var lag = 5
-glob.Glob.prototype._stat = (function (o) {
-  return function (f, cb) {
-    var args = arguments
-    setTimeout(
-      function () {
-        o.call(this, f, cb)
-      }.bind(this),
-      (lag += 5)
-    )
+t.test('mark with cwd', async t => {
+  const pattern = '*/*'
+  const opt = { mark: true, cwd: 'a' }
+  const expect = [
+    'abcdef/g/',
+    'abcfed/g/',
+    'b/c/',
+    'bc/e/',
+    'c/d/',
+    'cb/e/',
+  ].sort()
+
+  const res = await glob(pattern, opt)
+  if (process.platform !== 'win32') {
+    expect.push('symlink/a/')
   }
-})(glob.Glob.prototype._stat)
 
-test('mark with cwd', function (t) {
-  var pattern = '*/*'
-  var opt = { mark: true, cwd: 'a' }
-  glob(pattern, opt, function (er, res) {
-    if (er) throw er
-
-    var expect = [
-      'abcdef/g/',
-      'abcfed/g/',
-      'b/c/',
-      'bc/e/',
-      'c/d/',
-      'cb/e/',
-    ].sort()
-
-    if (process.platform !== 'win32') expect.push('symlink/a/')
-
-    t.same(res.sort(), expect)
-    t.same(glob.sync(pattern, opt).sort(), expect)
-    t.end()
-  })
+  t.same(res.sort(), expect)
+  t.same(glob.sync(pattern, opt).sort(), expect)
 })
 
-test('mark, with **', function (t) {
-  var pattern = 'a/*b*/**'
-  var opt = { mark: true }
-  glob(pattern, opt, function (er, results) {
-    if (er) throw er
-    var expect = [
-      'a/abcdef/',
-      'a/abcdef/g/',
-      'a/abcdef/g/h',
-      'a/abcfed/',
-      'a/abcfed/g/',
-      'a/abcfed/g/h',
-      'a/b/',
-      'a/b/c/',
-      'a/b/c/d',
-      'a/bc/',
-      'a/bc/e/',
-      'a/bc/e/f',
-      'a/cb/',
-      'a/cb/e/',
-      'a/cb/e/f',
-    ]
+t.test('mark, with **', async t => {
+  const pattern = 'a/*b*/**'
+  const opt = { mark: true }
+  const expect = [
+    'a/abcdef/',
+    'a/abcdef/g/',
+    'a/abcdef/g/h',
+    'a/abcfed/',
+    'a/abcfed/g/',
+    'a/abcfed/g/h',
+    'a/b/',
+    'a/b/c/',
+    'a/b/c/d',
+    'a/bc/',
+    'a/bc/e/',
+    'a/bc/e/f',
+    'a/cb/',
+    'a/cb/e/',
+    'a/cb/e/f',
+  ]
 
-    t.same(results, expect)
-    t.same(glob.sync(pattern, opt), expect)
-    t.end()
-  })
+  const results = await glob(pattern, opt)
+  t.same(results, expect)
+  t.same(glob.sync(pattern, opt), expect)
 })
 
-test('mark, no / on pattern', function (t) {
-  var pattern = 'a/*'
-  var opt = { mark: true }
-  glob(pattern, opt, function (er, results) {
-    if (er) throw er
-    var expect = [
-      'a/abcdef/',
-      'a/abcfed/',
-      'a/b/',
-      'a/bc/',
-      'a/c/',
-      'a/cb/',
-      'a/x/',
-      'a/z/',
-    ]
-
-    if (process.platform !== 'win32') expect.push('a/symlink/')
-
-    expect = expect.sort()
-
-    t.same(results, expect)
-    t.same(glob.sync(pattern, opt), expect)
-    t.end()
-  }).on('match', function (m) {
-    t.match(m, /\/$/)
-  })
+t.test('mark, no / on pattern', async t => {
+  const pattern = 'a/*'
+  const opt = { mark: true }
+  const expect = [
+    'a/abcdef/',
+    'a/abcfed/',
+    'a/b/',
+    'a/bc/',
+    'a/c/',
+    'a/cb/',
+    'a/x/',
+    'a/z/',
+  ]
+  if (process.platform !== 'win32') {
+    expect.push('a/symlink/')
+  }
+  expect.sort()
+  const results = await glob(pattern, opt)
+  t.same(results, expect)
+  t.same(glob.sync(pattern, opt), expect)
 })
 
-test('mark=false, no / on pattern', function (t) {
-  var pattern = 'a/*'
-  var opt = null
-  glob(pattern, opt, function (er, results) {
-    if (er) throw er
-    var expect = [
-      'a/abcdef',
-      'a/abcfed',
-      'a/b',
-      'a/bc',
-      'a/c',
-      'a/cb',
-      'a/x',
-      'a/z',
-    ]
+t.test('mark=false, no / on pattern', async t => {
+  const pattern = 'a/*'
+  const expect = [
+    'a/abcdef',
+    'a/abcfed',
+    'a/b',
+    'a/bc',
+    'a/c',
+    'a/cb',
+    'a/x',
+    'a/z',
+  ]
+  if (process.platform !== 'win32') {
+    expect.push('a/symlink')
+  }
+  expect.sort()
+  const results = await glob(pattern)
 
-    if (process.platform !== 'win32') expect.push('a/symlink')
-
-    expect = expect.sort()
-
-    t.same(results, expect)
-    t.same(glob.sync(pattern, opt), expect)
-    t.end()
-  }).on('match', function (m) {
-    t.match(m, /[^\/]$/)
-  })
+  t.same(results, expect)
+  t.same(glob.sync(pattern), expect)
 })
 
-test('mark=true, / on pattern', function (t) {
-  var pattern = 'a/*/'
-  var opt = { mark: true }
-  glob(pattern, opt, function (er, results) {
-    if (er) throw er
-    var expect = [
-      'a/abcdef/',
-      'a/abcfed/',
-      'a/b/',
-      'a/bc/',
-      'a/c/',
-      'a/cb/',
-      'a/x/',
-      'a/z/',
-    ]
+t.test('mark=true, / on pattern', async t => {
+  const pattern = 'a/*/'
+  const opt = { mark: true }
+  const expect = [
+    'a/abcdef/',
+    'a/abcfed/',
+    'a/b/',
+    'a/bc/',
+    'a/c/',
+    'a/cb/',
+    'a/x/',
+    'a/z/',
+  ]
 
-    if (process.platform !== 'win32') expect.push('a/symlink/')
-
-    expect = expect.sort()
-
-    t.same(results, expect)
-    t.same(glob.sync(pattern, opt), expect)
-    t.end()
-  }).on('match', function (m) {
-    t.match(m, /\/$/)
-  })
+  if (process.platform !== 'win32') {
+    expect.push('a/symlink/')
+  }
+  expect.sort()
+  const results = await glob(pattern, opt)
+  t.same(results, expect)
+  t.same(glob.sync(pattern, opt), expect)
 })
 
-test('mark=false, / on pattern', function (t) {
-  var pattern = 'a/*/'
-  var opt = null
-  glob(pattern, opt, function (er, results) {
-    if (er) throw er
-    var expect = [
-      'a/abcdef/',
-      'a/abcfed/',
-      'a/b/',
-      'a/bc/',
-      'a/c/',
-      'a/cb/',
-      'a/x/',
-      'a/z/',
-    ]
-    if (process.platform !== 'win32') expect.push('a/symlink/')
+t.test('mark=false, / on pattern', async t => {
+  const pattern = 'a/*/'
+  const expect = [
+    'a/abcdef/',
+    'a/abcfed/',
+    'a/b/',
+    'a/bc/',
+    'a/c/',
+    'a/cb/',
+    'a/x/',
+    'a/z/',
+  ]
+  if (process.platform !== 'win32') {
+    expect.push('a/symlink/')
+  }
+  expect.sort()
 
-    expect = expect.sort()
-
-    t.same(results, expect)
-    t.same(glob.sync(pattern, opt), expect)
-    t.end()
-  }).on('match', function (m) {
-    t.match(m, /\/$/)
-  })
+  const results = await glob(pattern)
+  t.same(results, expect)
+  t.same(glob.sync(pattern), expect)
 })
 
-var cwd = process
+const cwd = process
   .cwd()
   .replace(/[\/\\]+$/, '')
   .replace(/\\/g, '/')
-;[true, false].forEach(function (mark) {
-  ;[true, false].forEach(function (slash) {
-    test('cwd mark:' + mark + ' slash:' + slash, function (t) {
-      var pattern = cwd + (slash ? '/' : '')
-      glob(pattern, { mark: mark }, function (er, results) {
-        t.equal(results.length, 1)
-        var res = results[0].replace(/\\/g, '/')
-        var syncRes = glob.sync(pattern, { mark: mark })
-        syncRes = syncRes[0].replace(/\\/g, '/')
-        if (slash || mark) t.equal(res, cwd + '/')
-        else t.equal(res.indexOf(cwd), 0)
-        t.equal(syncRes, res, 'sync should match async')
-        t.end()
-      })
+for (const mark of [true, false]) {
+  for (const slash of [true, false]) {
+    t.test('cwd mark:' + mark + ' slash:' + slash, async t => {
+      const pattern = cwd + (slash ? '/' : '')
+      const results = await glob(pattern, { mark })
+      t.equal(results.length, 1)
+      const res = results[0].replace(/\\/g, '/')
+      const syncResults = glob.sync(pattern, { mark: mark })
+      const syncRes = syncResults[0].replace(/\\/g, '/')
+      if (slash || mark) {
+        t.equal(res, cwd + '/')
+      } else {
+        t.equal(res.indexOf(cwd), 0)
+      }
+      t.equal(syncRes, res, 'sync should match async')
     })
-  })
-})
+  }
+}

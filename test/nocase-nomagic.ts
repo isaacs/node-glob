@@ -1,96 +1,92 @@
-require('./global-leakage.js')
-var fs = require('fs')
-var test = require('tap').test
-var glob = require('../')
+import * as fs from 'fs'
+import t from 'tap'
 
-var cwd = process.cwd()
-var drive = 'c'
-if (/^[a-zA-Z]:[\\\/]/.test(cwd)) {
-  drive = cwd.charAt(0).toLowerCase()
+const cwd = process.cwd()
+const drive = /^[a-zA-Z]:[\\\/]/.test(cwd)
+  ? cwd.charAt(0).toLowerCase()
+  : 'c'
+
+const fakeStat = (
+  path: string
+): { isDirectory: () => boolean; isSymbolicLink: () => boolean } => {
+  let ret: { isDirectory: () => boolean; isSymbolicLink: () => false }
+  switch (path.toLowerCase().replace(/\\/g, '/')) {
+    case '/tmp':
+    case '/tmp/':
+    case drive + ':/tmp':
+    case drive + ':/tmp/':
+      ret = {
+        isSymbolicLink: () => false,
+        isDirectory: () => true,
+      }
+      break
+    case '/tmp/a':
+    case drive + ':/tmp/a':
+      ret = {
+        isSymbolicLink: () => false,
+        isDirectory: () => false,
+      }
+      break
+    default:
+      throw new Error('invalid: ' + path)
+  }
+  return ret
 }
 
-test('mock fs', function (t) {
-  var stat = fs.stat
-  var statSync = fs.statSync
-  var readdir = fs.readdir
-  var readdirSync = fs.readdirSync
+const join = (r: string, p: string) =>
+  r === '/' ? `${r}${p}` : `${r}/${p}`
 
-  function fakeStat(path) {
-    var ret
-    switch (path.toLowerCase().replace(/\\/g, '/')) {
-      case '/tmp':
-      case '/tmp/':
-      case drive + ':\\tmp':
-      case drive + ':\\tmp\\':
-        ret = {
-          isDirectory: function () {
-            return true
-          },
-        }
-        break
-      case '/tmp/a':
-      case drive + ':/tmp/a':
-        ret = {
-          isDirectory: function () {
-            return false
-          },
-        }
-        break
+function fakeReaddir(path: string) {
+  let ret: string[]
+  switch (path.toLowerCase().replace(/\\/g, '/')) {
+    case '/tmp':
+    case '/tmp/':
+    case drive + ':/tmp':
+    case drive + ':/tmp/':
+      ret = ['a', 'A']
+      break
+    case '/':
+    case drive + ':':
+    case drive + ':/':
+      ret = ['tMp', 'tmp', 'tMP', 'TMP']
+      break
+    default:
+      throw new Error('not mocked')
+  }
+  return ret.map(name => ({ name, ...fakeStat(join(path, name)) }))
+}
+
+const mockFs = {
+  ...fs,
+  readdir: (
+    path: string,
+    _options: { withFileTypes: true },
+    cb: (
+      er: null | NodeJS.ErrnoException,
+      entries?: ReturnType<typeof fakeReaddir>
+    ) => void
+  ) => {
+    try {
+      const f = fakeReaddir(path)
+      process.nextTick(() => cb(null, f))
+    } catch (_) {
+      fs.readdir(path, { withFileTypes: true }, cb)
     }
-    return ret
-  }
+  },
 
-  fs.stat = function (path, cb) {
-    var f = fakeStat(path)
-    if (f) {
-      process.nextTick(function () {
-        cb(null, f)
-      })
-    } else {
-      stat.call(fs, path, cb)
+  readdirSync: (path: string, _options?: { withFileTypes: true }) => {
+    try {
+      return fakeReaddir(path)
+    } catch (_) {
+      return fs.readdirSync(path, { withFileTypes: true })
     }
-  }
+  },
+}
 
-  fs.statSync = function (path) {
-    return fakeStat(path) || statSync.call(fs, path)
-  }
+const { glob } = t.mock('../dist/cjs/index.js', { fs: mockFs })
 
-  function fakeReaddir(path) {
-    var ret
-    switch (path.toLowerCase().replace(/\\/g, '/')) {
-      case '/tmp':
-      case '/tmp/':
-      case drive + ':/tmp':
-      case drive + ':/tmp/':
-        ret = ['a', 'A']
-        break
-      case '/':
-      case drive + ':/':
-        ret = ['tmp', 'tMp', 'tMP', 'TMP']
-    }
-    return ret
-  }
-
-  fs.readdir = function (path, cb) {
-    var f = fakeReaddir(path)
-    if (f)
-      process.nextTick(function () {
-        cb(null, f)
-      })
-    else readdir.call(fs, path, cb)
-  }
-
-  fs.readdirSync = function (path) {
-    return fakeReaddir(path) || readdirSync.call(fs, path)
-  }
-
-  t.pass('mocked')
-  t.end()
-})
-
-test('nocase, nomagic', function (t) {
-  var n = 2
-  var want = [
+t.test('nocase, nomagic', async t => {
+  const raw = [
     '/TMP/A',
     '/TMP/a',
     '/tMP/A',
@@ -100,38 +96,28 @@ test('nocase, nomagic', function (t) {
     '/tmp/A',
     '/tmp/a',
   ]
-  if (process.platform.match(/^win/)) {
-    want = want.map(function (p) {
-      return drive + ':' + p
+  const want =
+    process.platform === 'win32' ? raw.map(p => drive + ':' + p) : raw
+
+  await Promise.all(
+    ['/tmp/a', '/TmP/A'].map(async pattern => {
+      const rawRes: string[] = await glob(pattern, { nocase: true })
+      const g = new glob.Glob(pattern, { nocase: true })
+      const res =
+        process.platform === 'win32'
+          ? rawRes.map(r =>
+              r
+                .replace(/\\/g, '/')
+                .replace(new RegExp('^' + drive + ':', 'i'), drive + ':')
+            )
+          : rawRes
+      t.same(res.sort(), want, pattern)
     })
-  }
-  glob('/tmp/a', { nocase: true }, function (er, res) {
-    if (er) throw er
-    if (process.platform.match(/^win/))
-      res = res.map(function (r) {
-        return r
-          .replace(/\\/g, '/')
-          .replace(new RegExp('^' + drive + ':', 'i'), drive + ':')
-      })
-    t.same(res.sort(), want)
-    if (--n === 0) t.end()
-  })
-  glob('/tmp/A', { nocase: true }, function (er, res) {
-    if (er) throw er
-    if (process.platform.match(/^win/))
-      res = res.map(function (r) {
-        return r
-          .replace(/\\/g, '/')
-          .replace(new RegExp('^' + drive + ':', 'i'), drive + ':')
-      })
-    t.same(res.sort(), want)
-    if (--n === 0) t.end()
-  })
+  )
 })
 
-test('nocase, with some magic', function (t) {
-  t.plan(2)
-  var want = [
+t.test('nocase, with some magic', async t => {
+  const raw = [
     '/TMP/A',
     '/TMP/a',
     '/tMP/A',
@@ -141,32 +127,21 @@ test('nocase, with some magic', function (t) {
     '/tmp/A',
     '/tmp/a',
   ]
-  if (process.platform.match(/^win/)) {
-    want = want.map(function (p) {
-      return drive + ':' + p
-    })
-  }
+  const want =
+    process.platform === 'win32' ? raw.map(p => drive + ':' + p) : raw
 
-  glob('/tmp/*', { nocase: true }, function (er, res) {
-    if (er) throw er
-    if (process.platform.match(/^win/)) {
-      res = res.map(function (r) {
-        return r
-          .replace(/\\/g, '/')
-          .replace(new RegExp('^' + drive + ':', 'i'), drive + ':')
-      })
-    }
-    t.same(res.sort(), want)
-  })
-  glob('/tmp/*', { nocase: true }, function (er, res) {
-    if (er) throw er
-    if (process.platform.match(/^win/)) {
-      res = res.map(function (r) {
-        return r
-          .replace(/\\/g, '/')
-          .replace(new RegExp('^' + drive + ':', 'i'), drive + ':')
-      })
-    }
-    t.same(res.sort(), want)
-  })
+  await Promise.all(
+    ['/tmp/*', '/tMp/*'].map(async pattern => {
+      const resRaw: string[] = glob.sync(pattern, { nocase: true })
+      const res =
+        process.platform === 'win32'
+          ? resRaw.map(r =>
+              r
+                .replace(/\\/g, '/')
+                .replace(new RegExp('^' + drive + ':', 'i'), drive + ':')
+            )
+          : resRaw
+      t.same(res.sort(), want)
+    })
+  )
 })
