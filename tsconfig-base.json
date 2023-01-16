@@ -1,0 +1,17 @@
+{
+  "exclude": ["./test", "./tap-snapshots"],
+  "include": ["src/**/*.ts"],
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2022"
+  }
+}
