@@ -36,7 +36,7 @@
     "typedoc": "typedoc --tsconfig tsconfig-esm.json ./src/*.ts",
     "prepublish": "npm run benchclean",
     "profclean": "rm -f v8.log profile.txt",
-    "test-regen": "npm run profclean && TEST_REGEN=1 node test/00-setup.js",
+    "test-regen": "npm run profclean && TEST_REGEN=1 node --no-warnings --loader ts-node/esm test/00-setup.js",
     "bench": "bash benchmark.sh",
     "prof": "bash prof.sh && cat profile.txt",
     "benchclean": "node benchclean.js"
@@ -57,22 +57,23 @@
     "minimatch": "^6.0.4"
   },
   "devDependencies": {
+    "@types/mkdirp": "^1.0.2",
     "@types/node": "^18.11.18",
     "@types/tap": "^15.0.7",
     "c8": "^7.12.0",
     "eslint-config-prettier": "^8.6.0",
     "memfs": "^3.2.0",
-    "mkdirp": "0",
+    "mkdirp": "^2.0.0",
     "prettier": "^2.8.3",
-    "rimraf": "^2.2.8",
-    "tap": "^16.3.3",
+    "rimraf": "^4.0.7",
+    "tap": "^16.3.4",
     "ts-node": "^10.9.1",
     "typedoc": "^0.23.24",
     "typescript": "^4.9.4"
   },
   "tap": {
-    "before": "test/00-setup.js",
-    "after": "test/zz-cleanup.js",
+    "before": "test/00-setup.ts",
+    "after": "test/zz-cleanup.ts",
     "coverage": false,
     "node-arg": [
       "--no-warnings",

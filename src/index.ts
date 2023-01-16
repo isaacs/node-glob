@@ -13,12 +13,15 @@ export const glob = Object.assign(
   ): Promise<string[]> => new Glob(pattern, options).process(),
   {
     sync: globSync,
+    globSync,
     Glob,
     hasMagic,
   }
 )
 
+/* c8 ignore start */
 export { Glob } from './glob.js'
 export type { GlobOptions } from './glob.js'
 export { hasMagic } from './has-magic.js'
 export default glob
+/* c8 ignore stop */

@@ -1,4 +1,5 @@
 import { Minimatch, MinimatchOptions } from 'minimatch'
+import {resolve} from 'path'
 import { GlobCache } from './readdir.js'
 import { GlobWalker, Pattern } from './walker.js'
 
@@ -86,7 +87,6 @@ export class Glob {
   }
 
   doNonull(matches: string[], i: number) {
-    console.log('doNonull', matches, i, this.globSet[i])
     if (!matches.length && this.nonull) {
       const gs: string | undefined = this.globSet[i]
       if (gs) {
@@ -119,7 +119,17 @@ export class Glob {
   }
 
   getWalker(set: Pattern) {
-    return new GlobWalker(set, this.cwd, this)
+    // if the set starts with an absolute path, then start there
+    const first = set[0]
+    const setAbs =
+      typeof first === 'string' &&
+      (first === '' ||
+        (process.platform === 'win32' && /^[a-z]:$/i.test(first)))
+    if (setAbs) {
+      set.shift()
+    }
+    const start = setAbs ? first + '/' : this.cwd
+    return new GlobWalker(set, start, this)
   }
 
   processSync() {

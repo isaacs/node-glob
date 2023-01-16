@@ -1,4 +1,8 @@
-{
+// generated via 'npm run test-regen'
+if (module === require.main) {
+  console.log('TAP version 13\n1..1\nok\n')
+}
+export const bashResults:{ [path: string]: string[] } = {
   "a/*/+(c|g)/./d": [
     "a/b/c/./d"
   ],
@@ -138,3 +142,4 @@
     "a/symlink/a/b/c/a"
   ]
 }
+

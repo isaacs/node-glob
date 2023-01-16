@@ -191,7 +191,11 @@ export class GlobWalker {
   }
 
   join(p: string) {
-    return this.path ? `${this.path}/${p}` : p
+    return this.path === ''
+      ? p
+      : this.path === '/'
+      ? `${this.path}${p}`
+      : `${this.path}/${p}`
   }
 
   getChildrenString(
@@ -199,7 +203,6 @@ export class GlobWalker {
     p: string,
     rest: Pattern | null
   ): Children {
-    console.log('CS', this.path, entries, p, rest)
     const children: Children = []
     const e = entries.find(e => e.name === p)
     const traverse =
@@ -220,17 +223,14 @@ export class GlobWalker {
   }
 
   getChildrenGlobstar(entries: Dirent[], rest: Pattern | null): Children {
-    console.log('CGS', this.path, entries, rest)
     const children: Children = []
 
     // eg, p=**/a/b
     if (rest) {
-      console.log('> 1', rest, this.path)
       // it can match a/b against this path, without the **
       children.push(this.child(rest, this.path))
     } else {
       // but if ** is at the end, then this path definitely matches
-      console.log('> 2', null, this.path)
       children.push(this.path)
     }
 
@@ -242,18 +242,13 @@ export class GlobWalker {
       // ** does not traverse symlinks, unless follow:true is set.
       const traverse = e.isDirectory() || (this.follow && e.isSymbolicLink())
       if (traverse) {
-        console.log('t1>', this.pattern, path)
         children.push(this.child(this.pattern, path))
       }
       if (rest) {
         // can match a/b against child path
-        if (traverse) {
-          console.log('t2>', rest, path)
-          children.push(this.child(rest, path))
-        }
+        children.push(this.child(rest, path))
       } else {
         // ** at the end, will match all children
-        console.log('t3>', path)
         children.push(path)
       }
     }
