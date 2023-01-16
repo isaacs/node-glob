@@ -15,7 +15,7 @@ export class Ignore {
     for (const pattern of patterns) {
       this.matchers.push(new Minimatch(pattern, { dot: true }))
       if (pattern.substring(pattern.length - 3) === '/**') {
-        const gp = pattern.slice(0, pattern.length - 3)
+        const gp = pattern.replace(/(\/\*\*)+$/, '')
         this.gmatchers.push(new Minimatch(gp, { dot: true }))
       }
     }

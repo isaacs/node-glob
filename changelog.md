@@ -9,8 +9,11 @@ This is a full rewrite.
 - Removed `root` option and mounting behavior.
 - Removed `stat` option. It's slow and pointless. (Could bring
   back easily if there's demand.)
-- Simplified `cwd` behavior. Now it just serves as the initial
-  argument to `fs.readdir`.
+- Simplified `cwd` behavior so it is far less magical, and relies
+  less on platform-specific absolute path representations.
+- More efficient handling for absolute patterns.  (That is,
+  patterns that start with `/` on any platform, or start with a
+  drive letter on Windows.)
 - Removed all stat calls, in favor of using `withFileTypes:true`
   with `fs.readdir()`.
 - Consolidated all caching to a single object that only caches
@@ -25,6 +28,13 @@ This is a full rewrite.
 - Removed `fs` option. This module only operates on the real
   filesystem. (Could bring back if there's demand for it.)
 - Only support node 16 and higher.
+- When `{nonull:true}` is set, and an `ignore` pattern causes all
+  entries to be ignored, then the pattern is returned, as it
+  would be if no matches were found.  This _may_ result in the
+  surprising situation where a pattern like `x/y/z` is returned
+  even, even though the ignore value like `x/**` would have
+  excluded it.  However, _not_ returning anything when
+  `nonull:true` is set, is arguably a worse contract violation.
 
 ## 8.1
 
