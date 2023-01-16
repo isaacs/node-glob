@@ -106,12 +106,12 @@ export class GlobWalker {
     // a pattern like / (or c:/ on windows) can only match the root
     const setAbs =
       typeof first === 'string' &&
-      (first === '' ||
+      ((first === '' && rest.length) ||
         (process.platform === 'win32' && /^[a-z]:$/i.test(first)))
     if (setAbs) {
-      this.pattern = rest as Pattern
-      this.cwd = '/'
-      this.path = '/'
+      this.pattern = rest.length ? (rest as Pattern) : ['']
+      this.cwd = first || '/'
+      this.path = first || '/'
     }
     while (
       this.pattern.length > 1 &&
@@ -267,9 +267,6 @@ export class GlobWalker {
     }
 
     for (const e of entries) {
-      if (!e.name) {
-        console.error('wat?', this.start, e)
-      }
       if (!this.dot && e.name.startsWith('.')) {
         continue
       }

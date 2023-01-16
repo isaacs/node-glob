@@ -9,6 +9,9 @@ export const hasMagic = (
   }
   return pattern.some(p => {
     const g = new Glob(p, options)
+    if (g.matchSet.length === 0) {
+      return false
+    }
     if (g.matchSet.length > 1) {
       return true
     }

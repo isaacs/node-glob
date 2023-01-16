@@ -1,30 +1,18 @@
-require('./global-leakage.js')
-var test = require('tap').test
-var glob = require('../')
+import t from 'tap'
+import glob from '../'
 process.chdir(__dirname)
 
-glob.GlobSync.prototype._process = glob.Glob.prototype._process =
-  function () {
-    throw new Error('should not call _process() in these tests')
-  }
-
-test('create glob object without processing', function (t) {
-  t.ok(glob('a', { noprocess: true }) instanceof glob.Glob)
-  t.ok(glob.GlobSync('a', { noprocess: true }) instanceof glob.GlobSync)
-  t.end()
-})
-
-test('non-string pattern is evil magic', function (t) {
-  var patterns = [0, null, 12, { x: 1 }, undefined, /x/, NaN]
+t.test('non-string pattern is evil magic', async t => {
+  const patterns = [0, null, 12, { x: 1 }, undefined, /x/, NaN]
   patterns.forEach(function (p) {
-    t.throws('' + p, function () {
+    t.throws(function () {
+      // @ts-expect-error
       glob.hasMagic(p)
     })
   })
-  t.end()
 })
 
-test('detect magic in glob patterns', function (t) {
+t.test('detect magic in glob patterns', async t => {
   t.notOk(glob.hasMagic(''), "no magic in ''")
   t.notOk(glob.hasMagic('a/b/c/'), 'no magic a/b/c/')
   t.ok(glob.hasMagic('a/b/**/'), 'magic in a/b/**/')
@@ -39,5 +27,4 @@ test('detect magic in glob patterns', function (t) {
     glob.hasMagic('{a,b}', { nobrace: true }),
     'magic in {a,b} nobrace:true'
   )
-  t.end()
 })

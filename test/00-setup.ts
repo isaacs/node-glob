@@ -127,6 +127,19 @@ export const bashResults:{ [path: string]: string[] } = ${
     await writeFile(fname, data)
   })
 
+  t.test('formatting', t => {
+    const c = spawn(
+      'prettier',
+      ['--write', resolve(__dirname, 'bash-results.ts')],
+      { stdio: ['ignore', 2, 2] }
+    )
+    c.on('close', (code, signal) => {
+      t.equal(code, 0, 'code')
+      t.equal(signal, null, 'signal')
+      t.end()
+    })
+  })
+
   function cleanResults(m: string[]) {
     // normalize discrepancies in ordering, duplication,
     // and ending slashes.
