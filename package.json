@@ -58,7 +58,7 @@
   },
   "dependencies": {
     "fs.realpath": "^1.0.0",
-    "minimatch": "6.1"
+    "minimatch": "^6.1.4"
   },
   "devDependencies": {
     "@types/mkdirp": "^1.0.2",
