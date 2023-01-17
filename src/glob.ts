@@ -91,30 +91,30 @@ export class Glob {
     )
   }
 
-  doNonull(matches: string[], i: number) {
-    if (!matches.length && this.nonull) {
-      const gs: string | undefined = this.globSet[i]
-      if (gs) {
-        return [gs]
-      } else {
-        return []
-      }
-    }
-    return matches
-  }
-
   async process() {
     return this.finish(
       await Promise.all(
         this.matchSet.map(async (set, i) => {
-          if (!set.length) {
-            return []
-          }
           const matches = await this.getWalker(set as Pattern).walk()
           return this.doNonull(matches, i)
         })
       )
     )
+  }
+
+  processSync() {
+    return this.finish(
+      this.matchSet.map((set, i) =>
+        this.doNonull(this.getWalker(set as Pattern).walkSync(), i)
+      )
+    )
+  }
+
+  doNonull(matches: string[], i: number): string[] {
+    if (!matches.length && this.nonull) {
+      return [this.globSet[i]]
+    }
+    return matches
   }
 
   finish(matches: string[][]): string[] {
@@ -127,16 +127,5 @@ export class Glob {
 
   getWalker(set: Pattern) {
     return new GlobWalker(set, '', this)
-  }
-
-  processSync() {
-    return this.finish(
-      this.matchSet.map((set, i) => {
-        if (!set.length) {
-          return []
-        }
-        return this.doNonull(this.getWalker(set as Pattern).walkSync(), i)
-      })
-    )
   }
 }

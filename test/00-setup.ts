@@ -66,6 +66,8 @@ if (process.platform === 'win32' || !process.env.TEST_REGEN) {
     // put more patterns here.
     // anything that would be directly in / should be in /tmp/glob-test
     [
+      'a/c/d/*/b',
+      'a/*/d/*/b',
       'a/*/+(c|g)/./d',
       'a/**/[cg]/../[cg]',
       'a/{b,c,d,e,f}/**/g',

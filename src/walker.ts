@@ -21,8 +21,6 @@ import { resolve } from 'path'
 import { Ignore } from './ignore.js'
 import { GlobCache, Readdir } from './readdir.js'
 
-import { join } from 'path'
-
 // a single minimatch set entry with 1 or more parts
 type ParseReturnFiltered = string | RegExp | typeof GLOBSTAR
 export type Pattern = [
@@ -104,14 +102,22 @@ export class GlobWalker {
     const [first, ...rest] = this.pattern
     // a pattern like /a/s/d/f discards the cwd
     // a pattern like / (or c:/ on windows) can only match the root
-    const setAbs =
-      typeof first === 'string' &&
-      ((first === '' && rest.length) ||
-        (process.platform === 'win32' && /^[a-z]:$/i.test(first)))
-    if (setAbs) {
-      this.pattern = rest.length ? (rest as Pattern) : ['']
-      this.cwd = first || '/'
-      this.path = first || '/'
+    if (typeof first === 'string') {
+      const patternSlash = first === '' && !!rest.length
+      const isWin = process.platform === 'win32'
+      const patternDrive = isWin && /^[a-z]:$/i.test(first)
+      const setAbs = patternSlash || patternDrive
+      if (setAbs) {
+        // a pattern like '/' on windows goes to the root of
+        // the drive that cwd is on.  If cwd isn't on a drive, use /
+        const cwd = this.join(this.path, this.cwd)
+        const cwdRe = /^[a-z]:($|[\\\/])/i
+        const cwdDrive = isWin && patternSlash && cwd.match(cwdRe)
+        const root = cwdDrive ? cwdDrive[0] : '/'
+        this.pattern = rest.length ? (rest as Pattern) : ['']
+        this.cwd = first || root
+        this.path = first || root
+      }
     }
     while (
       this.pattern.length > 1 &&
@@ -120,7 +126,7 @@ export class GlobWalker {
       this.path = this.join(this.pattern[0])
       this.pattern.shift()
     }
-    return join(this.cwd, this.path) || '.'
+    return this.join(this.path, this.cwd) || '.'
   }
 
   child(pattern: Pattern, path: string) {
@@ -239,19 +245,14 @@ export class GlobWalker {
   ): Children {
     const children: Children = []
     const e = entries.find(e => e.name === p)
-    const traverse =
-      p === '..' ||
-      p === '.' ||
-      p === '' ||
-      (e && (e.isDirectory() || e.isSymbolicLink()))
-    if (p === '.' || p === '' || p === '..' || e) {
-      if (rest) {
-        if (traverse) {
-          children.push(this.child(rest, this.join(p)))
-        }
-      } else {
-        children.push(this.join(p))
-      }
+
+    // since we pull all string portions up to minimize readdir() calls,
+    // the only way we can possibly have a rest here is if something
+    // OTHER than a string comes next.
+    // However, if we're landing on ., '', .., or a string that matches
+    // an entry in the directory we just read, then it's a match.
+    if ((p === '.' || p === '' || p === '..' || e) && !rest) {
+      children.push(this.join(p))
     }
     return children
   }

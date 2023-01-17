@@ -3,6 +3,8 @@ if (module === require.main) {
   console.log('TAP version 13\n1..1\nok\n')
 }
 export const bashResults: { [path: string]: string[] } = {
+  'a/c/d/*/b': ['a/c/d/c/b'],
+  'a/*/d/*/b': ['a/c/d/c/b'],
   'a/*/+(c|g)/./d': ['a/b/c/./d'],
   'a/**/[cg]/../[cg]': [
     'a/abcdef/g/../g',

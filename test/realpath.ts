@@ -1,9 +1,12 @@
+import * as fs from 'fs'
 import { resolve } from 'path'
 import t from 'tap'
 import glob, { GlobOptions } from '../'
+
 // pattern to find a bunch of duplicates
 const pattern = 'a/symlink/{*,**/*/*/*,*/*/**,*/*/*/*/*/*}'
 const fixtureDir = resolve(__dirname, 'fixtures')
+const origCwd = process.cwd()
 process.chdir(fixtureDir)
 
 if (process.platform === 'win32') {
@@ -112,4 +115,32 @@ if (process.platform === 'win32') {
       }
     })
   }
+
+  t.test('realpath failure', async t => {
+    process.chdir(origCwd)
+    const { glob } = t.mock('../dist/cjs/index.js', {
+      fs: {
+        ...fs,
+        realpath: (_: string, cb: (er: Error) => void) =>
+          cb(new Error('no realpath for you async')),
+        realpathSync: () => {
+          throw new Error('no error for you sync')
+        },
+      },
+    })
+    const pattern = 'a/symlink/a/b/c/a/b/**'
+    const expect = ['a/symlink/a/b/c/a/b/', 'a/symlink/a/b/c/a/b/c']
+      .map(e => resolve(fixtureDir, e))
+    t.test('setting cwd explicitly', async t => {
+      const opt = { realpath: true, cwd: fixtureDir }
+      t.same(glob.sync(pattern, opt), expect)
+      t.same(await glob(pattern, opt), expect)
+    })
+    t.test('looking in cwd', async t => {
+      process.chdir(fixtureDir)
+      const opt = { realpath: true }
+      t.same(glob.sync(pattern, opt), expect)
+      t.same(await glob(pattern, opt), expect)
+    })
+  })
 }
