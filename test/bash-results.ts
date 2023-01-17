@@ -4,6 +4,7 @@ if (module === require.main) {
 }
 export const bashResults: { [path: string]: string[] } = {
   'a/c/d/*/b': ['a/c/d/c/b'],
+  'a//c//d//*//b': ['a//c//d//c/b'],
   'a/*/d/*/b': ['a/c/d/c/b'],
   'a/*/+(c|g)/./d': ['a/b/c/./d'],
   'a/**/[cg]/../[cg]': [
@@ -56,10 +57,10 @@ export const bashResults: { [path: string]: string[] } = {
   '*/*/*/f': ['a/bc/e/f', 'a/cb/e/f'],
   './**/f': ['./a/bc/e/f', './a/cb/e/f'],
   'a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/**/b/c/**': [
-    'a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c',
-    'a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a',
-    'a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b',
-    'a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c',
+    'a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/a/b/c',
+    'a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/a/b/c/a',
+    'a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/a/b/c/a/b',
+    'a/symlink/a/b/c/a/b/c/a/b/c//a/b/c////a/b/c/a/b/c/a/b/c',
   ],
   '{./*/*,/tmp/glob-test/*}': [
     './a/abcdef',

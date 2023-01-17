@@ -62,11 +62,13 @@ if (process.platform !== 'win32') {
 if (process.platform === 'win32' || !process.env.TEST_REGEN) {
   console.error('Windows, or TEST_REGEN unset.  Using cached fixtures.')
 } else {
+
   const globs =
     // put more patterns here.
     // anything that would be directly in / should be in /tmp/glob-test
     [
       'a/c/d/*/b',
+      'a//c//d//*//b',
       'a/*/d/*/b',
       'a/*/+(c|g)/./d',
       'a/**/[cg]/../[cg]',
@@ -86,6 +88,7 @@ if (process.platform === 'win32' || !process.env.TEST_REGEN) {
       'a/!(symlink)/**',
       'a/symlink/a/**/*',
     ]
+
   const bashOutput: { [k: string]: string[] } = {}
 
   for (const pattern of globs) {
@@ -144,7 +147,7 @@ export const bashResults:{ [path: string]: string[] } = ${
     // and ending slashes.
     return m
       .map(function (m) {
-        return m.replace(/\/+/g, '/').replace(/\/$/, '')
+        return m.replace(/\/$/, '')
       })
       .sort(alphasort)
       .reduce(function (set: string[], f) {

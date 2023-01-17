@@ -18,7 +18,7 @@ const cleanResults = (m: string[]) => {
   // normalize discrepancies in ordering, duplication,
   // and ending slashes.
   return m
-    .map(m => m.replace(/\/+/g, '/').replace(/\/$/, ''))
+    .map(m => m.replace(/\/$/, ''))
     .sort(alphasort)
     .reduce((set: string[], f) => {
       if (f !== set[set.length - 1]) set.push(f)

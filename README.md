@@ -66,7 +66,8 @@ sped up by sharing information about the filesystem.
   Defaults to `process.cwd()`. This option is always coerced to
   use forward-slashes as a path separator, because it is not
   tested as a glob pattern, so there is no need to escape
-  anything.
+  anything. See also: "Windows, CWDs, Drive Letters, and UNC
+  Paths", below.
 - `windowsPathsNoEscape` Use `\\` as a path separator _only_, and
   _never_ as an escape character. If set, all `\\` characters are
   replaced with `/` in the pattern. Note that this makes it
@@ -126,7 +127,8 @@ sped up by sharing information about the filesystem.
   have find matches, setting `{nonull:true}` will cause glob to
   return the pattern itself instead of the empty set.
 
-`nocomment` and `nonegate` are always set to `false`.
+`preserveSlashes` is always set to `true`, and `nocomment` and
+`nonegate` are always set to `false`.
 
 ## `hasMagic(pattern: string, options?: GlobOptions) => boolean`
 
@@ -280,6 +282,19 @@ classes), `[=c=]` (locale-specific character collation weight),
 and `[.symbol.]` (collating symbol) style class patterns are
 _not_ supported by this implementation.
 
+### Repeated Slashes
+
+Patterns that have excess `/` characters between non-magic
+portions will have their excess `/` characters preserved in the
+result.  That is, empty path portions in the pattern will match
+the parent directory, be appended to the parent path with a `/`,
+and returned.
+
+Empty path portions immediately following any "magic" glob
+pattern will be omitted.
+
+This is by design to match the behavior of the Bash shell.
+
 ### Comments and Negation
 
 Previously, this module let you mark a pattern as a "comment" if
@@ -308,6 +323,39 @@ To automatically coerce all `\` characters to `/` in pattern
 strings, **thus making it impossible to escape literal glob
 characters**, you may set the `windowsPathsNoEscape` option to
 `true`.
+
+### Windows, CWDs, Drive Letters, and UNC Paths
+
+On posix systems, when a pattern starts with `/`, any `cwd`
+option is ignored, and the traversal starts at `/`, plus any
+non-magic path portions specified in the pattern.
+
+On Windows systems, the behavior is similar, but the concept of
+an "absolute path" is much more involved.
+
+#### UNC Paths
+
+A UNC path may be used as the start of a pattern.  For example, a
+pattern like: `//?/x:/*` will return all file entries in the root
+of the `x:` drive.  A pattern like `//ComputerName/Share/*` will
+return all files in the associated share.
+
+#### Drive Letters
+
+A pattern starting with a drive letter, like `c:/*`, will search
+in that drive, regardless of any `cwd` option provided.
+
+If the pattern starts with `/`, and is not a UNC path, and there
+is an explicit `cwd` option set with a drive letter, then the
+drive letter in the `cwd` is used as the root of the directory
+traversal.
+
+For example, `glob('/tmp', { cwd: 'c:/any/thing' })` will return
+`['c:/tmp']` as the result.
+
+If an explicit `cwd` option is not provided, then the traversal
+will run on whichever drive the active `process.cwd()` returns.
+(That is, the result of `path.resolve('/')`.)
 
 ## Race Conditions
 

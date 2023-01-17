@@ -38,6 +38,12 @@ This is a full rewrite.
   even, even though the ignore value like `x/**` would have
   excluded it.  However, _not_ returning anything when
   `nonull:true` is set, is arguably a worse contract violation.
+- Patterns starting with drive letters on Windows are now
+  properly treated as absolute paths, and the drive letter in an
+  absolute `{cwd}` option will be used as the root of patterns
+  that start with `/`.
+- Patterns with multiple slashes will behave the same as the
+  Bash 5 shell.
 
 ## 8.1
 

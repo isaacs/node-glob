@@ -31,23 +31,24 @@ t.test('posix', t => {
   t.match(new GlobWalker(['', ''], '/tmp'), {
     pattern: [''],
     path: '/',
-    cwd: '/',
+    cwd: '',
     start: '/',
   }, 'pattern=/')
 
   t.match(new GlobWalker(['', 'x'], '/tmp'), {
     pattern: ['x'],
     path: '/',
-    cwd: '/',
+    cwd: '',
     start: '/',
   }, 'pattern=/x')
 
-  t.match(new GlobWalker(['', 'x'], '/tmp'), {
+  t.match(new GlobWalker(['', 'x'], '/tmp', { cwd: '/a/b/c/d' }), {
     pattern: ['x'],
     path: '/',
-    cwd: '/',
+    cwd: '',
     start: '/',
   }, 'pattern=/x')
+
 
   t.match(new GlobWalker(['c:'], 'd:/tmp'), {
     pattern: ['c:'],
@@ -124,6 +125,20 @@ t.test('win32', t => {
     cwd: 'c:',
     start: 'c:',
   }, 'pattern=c:/x path=d:/tmp')
+
+  t.match(new GlobWalker(['', '', '?', 'c:'], 'd:/tmp'), {
+    pattern: [''],
+    path: '/?/c:',
+    cwd: '/',
+    start: '//?/c:',
+  }, 'pattern=//?/c: path=d:/tmp')
+
+  t.match(new GlobWalker(['', '', '?', 'c:', /^[ab]$/], 'd:/tmp'), {
+    pattern: [/^[ab]$/],
+    path: '/?/c:',
+    cwd: '/',
+    start: '//?/c:',
+  }, 'pattern=//?/c:/[ab] path=d:/tmp')
 
   t.end()
 })

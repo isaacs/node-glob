@@ -82,7 +82,12 @@ export class Glob {
 
     this.pattern = pattern
 
-    const mmo = { ...options, nonegate: true, nocomment: true }
+    const mmo: MinimatchOptions = {
+      ...options,
+      nonegate: true,
+      nocomment: true,
+      preserveMultipleSlashes: true,
+    }
     const mms = this.pattern.map(p => new Minimatch(p, mmo))
     this.matchSet = mms.reduce((set: MatchSet, m) => set.concat(m.set), [])
     this.globSet = mms.reduce(
