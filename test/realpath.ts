@@ -1,101 +1,115 @@
-var glob = require('../')
-var test = require('tap').test
+import { resolve } from 'path'
+import t from 'tap'
+import glob, { GlobOptions } from '../'
 // pattern to find a bunch of duplicates
-var pattern = 'a/symlink/{*,**/*/*/*,*/*/**,*/*/*/*/*/*}'
-var path = require('path')
-var fixtureDir = path.resolve(__dirname, 'fixtures')
+const pattern = 'a/symlink/{*,**/*/*/*,*/*/**,*/*/*/*/*/*}'
+const fixtureDir = resolve(__dirname, 'fixtures')
 process.chdir(fixtureDir)
 
-if (process.platform === 'win32')
-  return require('tap').plan(0, 'skip on windows')
+if (process.platform === 'win32') {
+  t.plan(0, 'skip on windows')
+} else {
+  // options, results
+  // realpath:true set on each option
 
-// options, results
-// realpath:true set on each option
-var cases = [
-  [{}, ['a/symlink', 'a/symlink/a', 'a/symlink/a/b']],
+  type Case = [options: GlobOptions, results: string[], pattern?: string]
+  const cases: Case[] = [
+    [{}, ['a/symlink', 'a/symlink/a', 'a/symlink/a/b']],
 
-  [{ mark: true }, ['a/symlink/', 'a/symlink/a/', 'a/symlink/a/b/']],
+    [{ mark: true }, ['a/symlink/', 'a/symlink/a/', 'a/symlink/a/b/']],
 
-  [{ stat: true }, ['a/symlink', 'a/symlink/a', 'a/symlink/a/b']],
+    [{ follow: true }, ['a/symlink', 'a/symlink/a', 'a/symlink/a/b']],
 
-  [{ follow: true }, ['a/symlink', 'a/symlink/a', 'a/symlink/a/b']],
-
-  [
-    { cwd: 'a' },
-    ['symlink', 'symlink/a', 'symlink/a/b'],
-    pattern.substr(2),
-  ],
-
-  [{ cwd: 'a' }, [], 'no one here but us chickens'],
-
-  [
-    { nonull: true },
-    ['no one here but us chickens', 'no one here but us sheep'],
-    'no one here but us {chickens,sheep}',
-  ],
-
-  [
-    { nounique: true },
     [
-      'a/symlink',
-      'a/symlink',
-      'a/symlink',
-      'a/symlink/a',
-      'a/symlink/a',
-      'a/symlink/a/b',
-      'a/symlink/a/b',
+      { cwd: 'a' },
+      ['symlink', 'symlink/a', 'symlink/a/b'],
+      pattern.substring(2),
     ],
-  ],
 
-  [
-    { nounique: true, mark: true },
+    [{ cwd: 'a' }, [], 'no one here but us chickens'],
+
     [
-      'a/symlink/',
-      'a/symlink/',
-      'a/symlink/',
-      'a/symlink/a/',
-      'a/symlink/a/',
-      'a/symlink/a/b/',
-      'a/symlink/a/b/',
+      { nonull: true },
+      ['no one here but us chickens', 'no one here but us sheep'],
+      'no one here but us {chickens,sheep}',
     ],
-  ],
 
-  [
-    { nounique: true, mark: true, follow: true },
     [
-      'a/symlink/',
-      'a/symlink/',
-      'a/symlink/',
-      'a/symlink/a/',
-      'a/symlink/a/',
-      'a/symlink/a/',
-      'a/symlink/a/b/',
-      'a/symlink/a/b/',
+      { nounique: true },
+      [
+        'a/symlink',
+        'a/symlink',
+        'a/symlink',
+        'a/symlink',
+        'a/symlink/a',
+        'a/symlink/a',
+        'a/symlink/a',
+        'a/symlink/a/b',
+        'a/symlink/a/b',
+        'a/symlink/a/b',
+      ],
     ],
-  ],
-]
 
-cases.forEach(function (c) {
-  var opt = c[0]
-  var expect = c[1]
-  if (!(opt.nonull && expect[0].match(/^no one here/))) {
-    expect = expect.map(function (d) {
-      d = (opt.cwd ? path.resolve(opt.cwd) : fixtureDir) + '/' + d
-      return d.replace(/\\/g, '/')
+    [
+      { nounique: true, mark: true },
+      [
+        'a/symlink/',
+        'a/symlink/',
+        'a/symlink/',
+        'a/symlink/',
+        'a/symlink/a/',
+        'a/symlink/a/',
+        'a/symlink/a/',
+        'a/symlink/a/b/',
+        'a/symlink/a/b/',
+        'a/symlink/a/b/',
+      ],
+    ],
+
+    [
+      { nounique: true, mark: true, follow: true },
+      [
+        // this one actually just has HELLA entries, don't list them all here
+        // plus it differs based on the platform.  follow:true is kinda cray.
+        'a/symlink/',
+        'a/symlink/a/',
+        'a/symlink/a/b/',
+      ],
+    ],
+  ]
+
+  for (const [opt, raw, p = pattern] of cases) {
+    const expect = !(opt.nonull && raw[0].match(/^no one here/))
+      ? raw.map(function (d) {
+          d = (opt.cwd ? resolve(opt.cwd) : fixtureDir) + '/' + d
+          return d.replace(/\\/g, '/')
+        })
+      : raw
+
+    t.test(p + ' ' + JSON.stringify(opt), async t => {
+      opt.realpath = true
+      if (!(opt.follow && opt.nounique)) {
+        t.same(glob.sync(p, opt), expect, 'sync')
+        const a = await glob(p, opt)
+        t.same(a, expect, 'async')
+      } else {
+        // follow with nounique is wild, just verify it has a lot of entries,
+        // and that all the expected ones are found.
+        const s = glob.sync(p, opt)
+        const a = await glob(p, opt)
+        t.ok(s.length > 10, 'more than 10 entries found sync', {
+          found: s.length,
+          expect: '>10',
+        })
+        t.ok(a.length > 10, 'more than 10 entries found async', {
+          found: a.length,
+          expect: '>10',
+        })
+        for (const e of expect) {
+          t.ok(s.includes(e), 'found ' + e + ' sync')
+          t.ok(a.includes(e), 'found ' + e + ' async')
+        }
+      }
     })
   }
-  var p = c[2] || pattern
-
-  opt.realpath = true
-
-  test(JSON.stringify(opt), function (t) {
-    opt.realpath = true
-    var sync = glob.sync(p, opt)
-    t.same(sync, expect, 'sync')
-    glob(p, opt, function (er, async) {
-      if (er) throw er
-      t.same(async, expect, 'async')
-      t.end()
-    })
-  })
-})
+}

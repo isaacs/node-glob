@@ -1,11 +1,15 @@
-const t = require('tap')
-const g = require('../')
+import t from 'tap'
+import {Glob} from '../'
 
 const platforms = ['win32', 'posix']
 const originalPlatform = Object.getOwnPropertyDescriptor(
   process,
   'platform'
-)
+) as PropertyDescriptor
+t.teardown(() => {
+  Object.defineProperty(process, 'platform', originalPlatform)
+})
+
 for (const p of platforms) {
   t.test(p, t => {
     Object.defineProperty(process, 'platform', {
@@ -16,18 +20,15 @@ for (const p of platforms) {
     })
     t.equal(process.platform, p, 'gut check: actually set platform')
     const pattern = '/a/b/c/x\\[a-b\\]y\\*'
-    const def = new g.Glob(pattern, { noprocess: true })
-    const winpath = new g.Glob(pattern, {
+    const def = new Glob(pattern)
+    const winpath = new Glob(pattern, {
       windowsPathsNoEscape: true,
-      noprocess: true,
     })
-    const winpathLegacy = new g.Glob(pattern, {
+    const winpathLegacy = new Glob(pattern, {
       allowWindowsEscape: false,
-      noprocess: true,
     })
-    const nowinpath = new g.Glob(pattern, {
+    const nowinpath = new Glob(pattern, {
       windowsPathsNoEscape: false,
-      noprocess: true,
     })
 
     t.strictSame(
@@ -38,10 +39,10 @@ for (const p of platforms) {
         winpathLegacy.pattern,
       ],
       [
-        '/a/b/c/x\\[a-b\\]y\\*',
-        '/a/b/c/x\\[a-b\\]y\\*',
-        '/a/b/c/x/[a-b/]y/*',
-        '/a/b/c/x/[a-b/]y/*',
+        ['/a/b/c/x\\[a-b\\]y\\*'],
+        ['/a/b/c/x\\[a-b\\]y\\*'],
+        ['/a/b/c/x/[a-b/]y/*'],
+        ['/a/b/c/x/[a-b/]y/*'],
       ]
     )
     t.end()

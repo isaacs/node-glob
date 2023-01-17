@@ -1,6 +1,6 @@
 import { join, resolve } from 'path'
 import t from 'tap'
-import glob from '../'
+import { glob } from '../'
 
 const origCwd = process.cwd()
 process.chdir(__dirname + '/fixtures')

@@ -1,36 +1,25 @@
-require('./global-leakage.js')
-var test = require('tap').test
-var glob = require('../')
+import t from 'tap'
+import glob from '../'
 
-var mkdirp = require('mkdirp')
-var fs = require('fs')
-var rimraf = require('rimraf')
-var dir = __dirname + '/package'
+import { writeFileSync } from 'fs'
+import mkdirp from 'mkdirp'
+import rimraf from 'rimraf'
+const dir = __dirname + '/package'
 
-test('setup', function (t) {
+t.before(() => {
   mkdirp.sync(dir)
-  fs.writeFileSync(dir + '/package.json', '{}', 'ascii')
-  fs.writeFileSync(dir + '/README', 'x', 'ascii')
-  t.pass('setup done')
-  t.end()
+  writeFileSync(dir + '/package.json', '{}', 'ascii')
+  writeFileSync(dir + '/README', 'x', 'ascii')
 })
 
-test('glob', function (t) {
+t.teardown(() => rimraf.sync(dir))
+
+t.test('glob', async t => {
   var opt = {
     cwd: dir,
     nocase: true,
     mark: true,
   }
 
-  glob('README?(.*)', opt, function (er, files) {
-    if (er) throw er
-    t.same(files, ['README'])
-    t.end()
-  })
-})
-
-test('cleanup', function (t) {
-  rimraf.sync(dir)
-  t.pass('clean')
-  t.end()
+  t.same(await glob('README?(.*)', opt), ['README'])
 })

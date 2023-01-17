@@ -1,26 +1,23 @@
-require('./global-leakage.js')
-var test = require('tap').test
-var glob = require('../')
-var path = require('path')
+import { resolve } from 'path'
+import t from 'tap'
+import glob, { GlobOptions } from '../'
 process.chdir(__dirname + '/fixtures')
 
-function cacheCheck(g, t) {
-  // verify that path cache keys are all absolute
-  var caches = ['cache', 'statCache', 'symlinks']
-  caches.forEach(function (c) {
-    Object.keys(g[c]).forEach(function (p) {
-      t.ok(path.isAbsolute(p), p + ' should be absolute')
-    })
-  })
-}
-
 // [pattern, options, expect]
-var root = path.resolve('a')
-var cases = [
+const root = resolve('a')
+const cases: [string, GlobOptions, string[]][] = [
   [
     '*/**',
     { cwd: 'a' },
-    ['abcdef/g/h', 'abcfed/g/h', 'b/c/d', 'bc/e/f', 'c/d/c/b', 'cb/e/f'],
+    [
+      'abcdef/g/h',
+      'abcfed/g/h',
+      'b/c/d',
+      'bc/e/f',
+      'c/d/c/b',
+      'cb/e/f',
+      'symlink/a/b/c',
+    ],
   ],
   [
     'a/*b*/**',
@@ -29,30 +26,20 @@ var cases = [
   ],
   ['a/*b*/**/', {}, []],
   ['*/*', { cwd: 'a' }, []],
-  ['/*/*', { root: root }, []],
-  [
-    '/b*/**',
-    { root: root },
-    ['/b/c/d', '/bc/e/f'].map(function (m) {
-      return path.join(root, m).replace(/\\/g, '/')
-    }),
-  ],
+  ['*/*', { cwd: root }, []],
 ]
 
-cases.forEach(function (c) {
-  var pattern = c[0]
-  var options = c[1] || {}
+for (const [pattern, options, expectRaw] of cases) {
   options.nodir = true
-  var expect = c[2].sort()
-  test(pattern + ' ' + JSON.stringify(options), function (t) {
-    var res = glob.sync(pattern, options).sort()
-    t.same(res, expect, 'sync results')
-    var g = glob(pattern, options, function (er, res) {
-      if (er) throw er
-      res = res.sort()
-      t.same(res, expect, 'async results')
-      cacheCheck(g, t)
-      t.end()
-    })
+  const expect =
+    process.platform === 'win32'
+      ? expectRaw.filter(e => !/\bsymlink\b/.test(e))
+      : expectRaw
+  expect.sort()
+  if (process.platform !== 'win32') {
+  }
+  t.test(pattern + ' ' + JSON.stringify(options), async t => {
+    t.same(glob.sync(pattern, options).sort(), expect, 'sync results')
+    t.same((await glob(pattern, options)).sort(), expect, 'async results')
   })
-})
+}

@@ -1,6 +1,6 @@
 import { relative } from 'path'
 import t from 'tap'
-import glob, { GlobOptions } from '../'
+import { glob, GlobOptions } from '../'
 
 if (process.platform === 'win32') {
   t.plan(0, 'skip on windows')

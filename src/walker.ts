@@ -173,13 +173,14 @@ export class GlobWalker {
     if (!this.realpath && !this.absolute) {
       return p
     }
+    const pp = this.join(p, this.cwd)
     if (!this.realpath) {
-      return resolve(p)
+      return resolve(pp)
     }
     const rp: string = await new Promise(res =>
-      realpath(p, (er, rp) => (er ? res(resolve(p)) : res(rp)))
+      realpath(pp, (er, rp) => (er ? res(resolve(pp)) : res(rp)))
     )
-    this.rd.alias(rp, p)
+    this.rd.alias(rp, pp)
     return rp
   }
 
@@ -187,16 +188,17 @@ export class GlobWalker {
     if (!this.realpath && !this.absolute) {
       return p
     }
+    const pp = this.join(p, this.cwd)
     if (!this.realpath) {
-      return resolve(p)
+      return resolve(pp)
     }
     let rp: string
     try {
-      rp = realpathSync(p)
+      rp = realpathSync(pp)
     } catch (_) {
-      rp = resolve(p)
+      rp = resolve(pp)
     }
-    this.rd.alias(rp, p)
+    this.rd.alias(rp, pp)
     return rp
   }
 

@@ -1,19 +1,15 @@
 // regression test to make sure that slash-ended patterns
 // don't match files when using a different cwd.
-var glob = require('../')
-var test = require('tap').test
-var pattern = '../{*.md,test}/'
-var expect = ['../test/']
-var cwd = __dirname
-var opt = { cwd: cwd }
+import t from 'tap'
+import glob, { GlobOptions } from '../'
+
+const pattern = '../{*.md,test}/'
+const expect = ['../test/']
+const cwd = __dirname
+const opt: GlobOptions = { cwd }
 process.chdir(__dirname + '/..')
 
-test('slashes only match directories', function (t) {
-  var sync = glob.sync(pattern, { cwd: cwd })
-  t.same(sync, expect, 'sync test')
-  glob(pattern, { cwd: cwd }, function (er, async) {
-    if (er) throw er
-    t.same(async, expect, 'async test')
-    t.end()
-  })
+t.test('slashes only match directories', async t => {
+  t.same(glob.sync(pattern, opt), expect, 'sync test')
+  t.same(await glob(pattern, opt), expect, 'async test')
 })
