@@ -180,7 +180,7 @@ export class GlobWalker {
     // if it's not a directory, or we can't read it, then
     // that means no match, because we still have pattern to consume
     try {
-      entries = await this.rd.readdir(this.start)
+      entries = await this.rd.readdir(this.start) || []
     } catch (er) {
       return []
     }
@@ -255,7 +255,7 @@ export class GlobWalker {
     // if it's not a directory, or we can't read it, then
     // that means no match, because we still have pattern to consume
     try {
-      entries = this.rd.readdirSync(this.start)
+      entries = this.rd.readdirSync(this.start) || []
     } catch (er) {
       return []
     }

@@ -3,12 +3,16 @@
 
 import { Dirent } from 'fs'
 
-import { readdir as origReaddir, readdirSync as origReaddirSync } from 'fs'
+import {
+  statSync,
+  readdir as origReaddir,
+  readdirSync as origReaddirSync,
+} from 'fs'
 import { basename, dirname, resolve } from 'path'
 
 // when we read a directory, put its entries in here as well
 export interface GlobCache {
-  [path: string]: Dirent[] | NodeJS.ErrnoException
+  [path: string]: Dirent[] | false
 }
 
 export class Readdir {
@@ -42,46 +46,46 @@ export class Readdir {
       : !!this.lookup(path)?.isDirectory()
   }
 
-  async readdir(path: string): Promise<Dirent[]> {
+  async readdir(path: string): Promise<Dirent[] | false> {
     const resolved = resolve(path)
     const cacheEntry = this.cache[resolved]
     if (cacheEntry) {
       if (Array.isArray(cacheEntry)) {
         return cacheEntry
       } else {
-        throw cacheEntry
+        return false
       }
     }
 
-    return new Promise<Dirent[]>((res, rej) => {
-      origReaddir(resolved, { withFileTypes: true }, (er, entities) => {
-        this.cache[resolved] = er || entities
-        if (er) {
-          rej(er)
-        } else {
-          res(entities)
-        }
+    return new Promise<Dirent[] | false>(res => {
+      origReaddir(resolved, { withFileTypes: true }, (_, entities) => {
+        res((this.cache[resolved] = entities || false))
       })
     })
   }
 
-  readdirSync(path: string): Dirent[] {
+  readdirSync(path: string): Dirent[] | false {
     const resolved = resolve(path)
     const cacheEntry = this.cache[resolved]
     if (cacheEntry) {
       if (Array.isArray(cacheEntry)) {
         return cacheEntry
       } else {
-        throw cacheEntry
+        return false
       }
     }
+    // try to avoid getting an error object created if we can
+    // stack traces are expensive, and we don't use them.
+    const st = statSync(resolved, { throwIfNoEntry: false })
+    if (!st || !st.isDirectory()) {
+      return (this.cache[resolved] = false)
+    }
     try {
-      const entities = origReaddirSync(resolved, { withFileTypes: true })
-      this.cache[resolved] = entities
-      return entities
+      return (this.cache[resolved] = origReaddirSync(resolved, {
+        withFileTypes: true,
+      }))
     } catch (er) {
-      this.cache[resolved] = er as NodeJS.ErrnoException
-      throw er
+      return (this.cache[resolved] = false)
     }
   }
 }
