@@ -36,7 +36,6 @@
     "test": "c8 tap",
     "snap": "c8 tap",
     "format": "prettier --write . --loglevel warn",
-    "benchmark": "node benchmark/index.js",
     "typedoc": "typedoc --tsconfig tsconfig-esm.json ./src/*.ts",
     "prepublish": "npm run benchclean",
     "profclean": "rm -f v8.log profile.txt",
