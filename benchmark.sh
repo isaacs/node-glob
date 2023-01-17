@@ -12,25 +12,20 @@ tt () {
 }
 
 t () {
-  tt "$@" 2>&1 | grep real
+  tt "$@" 2>&1 | grep real | awk -F $'\t' '{ print $2 }'
 }
 
-set -e
-
 if [[ "`bash --version`" =~ version\ 4 ]] || [[ "`bash --version`" =~ version\ 5 ]]; then
-  echo Bash timing:
-  t bash -c 'shopt -s globstar; echo **/*.txt | wc -w' | grep real
+  echo -n $'bash                        \t'
+  t bash -c 'shopt -s globstar; echo **/*.txt | wc -w'
 fi
 
-echo
 if type zsh &>/dev/null; then
-  echo Zsh timing:
+  echo -n $'zsh                         \t'
   t zsh -c 'echo **/*.txt | wc -w'
 fi
 
-echo
-
-echo Node statSync and readdirSync timing:
+echo -n $'node raw                      \t'
 t node -e '
   var fs=require("fs");
   var count = 0;
@@ -44,58 +39,79 @@ t node -e '
     }
   }
   walk(".");
-  console.log(count)' | grep real
-echo
+  console.log(count)'
 
-mkdir -p "$wd/old/7"
-echo '{"dependencies":{"glob":"7"}}' > "$wd/old/7/package.json"
-(cd "$wd/old/7" &>/dev/null; npm i --silent)
+mkdir -p "$wd/old"
+cat > "$wd/old/package.json" <<PJ
+{
+  "dependencies": {
+    "glob7": "npm:glob@7",
+    "glob8": "npm:glob@8"
+  }
+}
+PJ
+(cd "$wd/old" &>/dev/null; npm i --silent)
 
-echo Node glob v7 sync timing:
+echo -n $'node glob v7 sync             \t'
 t node -e '
   var glob=require(process.argv[1])
   console.log(glob.sync("**/*.txt").length)
-' "$wd/old/7/node_modules/glob" | grep real
-echo
+' "$wd/old/node_modules/glob7"
 
-echo Node glob v7 async timing:
+echo -n $'node glob v7 async            \t'
 t node -e '
   var glob=require(process.argv[1])
   glob("**/*.txt", (er, files) => {
     console.log(files.length)
-  })' "$wd/old/7/node_modules/glob" | grep real
-echo
+  })' "$wd/old/node_modules/glob7"
 
-mkdir -p "$wd/old/8"
-echo '{"dependencies":{"glob":"8"}}' > "$wd/old/8/package.json"
-(cd "$wd/old/8" &>/dev/null; npm i --silent)
-
-echo Node glob v8 sync timing:
+echo -n $'node glob v8 sync             \t'
 t node -e '
   var glob=require(process.argv[1])
   console.log(glob.sync("**/*.txt").length)
-' "$wd/old/8/node_modules/glob"
-echo
+' "$wd/old/node_modules/glob8"
 
-echo Node glob v8 async timing:
+echo -n $'node glob v8 async            \t'
 t node -e '
   var glob=require(process.argv[1])
   glob("**/*.txt", (er, files) => {
     console.log(files.length)
-  })' "$wd/old/8/node_modules/glob"
-echo
+  })' "$wd/old/node_modules/glob8"
 
+echo -n $'node current glob.sync cjs    \t'
+cat > "$wd/old/sync.cjs" <<CJS
+const glob = require("$wd/dist/cjs/index-cjs.js")
+console.log(glob.sync("**/*.txt").length)
+CJS
+t node "$wd/old/sync.cjs"
 
-echo Node current glob.sync timing:
+echo -n $'node current glob async cjs   \t'
+cat > "$wd/old/async.cjs" <<CJS
+const glob = require("$wd/dist/cjs/index-cjs.js")
+glob("**/*.txt").then(files => console.log(files.length))
+CJS
+t node "$wd/old/async.cjs"
+
+echo -n $'node current glob.sync mjs    \t'
+cat > "$wd/old/sync.mjs" <<MJS
+import glob from '$wd/dist/mjs/index.js'
+console.log(glob.sync("**/*.txt").length)
+MJS
+t node "$wd/old/sync.mjs"
+
+echo -n $'node current glob async mjs   \t'
+cat > "$wd/old/async.mjs" <<MJS
+import glob from '$wd/dist/mjs/index.js'
+glob("**/*.txt").then(files => console.log(files.length))
+MJS
+t node "$wd/old/async.mjs"
+
+echo -n $'node current glob async cjs -e\t'
 t node -e '
-  var glob=require(process.argv[1]);
-  console.log(glob.sync("**/*.txt").length);' "$wd"
-echo
+require(process.argv[1])("**/*.txt").then((files) => console.log(files.length))
+' "$wd/dist/cjs/index-cjs.js"
 
-echo Node current glob async timing:
+echo -n $'node current glob sync cjs -e \t'
 t node -e '
-  var glob=require(process.argv[1]);
-  glob("**/*.txt").then((files) => {
-    console.log(files.length)
-  })' "$wd"
-echo
+console.log(require(process.argv[1]).sync("**/*.txt").length)
+' "$wd/dist/cjs/index-cjs.js"
