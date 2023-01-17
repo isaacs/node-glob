@@ -22,6 +22,11 @@ import { glob } from 'glob'
 // or using commonjs
 const { glob } = require('glob')
 
+// or default export is fine too
+import glob from 'glob'
+// or using commonjs
+const glob = require('glob')
+
 // these all return arrays of filenames
 
 // all js files, but don't look in node_modules
