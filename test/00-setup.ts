@@ -5,7 +5,6 @@ import { spawn } from 'child_process'
 import { createWriteStream, promises } from 'fs'
 import mkdirp from 'mkdirp'
 import { dirname, resolve } from 'path'
-import { rimraf } from 'rimraf'
 import t from 'tap'
 
 const { writeFile, symlink } = promises
@@ -31,8 +30,6 @@ const symlinkTo = resolve(fixtureDir, 'a/symlink/a/b/c')
 const symlinkFrom = '../..'
 
 const files = filesUnresolved.map(f => resolve(fixtureDir, f))
-
-t.test('remove fixtures', async () => await rimraf(fixtureDir))
 
 for (const file of files) {
   t.test(file, { bail: true }, async () => {

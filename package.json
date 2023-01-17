@@ -76,7 +76,6 @@
   },
   "tap": {
     "before": "test/00-setup.ts",
-    "after": "test/zz-cleanup.ts",
     "coverage": false,
     "node-arg": [
       "--no-warnings",
