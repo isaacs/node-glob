@@ -5,6 +5,9 @@ This is a full rewrite.
 - Promise API instead of callbacks.
 - Accept pattern as string or array of strings.
 - Hybrid module distribution.
+- `module.exports` in CommonJS mode is an object, not a function.
+  Use the exported `default` or `glob` members to access the
+  default function export in CommonJS modes.
 - Full TypeScript support.
 - Removed `root` option and mounting behavior.
 - Removed `stat` option. It's slow and pointless. (Could bring

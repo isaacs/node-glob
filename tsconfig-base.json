@@ -6,7 +6,6 @@
     "declaration": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "isolatedModules": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "skipLibCheck": true,

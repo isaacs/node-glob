@@ -9,12 +9,16 @@
   },
   "main": "./dist/cjs/index.js",
   "module": "./dist/mjs/index.js",
-  "types": "./dist/cjs/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/cjs/index.d.ts",
-      "import": "./dist/mjs/index.js",
-      "require": "./dist/cjs/index.js"
+      "import": {
+        "default": "./dist/mjs/index.js",
+        "types": "./dist/mjs/index.d.ts"
+      },
+      "require": {
+        "default": "./dist/cjs/index.js",
+        "types": "./dist/cjs/index.d.ts"
+      }
     }
   },
   "files": [
@@ -25,7 +29,7 @@
     "postversion": "npm publish",
     "prepublishOnly": "git push origin --follow-tags",
     "preprepare": "rm -rf dist",
-    "prepare": "tsc -p tsconfig-cjs.json && tsc -p tsconfig-esm.json",
+    "prepare": "tsc -p tsconfig.json && tsc -p tsconfig-esm.json",
     "postprepare": "bash fixup.sh",
     "pretest": "npm run prepare",
     "presnap": "npm run prepare",
