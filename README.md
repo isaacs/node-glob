@@ -291,7 +291,7 @@ _not_ supported by this implementation.
 
 Patterns that have excess `/` characters between non-magic
 portions will have their excess `/` characters preserved in the
-result.  That is, empty path portions in the pattern will match
+result. That is, empty path portions in the pattern will match
 the parent directory, be appended to the parent path with a `/`,
 and returned.
 
@@ -340,9 +340,9 @@ an "absolute path" is much more involved.
 
 #### UNC Paths
 
-A UNC path may be used as the start of a pattern.  For example, a
+A UNC path may be used as the start of a pattern. For example, a
 pattern like: `//?/x:/*` will return all file entries in the root
-of the `x:` drive.  A pattern like `//ComputerName/Share/*` will
+of the `x:` drive. A pattern like `//ComputerName/Share/*` will
 return all files in the associated share.
 
 #### Drive Letters

@@ -44,9 +44,8 @@ t.test('mark, with **', async t => {
     'a/cb/e/f',
   ]
 
-  const results = await glob(pattern, opt)
-  t.same(results, expect)
-  t.same(glob.sync(pattern, opt), expect)
+  t.same(await glob(pattern, opt), expect, 'async')
+  t.same(glob.sync(pattern, opt), expect, 'sync')
 })
 
 t.test('mark, no / on pattern', async t => {

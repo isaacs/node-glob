@@ -1,6 +1,7 @@
 import { relative } from 'path'
 import t from 'tap'
-import { glob, GlobOptions } from '../'
+import { glob } from '../'
+import type { GlobOptions } from '../src/index.js'
 
 if (process.platform === 'win32') {
   t.plan(0, 'skip on windows')

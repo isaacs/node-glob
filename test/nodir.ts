@@ -1,6 +1,7 @@
 import { resolve } from 'path'
 import t from 'tap'
-import glob, { GlobOptions } from '../'
+import glob from '../'
+import type { GlobOptions } from '../src/index.js'
 process.chdir(__dirname + '/fixtures')
 
 // [pattern, options, expect]

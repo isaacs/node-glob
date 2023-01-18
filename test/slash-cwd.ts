@@ -1,7 +1,8 @@
 // regression test to make sure that slash-ended patterns
 // don't match files when using a different cwd.
 import t from 'tap'
-import glob, { GlobOptions } from '../'
+import glob from '../'
+import type { GlobOptions } from '../src/index.js'
 
 const pattern = '../{*.md,test}/'
 const expect = ['../test/']

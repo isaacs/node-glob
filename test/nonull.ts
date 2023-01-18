@@ -1,9 +1,10 @@
 import t from 'tap'
-import {glob, GlobOptions} from '../'
+import { glob } from '../'
+import type { GlobOptions } from '../src/index.js'
 process.chdir(__dirname)
 
 // [pattern, options, expect]
-const cases:[string, GlobOptions, string[]][] = [
+const cases: [string, GlobOptions, string[]][] = [
   ['a/*NOFILE*/**/', {}, ['a/*NOFILE*/**/']],
   ['*/*', { cwd: 'NODIR' }, ['*/*']],
   ['NOFILE', {}, ['NOFILE']],

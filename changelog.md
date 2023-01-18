@@ -14,7 +14,7 @@ This is a full rewrite.
   back easily if there's demand.)
 - Simplified `cwd` behavior so it is far less magical, and relies
   less on platform-specific absolute path representations.
-- More efficient handling for absolute patterns.  (That is,
+- More efficient handling for absolute patterns. (That is,
   patterns that start with `/` on any platform, or start with a
   drive letter on Windows.)
 - Removed all stat calls, in favor of using `withFileTypes:true`
@@ -33,10 +33,10 @@ This is a full rewrite.
 - Only support node 16 and higher.
 - When `{nonull:true}` is set, and an `ignore` pattern causes all
   entries to be ignored, then the pattern is returned, as it
-  would be if no matches were found.  This _may_ result in the
+  would be if no matches were found. This _may_ result in the
   surprising situation where a pattern like `x/y/z` is returned
   even, even though the ignore value like `x/**` would have
-  excluded it.  However, _not_ returning anything when
+  excluded it. However, _not_ returning anything when
   `nonull:true` is set, is arguably a worse contract violation.
 - Patterns starting with drive letters on Windows are now
   properly treated as absolute paths, and the drive letter in an

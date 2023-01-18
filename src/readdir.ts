@@ -12,21 +12,16 @@ import { basename, dirname, resolve } from 'path'
 
 // when we read a directory, put its entries in here as well
 export interface GlobCache {
-  [path: string]: Dirent[] | false | Promise<Dirent[] | false>
+  [path: string]: Dirent[] | false
 }
 
 export class Readdir {
   cache: GlobCache
+  pcache: { [path: string]: Promise<Dirent[] | false> | undefined }
 
   constructor(cache: GlobCache = Object.create(null)) {
+    this.pcache = Object.create(null)
     this.cache = cache
-  }
-
-  // alias cached lookup from p to realpath rp, if not already set
-  alias(rp: string, p: string): void {
-    if (!this.cache[rp]) {
-      this.cache[rp] = this.cache[p]
-    }
   }
 
   // look up the Dirent for the path, if it exists
@@ -54,15 +49,21 @@ export class Readdir {
 
     const lu = this.lookup(resolved)
     if (lu && !lu.isDirectory() && !lu.isSymbolicLink()) {
-      return this.cache[resolved] = false
+      return (this.cache[resolved] = false)
+    }
+
+    const pc = this.pcache[resolved]
+    if (pc) {
+      return pc
     }
 
     // TODO: cache the promise, too
-    return this.cache[resolved] = new Promise<Dirent[] | false>(res => {
+    return (this.pcache[resolved] = new Promise<Dirent[] | false>(res => {
       origReaddir(resolved, { withFileTypes: true }, (_, entities) => {
+        this.pcache[resolved] = undefined
         res((this.cache[resolved] = entities || false))
       })
-    })
+    }))
   }
 
   readdirSync(path: string): Dirent[] | false {
@@ -74,20 +75,20 @@ export class Readdir {
 
     const lu = this.lookup(resolved)
     if (lu && !lu.isDirectory() && !lu.isSymbolicLink()) {
-      return this.cache[resolved] = false
+      return (this.cache[resolved] = false)
     }
 
     // try to avoid getting an error object created if we can
     // stack traces are expensive, and we don't use them.
-    const st = statSync(resolved, { throwIfNoEntry: false })
-    if (!st || !st.isDirectory()) {
-      return (this.cache[resolved] = false)
-    }
     try {
+      const st = statSync(resolved, { throwIfNoEntry: false })
+      if (!st || !st.isDirectory()) {
+        return (this.cache[resolved] = false)
+      }
       return (this.cache[resolved] = origReaddirSync(resolved, {
         withFileTypes: true,
       }))
-    } catch (er) {
+    } catch (_) {
       return (this.cache[resolved] = false)
     }
   }

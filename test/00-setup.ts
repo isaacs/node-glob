@@ -62,7 +62,6 @@ if (process.platform !== 'win32') {
 if (process.platform === 'win32' || !process.env.TEST_REGEN) {
   console.error('Windows, or TEST_REGEN unset.  Using cached fixtures.')
 } else {
-
   const globs =
     // put more patterns here.
     // anything that would be directly in / should be in /tmp/glob-test

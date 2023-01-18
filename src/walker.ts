@@ -177,7 +177,10 @@ export class GlobWalker {
     if (this.ignore?.childrenIgnored(this.path)) {
       return []
     }
-    let entries: Dirent[] = (await this.rd.readdir(this.start)) || []
+    let entries: Dirent[] | false = await this.rd.readdir(this.start)
+    if (!entries) {
+      return []
+    }
     const children = this.getChildren(entries)
     const matches: (string | string[])[] = await Promise.all(
       children.map(async c =>
@@ -187,9 +190,7 @@ export class GlobWalker {
       )
     )
     const flat = matches.reduce((set: string[], m) => set.concat(m), [])
-    return this.ignore
-      ? flat.filter(f => !this.ignore?.ignored(f))
-      : flat
+    return this.ignore ? flat.filter(f => !this.ignore?.ignored(f)) : flat
   }
 
   finish(p: string | undefined): string | [] {
@@ -214,33 +215,28 @@ export class GlobWalker {
     if (!this.realpath && !this.absolute) {
       return p
     }
-    const pp = this.join(p, this.cwd)
+    const pp = resolve(this.join(p, this.cwd))
     if (!this.realpath) {
-      return resolve(pp)
+      return pp
     }
-    const rp: string = await new Promise(res =>
-      realpath(pp, (er, rp) => (er ? res(resolve(pp)) : res(rp)))
+    return await new Promise(res =>
+      realpath(pp, (er, rp) => (er ? res(pp) : res(rp)))
     )
-    this.rd.alias(rp, pp)
-    return rp
   }
 
   doRealpathSync(p: string): string | undefined {
     if (!this.realpath && !this.absolute) {
       return p
     }
-    const pp = this.join(p, this.cwd)
+    const pp = resolve(this.join(p, this.cwd))
     if (!this.realpath) {
-      return resolve(pp)
+      return pp
     }
-    let rp: string
     try {
-      rp = realpathSync(pp)
+      return realpathSync(pp)
     } catch (_) {
-      rp = resolve(pp)
+      return pp
     }
-    this.rd.alias(rp, pp)
-    return rp
   }
 
   walkSync(): string[] {
@@ -248,7 +244,10 @@ export class GlobWalker {
       return []
     }
 
-    let entries: Dirent[] = this.rd.readdirSync(this.start) || []
+    let entries: Dirent[] | false = this.rd.readdirSync(this.start)
+    if (!entries) {
+      return []
+    }
     const children = this.getChildren(entries)
     const matches: (string | string[])[] = children.map(c => {
       return typeof c === 'string'
@@ -256,9 +255,7 @@ export class GlobWalker {
         : c.walkSync()
     })
     const flat = matches.reduce((set: string[], m) => set.concat(m), [])
-    return this.ignore
-      ? flat.filter(f => !this.ignore?.ignored(f))
-      : flat
+    return this.ignore ? flat.filter(f => !this.ignore?.ignored(f)) : flat
   }
 
   join(p: string, base: string = this.path) {
@@ -305,29 +302,20 @@ export class GlobWalker {
     }
 
     for (const e of entries) {
-      // do not match ** to dot files, or traverse into them
-      const dotCheck = !e.name.startsWith('.') || this.dot
+      if (!this.dot && e.name.startsWith('.')) {
+        continue
+      }
+      const path = this.join(e.name)
       // ** does not traverse symlinks, unless follow:true is set.
       const traverse =
-        dotCheck &&
-        (e.isDirectory() || (this.follow && e.isSymbolicLink()))
-      const path = this.join(e.name)
+        e.isDirectory() || (this.follow && e.isSymbolicLink())
       if (traverse) {
         children.push(this.child(this.pattern, path))
       }
       if (rest) {
         // can match a/b against child path
-        if (
-          (typeof rest[0] == 'string' && e.name === rest[0]) ||
-          (rest[0] instanceof RegExp && rest[0].test(e.name))
-        ) {
-          if (rest.length > 1) {
-            children.push(this.child(rest, path))
-          } else {
-            children.push(path)
-          }
-        }
-      } else if (dotCheck) {
+        children.push(this.child(rest, path))
+      } else {
         // ** at the end, will match all children
         children.push(path)
       }

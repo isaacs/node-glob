@@ -2,7 +2,8 @@
 // Show that glob ignores results matching pattern on ignore option
 
 import t from 'tap'
-import glob, { GlobOptions } from '../'
+import glob from '../'
+import type { GlobOptions } from '../src/index.js'
 
 // [pattern, ignore, expect, opt (object) or cwd (string)]
 type Case = [

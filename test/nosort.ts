@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import { Dirent, readdir, readdirSync } from 'fs'
-import {resolve} from 'path'
+import { resolve } from 'path'
 import t from 'tap'
 const { glob } = t.mock('../dist/cjs/index.js', {
   fs: {

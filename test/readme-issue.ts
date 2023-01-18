@@ -3,7 +3,7 @@ import glob from '../'
 
 const dir = t.testdir({
   'package.json': '{}',
-  'README': 'x',
+  README: 'x',
 })
 
 t.test('glob', async t => {

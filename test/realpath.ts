@@ -1,7 +1,8 @@
 import * as fs from 'fs'
 import { resolve } from 'path'
 import t from 'tap'
-import glob, { GlobOptions } from '../'
+import glob from '../'
+import type { GlobOptions } from '../src/index.js'
 
 // pattern to find a bunch of duplicates
 const pattern = 'a/symlink/{*,**/*/*/*,*/*/**,*/*/*/*/*/*}'
@@ -129,8 +130,9 @@ if (process.platform === 'win32') {
       },
     })
     const pattern = 'a/symlink/a/b/c/a/b/**'
-    const expect = ['a/symlink/a/b/c/a/b/', 'a/symlink/a/b/c/a/b/c']
-      .map(e => resolve(fixtureDir, e))
+    const expect = ['a/symlink/a/b/c/a/b/', 'a/symlink/a/b/c/a/b/c'].map(
+      e => resolve(fixtureDir, e)
+    )
     t.test('setting cwd explicitly', async t => {
       const opt = { realpath: true, cwd: fixtureDir }
       t.same(glob.sync(pattern, opt), expect)
