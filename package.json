@@ -41,7 +41,7 @@
     "profclean": "rm -f v8.log profile.txt",
     "test-regen": "npm run profclean && TEST_REGEN=1 node --no-warnings --loader ts-node/esm test/00-setup.js",
     "bench": "bash benchmark.sh",
-    "prof": "bash prof.sh && cat profile.txt",
+    "prof": "bash prof.sh",
     "benchclean": "node benchclean.js"
   },
   "prettier": {

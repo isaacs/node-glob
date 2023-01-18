@@ -57,12 +57,13 @@ export class GlobWalker {
   cache: GlobCache
   cwd: string
   start: string
-  parent?: GlobWalker
+  hasParent: boolean
 
   constructor(
     pattern: Pattern,
     path: string,
-    options: GlobWalkerOptions | GlobWalker = {}
+    options: GlobWalkerOptions | GlobWalker = {},
+    hasParent: boolean = false
   ) {
     const {
       follow = false,
@@ -76,9 +77,8 @@ export class GlobWalker {
       ignore,
       cwd = '',
     } = options
-    if (options instanceof GlobWalker) {
-      this.parent = options
-    }
+
+    this.hasParent = hasParent
 
     // if the pattern starts with a bunch of strings, then skip ahead
     this.pattern = [...pattern]
@@ -109,7 +109,7 @@ export class GlobWalker {
     const [first, ...rest] = this.pattern
     // a pattern like /a/s/d/f discards the cwd
     // a pattern like / (or c:/ on windows) can only match the root
-    if (typeof first === 'string' && !this.parent) {
+    if (typeof first === 'string' && !this.hasParent) {
       const patternSlash = first === '' && !!rest.length
       const isWin = process.platform === 'win32'
       const patternDrive = isWin && /^[a-z]:$/i.test(first)
@@ -169,21 +169,15 @@ export class GlobWalker {
   }
 
   child(pattern: Pattern, path: string) {
-    return new GlobWalker(pattern, path, this)
+    // console.error('CHILD', path, pattern)
+    return new GlobWalker(pattern, path, this, true)
   }
 
   async walk(): Promise<string[]> {
     if (this.ignore?.childrenIgnored(this.path)) {
       return []
     }
-    let entries: Dirent[]
-    // if it's not a directory, or we can't read it, then
-    // that means no match, because we still have pattern to consume
-    try {
-      entries = await this.rd.readdir(this.start) || []
-    } catch (er) {
-      return []
-    }
+    let entries: Dirent[] = (await this.rd.readdir(this.start)) || []
     const children = this.getChildren(entries)
     const matches: (string | string[])[] = await Promise.all(
       children.map(async c =>
@@ -193,7 +187,9 @@ export class GlobWalker {
       )
     )
     const flat = matches.reduce((set: string[], m) => set.concat(m), [])
-    return this.ignore ? flat.filter(f => !this.ignore?.ignored(f)) : flat
+    return this.ignore
+      ? flat.filter(f => !this.ignore?.ignored(f))
+      : flat
   }
 
   finish(p: string | undefined): string | [] {
@@ -251,14 +247,8 @@ export class GlobWalker {
     if (this.ignore?.childrenIgnored(this.path)) {
       return []
     }
-    let entries: Dirent[]
-    // if it's not a directory, or we can't read it, then
-    // that means no match, because we still have pattern to consume
-    try {
-      entries = this.rd.readdirSync(this.start) || []
-    } catch (er) {
-      return []
-    }
+
+    let entries: Dirent[] = this.rd.readdirSync(this.start) || []
     const children = this.getChildren(entries)
     const matches: (string | string[])[] = children.map(c => {
       return typeof c === 'string'
@@ -266,7 +256,9 @@ export class GlobWalker {
         : c.walkSync()
     })
     const flat = matches.reduce((set: string[], m) => set.concat(m), [])
-    return this.ignore ? flat.filter(f => !this.ignore?.ignored(f)) : flat
+    return this.ignore
+      ? flat.filter(f => !this.ignore?.ignored(f))
+      : flat
   }
 
   join(p: string, base: string = this.path) {
@@ -313,20 +305,29 @@ export class GlobWalker {
     }
 
     for (const e of entries) {
-      if (!this.dot && e.name.startsWith('.')) {
-        continue
-      }
-      const path = this.join(e.name)
+      // do not match ** to dot files, or traverse into them
+      const dotCheck = !e.name.startsWith('.') || this.dot
       // ** does not traverse symlinks, unless follow:true is set.
       const traverse =
-        e.isDirectory() || (this.follow && e.isSymbolicLink())
+        dotCheck &&
+        (e.isDirectory() || (this.follow && e.isSymbolicLink()))
+      const path = this.join(e.name)
       if (traverse) {
         children.push(this.child(this.pattern, path))
       }
       if (rest) {
         // can match a/b against child path
-        children.push(this.child(rest, path))
-      } else {
+        if (
+          (typeof rest[0] == 'string' && e.name === rest[0]) ||
+          (rest[0] instanceof RegExp && rest[0].test(e.name))
+        ) {
+          if (rest.length > 1) {
+            children.push(this.child(rest, path))
+          } else {
+            children.push(path)
+          }
+        }
+      } else if (dotCheck) {
         // ** at the end, will match all children
         children.push(path)
       }
@@ -361,12 +362,14 @@ export class GlobWalker {
   getChildren(entries: Dirent[]): Children {
     const [p, ...tail] = this.pattern
     const rest = tail.length ? (tail as Pattern) : null
+    let ret: Children
     if (typeof p === 'string') {
-      return this.getChildrenString(entries, p, rest)
+      ret = this.getChildrenString(entries, p, rest)
     } else if (p === GLOBSTAR) {
-      return this.getChildrenGlobstar(entries, rest)
+      ret = this.getChildrenGlobstar(entries, rest)
     } else {
-      return this.getChildrenRegexp(entries, p, rest)
+      ret = this.getChildrenRegexp(entries, p, rest)
     }
+    return ret
   }
 }

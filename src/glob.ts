@@ -109,28 +109,27 @@ export class Glob {
 
   processSync() {
     return this.finish(
-      this.matchSet.map((set, i) =>
-        this.doNonull(this.getWalker(set as Pattern).walkSync(), i)
-      )
+      this.matchSet.map((set, i) => {
+        return this.doNonull(this.getWalker(set as Pattern).walkSync(), i)
+      })
     )
   }
 
   doNonull(matches: string[], i: number): string[] {
-    if (!matches.length && this.nonull) {
-      return [this.globSet[i]]
-    }
-    return matches
+    return !matches.length && this.nonull ? [this.globSet[i]] : matches
   }
 
   finish(matches: string[][]): string[] {
     const raw = matches.reduce((set, m) => set.concat(m), [])
     const flat = this.nounique ? raw : [...new Set(raw)]
-    return this.nosort
-      ? flat
-      : flat.sort((a, b) => a.localeCompare(b, 'en'))
+    return this.nosort ? flat : this.sort(flat)
+  }
+
+  sort(flat: string[]) {
+    return flat.sort((a, b) => a.localeCompare(b, 'en'))
   }
 
   getWalker(set: Pattern) {
-    return new GlobWalker(set, '', this)
+    return new GlobWalker(set, '', this, false)
   }
 }

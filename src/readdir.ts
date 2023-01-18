@@ -4,15 +4,15 @@
 import { Dirent } from 'fs'
 
 import {
-  statSync,
   readdir as origReaddir,
   readdirSync as origReaddirSync,
+  statSync,
 } from 'fs'
 import { basename, dirname, resolve } from 'path'
 
 // when we read a directory, put its entries in here as well
 export interface GlobCache {
-  [path: string]: Dirent[] | false
+  [path: string]: Dirent[] | false | Promise<Dirent[] | false>
 }
 
 export class Readdir {
@@ -30,8 +30,7 @@ export class Readdir {
   }
 
   // look up the Dirent for the path, if it exists
-  lookup(path: string): Dirent | undefined {
-    const resolved = resolve(path)
+  lookup(resolved: string): Dirent | undefined {
     const dir = dirname(resolved)
     const entities = this.cache[dir]
     if (entities && Array.isArray(entities)) {
@@ -43,21 +42,23 @@ export class Readdir {
     const resolved = resolve(path)
     return this.cache[resolved]
       ? Array.isArray(this.cache[resolved])
-      : !!this.lookup(path)?.isDirectory()
+      : !!this.lookup(resolved)?.isDirectory()
   }
 
   async readdir(path: string): Promise<Dirent[] | false> {
     const resolved = resolve(path)
     const cacheEntry = this.cache[resolved]
-    if (cacheEntry) {
-      if (Array.isArray(cacheEntry)) {
-        return cacheEntry
-      } else {
-        return false
-      }
+    if (cacheEntry !== undefined) {
+      return cacheEntry
     }
 
-    return new Promise<Dirent[] | false>(res => {
+    const lu = this.lookup(resolved)
+    if (lu && !lu.isDirectory() && !lu.isSymbolicLink()) {
+      return this.cache[resolved] = false
+    }
+
+    // TODO: cache the promise, too
+    return this.cache[resolved] = new Promise<Dirent[] | false>(res => {
       origReaddir(resolved, { withFileTypes: true }, (_, entities) => {
         res((this.cache[resolved] = entities || false))
       })
@@ -67,13 +68,15 @@ export class Readdir {
   readdirSync(path: string): Dirent[] | false {
     const resolved = resolve(path)
     const cacheEntry = this.cache[resolved]
-    if (cacheEntry) {
-      if (Array.isArray(cacheEntry)) {
-        return cacheEntry
-      } else {
-        return false
-      }
+    if (Array.isArray(cacheEntry) || cacheEntry === false) {
+      return cacheEntry
     }
+
+    const lu = this.lookup(resolved)
+    if (lu && !lu.isDirectory() && !lu.isSymbolicLink()) {
+      return this.cache[resolved] = false
+    }
+
     // try to avoid getting an error object created if we can
     // stack traces are expensive, and we don't use them.
     const st = statSync(resolved, { throwIfNoEntry: false })
