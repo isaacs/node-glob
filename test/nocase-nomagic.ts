@@ -11,6 +11,14 @@ const fakeStat = (
 ): { isDirectory: () => boolean; isSymbolicLink: () => boolean } => {
   let ret: { isDirectory: () => boolean; isSymbolicLink: () => false }
   switch (path.toLowerCase().replace(/\\/g, '/')) {
+    case '/':
+    case drive + '/':
+    case drive:
+      ret = {
+        isSymbolicLink: () => false,
+        isDirectory: () => true,
+      }
+      break
     case '/tmp':
     case '/tmp/':
     case drive + ':/tmp':
@@ -58,6 +66,7 @@ function fakeReaddir(path: string) {
 
 const mockFs = {
   ...fs,
+  statSync: fakeStat,
   readdir: (
     path: string,
     _options: { withFileTypes: true },
