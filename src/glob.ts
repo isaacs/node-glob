@@ -37,6 +37,7 @@ export class Glob {
   windowsPathsNoEscape: boolean
   noglobstar: boolean
   cache: GlobCache
+  matches?: Set<string>
 
   constructor(
     pattern: string | string[],
@@ -48,6 +49,9 @@ export class Glob {
     this.nodir = !!options.nodir
     this.mark = !!options.mark
     this.nounique = !!options.nounique
+    if (this.nounique) {
+      this.matches = new Set()
+    }
     this.nosort = !!options.nosort
     this.cwd = options.cwd || ''
     if (process.platform === 'win32') {
@@ -110,19 +114,22 @@ export class Glob {
   processSync() {
     return this.finish(
       this.matchSet.map((set, i) => {
-        return this.doNonull(this.getWalker(set as Pattern).walkSync(), i)
+        const matches = this.getWalker(set as Pattern).walkSync()
+        return this.doNonull(matches, i)
       })
     )
   }
 
-  doNonull(matches: string[], i: number): string[] {
-    return !matches.length && this.nonull ? [this.globSet[i]] : matches
+  doNonull(matches: Set<string>, i: number): Set<string> {
+    return !matches.size && this.nonull ? new Set([this.globSet[i]]) : matches
   }
 
-  finish(matches: string[][]): string[] {
-    const raw = matches.reduce((set, m) => set.concat(m), [])
-    const flat = this.nounique ? raw : [...new Set(raw)]
-    return this.nosort ? flat : this.sort(flat)
+  finish(matches: Set<string>[]): string[] {
+    const raw: string[] = []
+    for (const set of matches) {
+      raw.push(...set)
+    }
+    return this.nosort ? raw : this.sort(raw)
   }
 
   sort(flat: string[]) {

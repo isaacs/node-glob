@@ -3,16 +3,22 @@ export CDPATH=
 set -e
 set -x
 
-tmp=${TMPDIR:-/tmp}
 bash -x make-benchmark-fixture.sh
 wd=$PWD
-cd "$tmp/benchmark-fixture"
+tmp="$wd/bench-working-dir"
+cd "$tmp"
 
 export __GLOB_PROFILE__=1
 
 cat > "profscript.mjs" <<MJS
 import glob from '$wd/dist/mjs/index.js'
-console.log(glob.sync("**/*/*.txt").length);
+console.log(glob.sync("./fixture/**/*/**/*.txt").length);
 MJS
 
-node "$tmp/benchmark-fixture/profscript.mjs"
+node --prof profscript.mjs &> profile.out
+mkdir -p profiles
+d=./profiles/$(date +%s)
+mv isolate*.log ${d}.log
+node --prof-process ${d}.log > ${d}.txt
+cp ${d}.txt ../profile.txt
+#cat ${d}.txt

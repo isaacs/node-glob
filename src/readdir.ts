@@ -35,8 +35,11 @@ export class Readdir {
 
   isDirectory(path: string): boolean {
     const resolved = resolve(path)
-    return this.cache[resolved]
-      ? Array.isArray(this.cache[resolved])
+    const cached = this.cache[resolved]
+    return Array.isArray(cached)
+      ? true
+      : cached === false
+      ? false
       : !!this.lookup(resolved)?.isDirectory()
   }
 
