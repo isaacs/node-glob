@@ -348,18 +348,19 @@ export class GlobWalker {
 
     // eg, p=**/a/b
     if (rest) {
-      // XXX this is breaking symlink following??
+      // XXX this is faster, but it breaks some bash comparisons
+      // also, it's still not fast enough, even with this.
       //
       // it can match a/b against this path, without the **
       // skip ahead one step
-      const p = rest[0]
-      const r = rest.length > 1 ? rest.slice(1) as Pattern : null
-      if (typeof p === 'string') {
-        children.push(...this.getChildrenString(entries, p, r))
-      } else if (p instanceof RegExp) {
-        children.push(...this.getChildrenRegexp(entries, p, r))
-      }
-      // children.push(this.child(rest, this.path))
+      // const p = rest[0]
+      // const r = rest.length > 1 ? rest.slice(1) as Pattern : null
+      // if (typeof p === 'string') {
+      //   children.push(...this.getChildrenString(entries, p, r))
+      // } else if (p instanceof RegExp) {
+      //   children.push(...this.getChildrenRegexp(entries, p, r))
+      // }
+      children.push(this.child(rest, this.path))
     } else {
       // but if ** is at the end, then this path definitely matches
       children.push(this.path)
@@ -377,10 +378,10 @@ export class GlobWalker {
         children.push(this.child(this.pattern, path))
       }
       if (rest) {
-        // matching bash behavior
+        // TODO: match bash behavior
         // **/a will not traverse symlinks, but ./**/a WILL traverse
         // a single symlink
-        if (e.isDirectory() || e.isSymbolicLink()) {
+        if (e.isSymbolicLink()) {
           // can match a/b against child path
           children.push(this.child(rest, path))
         }

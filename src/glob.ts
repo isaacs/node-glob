@@ -49,7 +49,7 @@ export class Glob {
     this.nodir = !!options.nodir
     this.mark = !!options.mark
     this.nounique = !!options.nounique
-    if (this.nounique) {
+    if (!this.nounique) {
       this.matches = new Set()
     }
     this.nosort = !!options.nosort
@@ -101,33 +101,40 @@ export class Glob {
   }
 
   async process() {
-    return this.finish(
-      await Promise.all(
-        this.matchSet.map(async (set, i) => {
-          const matches = await this.getWalker(set as Pattern).walk()
-          return this.doNonull(matches, i)
-        })
-      )
+    const matches = await Promise.all(
+      this.matchSet.map(async set => {
+        return await this.getWalker(set as Pattern).walk()
+      })
     )
+    return this.finish(this.doNonull(matches))
   }
 
   processSync() {
-    return this.finish(
-      this.matchSet.map((set, i) => {
-        const matches = this.getWalker(set as Pattern).walkSync()
-        return this.doNonull(matches, i)
-      })
-    )
+    const matches = this.matchSet.map(set => {
+      return this.getWalker(set as Pattern).walkSync()
+    })
+    return this.finish(this.doNonull(matches))
   }
 
-  doNonull(matches: Set<string>, i: number): Set<string> {
-    return !matches.size && this.nonull ? new Set([this.globSet[i]]) : matches
+  doNonull(matches: Set<string>[]): Set<string>[] {
+    const nulls: string[] = []
+    matches.forEach((set, i) => {
+      if (!set.size && this.nonull) {
+        nulls.push(this.globSet[i])
+      }
+    })
+    for (const n of nulls) {
+      matches[0].add(n)
+    }
+    return matches
   }
 
   finish(matches: Set<string>[]): string[] {
-    const raw: string[] = []
-    for (const set of matches) {
-      raw.push(...set)
+    const raw: string[] = [...matches[0]]
+    if (this.nounique) {
+      for (const set of matches) {
+        raw.push(...set)
+      }
     }
     return this.nosort ? raw : this.sort(raw)
   }

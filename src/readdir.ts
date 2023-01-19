@@ -38,8 +38,6 @@ export class Readdir {
     const cached = this.cache[resolved]
     return Array.isArray(cached)
       ? true
-      : cached === false
-      ? false
       : !!this.lookup(resolved)?.isDirectory()
   }
 
@@ -50,17 +48,16 @@ export class Readdir {
       return cacheEntry
     }
 
-    const lu = this.lookup(resolved)
-    if (lu && !lu.isDirectory() && !lu.isSymbolicLink()) {
-      return (this.cache[resolved] = false)
-    }
+    // const lu = this.lookup(resolved)
+    // if (lu && !lu.isDirectory() && !lu.isSymbolicLink()) {
+    //   return (this.cache[resolved] = false)
+    // }
 
     const pc = this.pcache[resolved]
     if (pc) {
       return pc
     }
 
-    // TODO: cache the promise, too
     return (this.pcache[resolved] = new Promise<Dirent[] | false>(res => {
       origReaddir(resolved, { withFileTypes: true }, (_, entities) => {
         this.pcache[resolved] = undefined
@@ -76,10 +73,10 @@ export class Readdir {
       return cacheEntry
     }
 
-    const lu = this.lookup(resolved)
-    if (lu && !lu.isDirectory() && !lu.isSymbolicLink()) {
-      return (this.cache[resolved] = false)
-    }
+    // const lu = this.lookup(resolved)
+    // if (lu && !lu.isDirectory() && !lu.isSymbolicLink()) {
+    //   return (this.cache[resolved] = false)
+    // }
 
     // try to avoid getting an error object created if we can
     // stack traces are expensive, and we don't use them.

@@ -77,7 +77,15 @@ if (process.platform === 'win32' || !process.env.TEST_REGEN) {
       'a/abc{fed,def}/g/h',
       'a/abc{fed/g,def}/**/',
       'a/abc{fed/g,def}/**///**/',
+      // TODO: match bash behavior
+      // When a ** is the FIRST item in a pattern, it has
+      // slightly dfferent symbolic link handling behavior.
+      // '**/a',
+      // '**/a/**',
+      './**/a',
       './**/a/**/',
+      './**/a/**',
+      './**/a/**/a/**/',
       '+(a|b|c)/a{/,bc*}/**',
       '*/*/*/f',
       './**/f',

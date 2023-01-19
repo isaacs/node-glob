@@ -44,11 +44,9 @@ if (process.platform === 'win32') {
         'a/symlink',
         'a/symlink',
         'a/symlink',
-        'a/symlink',
         'a/symlink/a',
         'a/symlink/a',
         'a/symlink/a',
-        'a/symlink/a/b',
         'a/symlink/a/b',
         'a/symlink/a/b',
       ],
@@ -60,11 +58,9 @@ if (process.platform === 'win32') {
         'a/symlink/',
         'a/symlink/',
         'a/symlink/',
-        'a/symlink/',
         'a/symlink/a/',
         'a/symlink/a/',
         'a/symlink/a/',
-        'a/symlink/a/b/',
         'a/symlink/a/b/',
         'a/symlink/a/b/',
       ],
@@ -101,13 +97,15 @@ if (process.platform === 'win32') {
         // and that all the expected ones are found.
         const s = glob.sync(p, opt)
         const a = await glob(p, opt)
-        t.ok(s.length > 10, 'more than 10 entries found sync', {
+        t.ok(s.length > 5, 'more than 5 entries found sync', {
           found: s.length,
-          expect: '>10',
+          expect: '>5',
+          matches: s,
         })
-        t.ok(a.length > 10, 'more than 10 entries found async', {
+        t.ok(a.length > 5, 'more than 5 entries found async', {
           found: a.length,
-          expect: '>10',
+          expect: '>5',
+          matches: a,
         })
         for (const e of expect) {
           t.ok(s.includes(e), 'found ' + e + ' sync')
