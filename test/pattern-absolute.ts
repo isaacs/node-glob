@@ -3,7 +3,7 @@
 // This is a weirdly specific test of unexported implementation, not my
 // favorite, but it is the easiest way to verify what we expect here.
 import t from 'tap'
-import { GlobWalker } from '../dist/cjs/walker.js'
+import { posix, win32 } from 'path'
 
 const setPlatform = (platform: string) => {
   Object.defineProperty(process, 'platform', {
@@ -19,6 +19,10 @@ t.teardown(() => setPlatform(platform))
 
 t.test('posix', t => {
   setPlatform('posix')
+  const root = '/'
+  const { GlobWalker } = t.mock('../dist/cjs/walker.js', {
+    path: posix,
+  })
 
   // pattern like [a]/[b]
   t.match(
@@ -36,9 +40,9 @@ t.test('posix', t => {
     new GlobWalker(['', ''], '/tmp'),
     {
       pattern: [''],
-      path: '/',
+      path: root,
       cwd: '',
-      start: '/',
+      start: root,
     },
     'pattern=/'
   )
@@ -47,9 +51,9 @@ t.test('posix', t => {
     new GlobWalker(['', 'x'], '/tmp'),
     {
       pattern: ['x'],
-      path: '/',
+      path: root,
       cwd: '',
-      start: '/',
+      start: root,
     },
     'pattern=/x'
   )
@@ -58,25 +62,25 @@ t.test('posix', t => {
     new GlobWalker(['', 'x'], '/tmp', { cwd: '/a/b/c/d' }),
     {
       pattern: ['x'],
-      path: '/',
+      path: root,
       cwd: '',
-      start: '/',
+      start: root,
     },
     'pattern=/x'
   )
 
-  t.match(new GlobWalker(['c:'], 'd:/tmp'), {
-    pattern: ['c:'],
-    path: 'd:/tmp',
+  t.match(new GlobWalker(['p:'], 'q:/tmp'), {
+    pattern: ['p:'],
+    path: 'q:/tmp',
     cwd: '',
-    start: 'd:/tmp',
+    start: 'q:/tmp',
   })
 
-  t.match(new GlobWalker(['c:', 'x'], 'd:/tmp'), {
+  t.match(new GlobWalker(['p:', 'x'], 'q:/tmp'), {
     pattern: ['x'],
-    path: 'd:/tmp/c:',
+    path: 'q:/tmp/p:',
     cwd: '',
-    start: 'd:/tmp/c:',
+    start: 'q:/tmp/p:',
   })
 
   t.end()
@@ -84,14 +88,18 @@ t.test('posix', t => {
 
 t.test('win32', t => {
   setPlatform('win32')
+  const { GlobWalker } = t.mock('../dist/cjs/walker.js', {
+    path: win32,
+  })
+  const root = win32.resolve('/')
 
   t.match(
     new GlobWalker(['', ''], '/tmp'),
     {
       pattern: [''],
-      path: '/',
-      cwd: '/',
-      start: '/',
+      path: root,
+      cwd: root,
+      start: root,
     },
     'pattern=/'
   )
@@ -100,9 +108,9 @@ t.test('win32', t => {
     new GlobWalker(['', 'x'], '/tmp'),
     {
       pattern: ['x'],
-      path: '/',
-      cwd: '/',
-      start: '/',
+      path: root,
+      cwd: root,
+      start: root,
     },
     'pattern=/x'
   )
@@ -111,22 +119,22 @@ t.test('win32', t => {
     new GlobWalker(['', 'x'], '/tmp'),
     {
       pattern: ['x'],
-      path: '/',
-      cwd: '/',
-      start: '/',
+      path: root,
+      cwd: root,
+      start: root,
     },
     'pattern=/x'
   )
 
   t.match(
-    new GlobWalker(['', ''], 'd:/tmp'),
+    new GlobWalker(['', ''], 'q:/tmp'),
     {
       pattern: [''],
-      path: 'd:/',
-      cwd: 'd:/',
-      start: 'd:/',
+      path: 'q:/',
+      cwd: 'q:/',
+      start: 'q:/',
     },
-    'pattern=/, path=d:/tmp'
+    'pattern=/, path=q:/tmp'
   )
 
   t.match(
@@ -152,47 +160,47 @@ t.test('win32', t => {
   )
 
   t.match(
-    new GlobWalker(['c:'], 'd:/tmp'),
+    new GlobWalker(['p:'], 'q:/tmp'),
     {
       pattern: [''],
-      path: 'c:',
-      cwd: 'c:',
-      start: 'c:',
+      path: 'p:',
+      cwd: 'p:',
+      start: 'p:',
     },
-    'pattern=c: path=d:/tmp'
+    'pattern=c: path=q:/tmp'
   )
 
   t.match(
-    new GlobWalker(['c:', 'x'], 'd:/tmp'),
+    new GlobWalker(['p:', 'x'], 'q:/tmp'),
     {
       pattern: ['x'],
-      path: 'c:',
-      cwd: 'c:',
-      start: 'c:',
+      path: 'p:',
+      cwd: 'p:',
+      start: 'p:',
     },
-    'pattern=c:/x path=d:/tmp'
+    'pattern=c:/x path=q:/tmp'
   )
 
   t.match(
-    new GlobWalker(['', '', '?', 'c:'], 'd:/tmp'),
+    new GlobWalker(['', '', '?', 'p:'], 'q:/tmp'),
     {
       pattern: [''],
-      path: '/?/c:',
+      path: '/?/p:',
       cwd: '/',
-      start: '//?/c:',
+      start: '//?/p:',
     },
-    'pattern=//?/c: path=d:/tmp'
+    'pattern=//?/p: path=q:/tmp'
   )
 
   t.match(
-    new GlobWalker(['', '', '?', 'c:', /^[ab]$/], 'd:/tmp'),
+    new GlobWalker(['', '', '?', 'p:', /^[ab]$/], 'q:/tmp'),
     {
       pattern: [/^[ab]$/],
-      path: '/?/c:',
+      path: '/?/p:',
       cwd: '/',
-      start: '//?/c:',
+      start: '//?/p:',
     },
-    'pattern=//?/c:/[ab] path=d:/tmp'
+    'pattern=//?/p:/[ab] path=q:/tmp'
   )
 
   t.end()
