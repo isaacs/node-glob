@@ -17,25 +17,15 @@
 
 import { Dirent, realpath, realpathSync } from 'fs'
 import { GLOBSTAR } from 'minimatch'
-import { join, resolve } from 'path'
+import { posix, resolve } from 'path'
+// always use posix join because it's faster, and it's just for keys
+const { join } = posix
 import { Ignore } from './ignore.js'
 import { GlobCache, Readdir } from './readdir.js'
 
-type MMRegExp = RegExp & { _glob: string }
+import { Pattern } from './pattern.js'
 
 // a single minimatch set entry with 1 or more parts
-type ParseReturnFiltered = string | MMRegExp | typeof GLOBSTAR
-export type Pattern = [
-  p: ParseReturnFiltered,
-  ...rest: ParseReturnFiltered[]
-]
-
-const stringPattern = (pattern: Pattern): string =>
-  pattern
-    .map(p =>
-      typeof p === 'string' ? p : p === GLOBSTAR ? '**' : p._glob
-    )
-    .join('/')
 
 type Children = (GlobWalker | string | undefined)[]
 
@@ -72,14 +62,13 @@ export class GlobWalker {
   matches: Set<string>
   seen: Map<string, Set<string>>
 
-  patternString: string
-
   constructor(
     pattern: Pattern,
     path: string,
     options: GlobWalkerOptions | GlobWalker = {},
     hasParent: boolean = false
   ) {
+    //console.error('GW', [path, pattern.globString()])
     const {
       follow = false,
       realpath = false,
@@ -99,10 +88,7 @@ export class GlobWalker {
     this.hasParent = hasParent
     this.seen = seen
 
-    this.patternString = stringPattern(pattern)
-
-    // if the pattern starts with a bunch of strings, then skip ahead
-    this.pattern = [...pattern]
+    this.pattern = pattern
     this.path = path
     this.cwd = cwd
     this.start = this.setStart()
@@ -111,9 +97,9 @@ export class GlobWalker {
     const jp = join(path)
     const pathSeen = seen.get(jp)
     if (!pathSeen) {
-      seen.set(jp, new Set([this.patternString]))
+      seen.set(jp, new Set([this.pattern.globString()]))
     } else {
-      pathSeen.add(this.patternString)
+      pathSeen.add(this.pattern.globString())
     }
 
     this.follow = follow
@@ -137,69 +123,31 @@ export class GlobWalker {
   // since then we can remove the parent bit.
   // Also, then we can ditch the cwd
   setStart() {
-    const [first, ...rest] = this.pattern
+    const first = this.pattern.pattern()
     // a pattern like /a/s/d/f discards the cwd
     // a pattern like / (or c:/ on windows) can only match the root
     if (typeof first === 'string' && !this.hasParent) {
-      const patternSlash = first === '' && !!rest.length
-      const isWin = process.platform === 'win32'
-      const patternDrive = isWin && /^[a-z]:$/i.test(first)
-      const setAbs = patternSlash || patternDrive
-      if (setAbs) {
+      const setAbs = this.pattern.isAbsolute()
+      const rest = this.pattern.rest()
+      if (setAbs && rest) {
         // a pattern like '/' on windows goes to the root of
         // the drive that cwd is on.  If cwd isn't on a drive, use /
         const cwd = this.cwd ? this.join(this.path, this.cwd) : this.path
-        const cwdRe = /^[a-z]:($|[\\\/])/i
-        const cwdDrive = isWin && patternSlash && cwd.match(cwdRe)
         // don't mount UNC paths on a drive letter
         // eg: //?/c:/* or //host/share/*
         // Only relevant if we WOULD have tried to mount it
         // We'll gobble those strings shortly, so use '/' for now
-        const isUNC =
-          cwdDrive &&
-          first === '' &&
-          rest[0] === '' &&
-          rest[1] &&
-          typeof rest[1] === 'string' &&
-          rest[2] &&
-          typeof rest[2] === 'string'
-        const root = isUNC
-          ? '/'
-          : cwdDrive
-          ? cwdDrive[0]
-          : isWin
-          ? resolve('/')
-          : ''
-        if (isUNC && rest.length === 3) {
-          rest.push('')
-        }
-        this.pattern = rest.length ? (rest as Pattern) : ['']
-        this.cwd = first || root
-        this.path = first || root || '/'
+        const root = this.pattern.root(cwd)
+        this.cwd = root
+        this.path = root || '/'
       }
     }
 
     // skip ahead any literal portions, and read that dir instead
-    while (
-      this.pattern.length > 1 &&
-      typeof this.pattern[0] === 'string'
-    ) {
-      this.path =
-        this.path === '/'
-          ? this.path + this.pattern[0]
-          : this.join(this.pattern[0])
-      this.pattern.shift()
-    }
-
-    // match bash behavior, discard any empty path portions that
-    // follow a path portion with magic chars
-    while (
-      (this.pattern[0] instanceof RegExp ||
-        this.pattern[0] === GLOBSTAR) &&
-      this.pattern[1] === '' &&
-      this.pattern.length > 2
-    ) {
-      this.pattern.splice(1, 1)
+    while (this.pattern.hasMore() && this.pattern.isString()) {
+      const p = this.pattern.pattern() as string
+      this.path = this.path === '/' ? this.path + p : this.join(p)
+      this.pattern = this.pattern.rest() as Pattern
     }
 
     // this is the dir to read
@@ -208,11 +156,10 @@ export class GlobWalker {
 
   // don't do the same walk more than one time, ever
   hasSeen(pattern: Pattern, path: string): boolean {
-    const patternString = stringPattern(pattern)
     const jp = join(path)
     const seenPath = this.seen.get(jp)
     if (seenPath) {
-      if (seenPath.has(patternString)) {
+      if (seenPath.has(pattern.globString())) {
         return true
       }
     }
@@ -302,6 +249,7 @@ export class GlobWalker {
       return this.matches
     }
     let entries: Dirent[] | false = this.rd.readdirSync(this.start)
+    //console.error(' >', [this.path, this.pattern.globString()], entries && entries.map(e => e.name))
     if (!entries) {
       return this.matches
     }
@@ -357,11 +305,11 @@ export class GlobWalker {
       //
       // it can match a/b against this path, without the **
       // skip ahead one step
-      // const p = rest[0]
-      // const r = rest.length > 1 ? rest.slice(1) as Pattern : null
-      // if (typeof p === 'string') {
+      // const p = rest.pattern()
+      // const r = rest.rest()
+      // if (rest.isString()) {
       //   children.push(...this.getChildrenString(entries, p, r))
-      // } else if (p instanceof RegExp) {
+      // } else if (rest.isMagic()) {
       //   children.push(...this.getChildrenRegexp(entries, p, r))
       // }
       children.push(this.child(rest, this.path))
@@ -421,8 +369,8 @@ export class GlobWalker {
   }
 
   getChildren(entries: Dirent[]): Children {
-    const [p, ...tail] = this.pattern
-    const rest = tail.length ? (tail as Pattern) : null
+    const p = this.pattern.pattern()
+    const rest = this.pattern.rest()
     if (typeof p === 'string') {
       return this.getChildrenString(entries, p, rest)
     } else if (p === GLOBSTAR) {

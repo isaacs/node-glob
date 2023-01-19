@@ -1,9 +1,11 @@
 import { Minimatch, MinimatchOptions } from 'minimatch'
+import { Pattern } from './pattern.js'
 import { GlobCache } from './readdir.js'
-import { GlobWalker, Pattern } from './walker.js'
+import { GlobWalker } from './walker.js'
 
 type MatchSet = Minimatch['set']
 type GlobSet = Exclude<Minimatch['globSet'], undefined>
+type GlobParts = Exclude<Minimatch['globParts'], undefined>
 
 export interface GlobOptions extends MinimatchOptions {
   ignore?: string | string[]
@@ -30,6 +32,7 @@ export class Glob {
   cwd: string
   matchSet: MatchSet
   globSet: GlobSet
+  globParts: GlobParts
   realpath: boolean
   nonull: boolean
   absolute: boolean
@@ -92,26 +95,36 @@ export class Glob {
       nocomment: true,
       preserveMultipleSlashes: true,
     }
+
     const mms = this.pattern.map(p => new Minimatch(p, mmo))
-    this.matchSet = mms.reduce((set: MatchSet, m) => set.concat(m.set), [])
-    this.globSet = mms.reduce(
-      (set: GlobSet, m) => set.concat(m.globSet),
-      []
+    const [matchSet, globSet, globParts] = mms.reduce(
+      (set: [MatchSet, GlobSet, GlobParts], m) => {
+        set[0].push(...m.set)
+        set[1].push(...m.globSet)
+        set[2].push(...m.globParts)
+        return set
+      },
+      [[], [], []]
     )
+    this.matchSet = matchSet
+    this.globSet = globSet
+    this.globParts = globParts
   }
 
   async process() {
     const matches = await Promise.all(
-      this.matchSet.map(async set => {
-        return await this.getWalker(set as Pattern).walk()
+      this.matchSet.map(async (set, i) => {
+        const p = new Pattern(set, this.globParts[i], 0)
+        return await this.getWalker(p).walk()
       })
     )
     return this.finish(this.doNonull(matches))
   }
 
   processSync() {
-    const matches = this.matchSet.map(set => {
-      return this.getWalker(set as Pattern).walkSync()
+    const matches = this.matchSet.map((set, i) => {
+      const p = new Pattern(set, this.globParts[i], 0)
+      return this.getWalker(p).walkSync()
     })
     return this.finish(this.doNonull(matches))
   }
