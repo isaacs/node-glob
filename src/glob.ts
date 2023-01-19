@@ -143,7 +143,7 @@ export class Glob {
     return flat.sort((a, b) => a.localeCompare(b, 'en'))
   }
 
-  getWalker(set: Pattern) {
-    return new GlobWalker(set, '', this, false)
+  getWalker(pattern: Pattern) {
+    return new GlobWalker(pattern, '', this, false)
   }
 }

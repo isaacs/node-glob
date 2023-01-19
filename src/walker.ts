@@ -17,7 +17,7 @@
 
 import { Dirent, realpath, realpathSync } from 'fs'
 import { GLOBSTAR } from 'minimatch'
-import { resolve } from 'path'
+import { join, resolve } from 'path'
 import { Ignore } from './ignore.js'
 import { GlobCache, Readdir } from './readdir.js'
 
@@ -29,6 +29,13 @@ export type Pattern = [
   p: ParseReturnFiltered,
   ...rest: ParseReturnFiltered[]
 ]
+
+const stringPattern = (pattern: Pattern): string =>
+  pattern
+    .map(p =>
+      typeof p === 'string' ? p : p === GLOBSTAR ? '**' : p._glob
+    )
+    .join('/')
 
 type Children = (GlobWalker | string | undefined)[]
 
@@ -65,7 +72,7 @@ export class GlobWalker {
   matches: Set<string>
   seen: Map<string, Set<string>>
 
-  //pkey: string
+  patternString: string
 
   constructor(
     pattern: Pattern,
@@ -92,23 +99,23 @@ export class GlobWalker {
     this.hasParent = hasParent
     this.seen = seen
 
-    //this.pkey = pattern
-    //  .map(p =>
-    //    p === GLOBSTAR ? '**' : p instanceof RegExp ? p._glob : p
-    //  )
-    //  .join('/')
-    //const pathSeen = seen.get(path)
-    //if (!pathSeen) {
-    //  seen.set(path, new Set([this.pkey]))
-    //} else {
-    //  pathSeen.add(this.pkey)
-    //}
+    this.patternString = stringPattern(pattern)
 
     // if the pattern starts with a bunch of strings, then skip ahead
     this.pattern = [...pattern]
     this.path = path
     this.cwd = cwd
     this.start = this.setStart()
+
+    // note that we've now tested this pattern at this path
+    const jp = join(path)
+    const pathSeen = seen.get(jp)
+    if (!pathSeen) {
+      seen.set(jp, new Set([this.patternString]))
+    } else {
+      pathSeen.add(this.patternString)
+    }
+
     this.follow = follow
     this.realpath = realpath
     this.absolute = absolute
@@ -200,25 +207,22 @@ export class GlobWalker {
   }
 
   // don't do the same walk more than one time, ever
-  // hasSeen(pattern: Pattern, path: string): boolean {
-  //   const seenPath = this.seen.get(path)
-  //   if (seenPath) {
-  //     const pkey = pattern
-  //       .map(e =>
-  //         e === GLOBSTAR ? '**' : e instanceof RegExp ? e._glob : e
-  //       )
-  //       .join('/')
-  //     if (seenPath.has(pkey)) {
-  //       return true
-  //     }
-  //   }
-  //   return false
-  // }
+  hasSeen(pattern: Pattern, path: string): boolean {
+    const patternString = stringPattern(pattern)
+    const jp = join(path)
+    const seenPath = this.seen.get(jp)
+    if (seenPath) {
+      if (seenPath.has(patternString)) {
+        return true
+      }
+    }
+    return false
+  }
 
-  child(pattern: Pattern, path: string) {
-    //if (!this.hasSeen(pattern, path)) {
-    return new GlobWalker(pattern, path, this, true)
-    //}
+  child(pattern: Pattern, path: string): GlobWalker | undefined {
+    if (!this.hasSeen(pattern, path)) {
+      return new GlobWalker(pattern, path, this, true)
+    }
   }
 
   match(p: string): void {
