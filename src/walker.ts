@@ -147,6 +147,8 @@ export class GlobWalker {
         this.path = first || root || '/'
       }
     }
+
+    // skip ahead any literal portions, and read that dir instead
     while (
       this.pattern.length > 1 &&
       typeof this.pattern[0] === 'string'
@@ -157,6 +159,9 @@ export class GlobWalker {
           : this.join(this.pattern[0])
       this.pattern.shift()
     }
+
+    // match bash behavior, discard any empty path portions that
+    // follow a path portion with magic chars
     while (
       (this.pattern[0] instanceof RegExp ||
         this.pattern[0] === GLOBSTAR) &&
@@ -165,6 +170,8 @@ export class GlobWalker {
     ) {
       this.pattern.splice(1, 1)
     }
+
+    // this is the dir to read
     return this.join(this.path, this.cwd) || '.'
   }
 
