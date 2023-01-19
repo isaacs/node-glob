@@ -54,7 +54,7 @@ t () {
 
 for p in "${patterns[@]}"; do
   echo
-  echo "# pattern: $p"
+  echo "--- pattern: '$p' ---"
 
   # if [[ "`bash --version`" =~ version\ 4 ]] || [[ "`bash --version`" =~ version\ 5 ]]; then
   #   echo -n $'bash                        \t'
