@@ -12,7 +12,8 @@ export __GLOB_PROFILE__=1
 
 cat > "profscript.mjs" <<MJS
 import glob from '$wd/dist/mjs/index.js'
-console.log(glob.sync("./fixture/**/*/**/*.txt").length);
+console.log(glob.sync("./fixture/**/*/**/*/**/*/**/*/**/*.txt").length)
+glob("./fixture/**/*/**/*/**/*/**/*/**/*.txt").then(m => console.log(m.length))
 MJS
 
 node --prof profscript.mjs &> profile.out
