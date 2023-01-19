@@ -1,3 +1,3 @@
 var rimraf = require('rimraf')
-var bf = (process.env.TMPDIR || '/tmp') + '/benchmark-fixture'
+var bf = './bench-working-dir/fixture'
 rimraf.sync(bf)

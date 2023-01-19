@@ -2,12 +2,11 @@
 export CDPATH=
 set -e
 
-tmp=${TMPDIR:-/tmp}
 bash make-benchmark-fixture.sh
 wd=$PWD
-cd $tmp/benchmark-fixture
 
-mkdir -p "$wd/bench-working-dir"
+mkdir -p "$wd/bench-working-dir/fixture"
+cd "$wd/bench-working-dir"
 cat > "$wd/bench-working-dir/package.json" <<PJ
 {
   "dependencies": {
@@ -37,7 +36,7 @@ patterns=(
   # './**/*.txt'
   './**/**/**/**/**/**/**/**/*.txt'
   '**/*/*.txt'
-  '**/0/**/*.txt'
+  './**/0/**/0/**/*.txt'
   '**/[0-9]/**/*.txt'
   # '0/@([5-9]/*.txt|8/**)'
   # '[0-9]/[0-9]/[0-9]/[0-9]/[0-9].txt'

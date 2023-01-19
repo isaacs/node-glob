@@ -1,12 +1,14 @@
 #!/bin/bash
 
-tmp=${TMPDIR:-/tmp}
+wd=$PWD
+mkdir -p "$wd/bench-working-dir/fixture"
+tmp="$wd/bench-working-dir/fixture"
 export CDPATH=
 set -e
-if ! [ -d $tmp/benchmark-fixture ]; then
+if ! [ -d "$tmp/0" ]; then
   echo Making benchmark fixtures
-  mkdir $tmp/benchmark-fixture
-  cd $tmp/benchmark-fixture
+  mkdir -p "$tmp"
+  cd "$tmp"
   dirnames=`echo {0..9}/{0..9}/{0..9}/{0..9}` # 10000 dirs
   filenames=`echo {0..9}/{0..9}/{0..9}/{0..9}/{0..9}.txt`
   echo $dirnames | xargs mkdir -p
