@@ -42,54 +42,55 @@ export class Readdir {
   }
 
   async readdir(path: string): Promise<Dirent[] | false> {
-    const resolved = resolve(path)
-    const cacheEntry = this.cache[resolved]
+    const cacheEntry = this.cache[path]
     if (cacheEntry !== undefined) {
       return cacheEntry
     }
 
-    // const lu = this.lookup(resolved)
+    // const lu = this.lookup(path)
     // if (lu && !lu.isDirectory() && !lu.isSymbolicLink()) {
-    //   return (this.cache[resolved] = false)
+    //   return (this.cache[path] = false)
     // }
 
-    const pc = this.pcache[resolved]
+    const pc = this.pcache[path]
     if (pc) {
       return pc
     }
 
-    return (this.pcache[resolved] = new Promise<Dirent[] | false>(res => {
-      origReaddir(resolved, { withFileTypes: true }, (_, entities) => {
-        this.pcache[resolved] = undefined
-        res((this.cache[resolved] = entities || false))
+    return (this.pcache[path] = new Promise<Dirent[] | false>(res => {
+      origReaddir(path, { withFileTypes: true }, (_, entities) => {
+        this.pcache[path] = undefined
+        res((this.cache[path] = entities || false))
       })
     }))
   }
 
   readdirSync(path: string): Dirent[] | false {
-    const resolved = resolve(path)
-    const cacheEntry = this.cache[resolved]
+    // if (path.startsWith('//')) {
+    //   console.error('WAT', path)
+    // }
+    const cacheEntry = this.cache[path]
     if (Array.isArray(cacheEntry) || cacheEntry === false) {
       return cacheEntry
     }
 
-    // const lu = this.lookup(resolved)
+    // const lu = this.lookup(path)
     // if (lu && !lu.isDirectory() && !lu.isSymbolicLink()) {
-    //   return (this.cache[resolved] = false)
+    //   return (this.cache[path] = false)
     // }
 
     // try to avoid getting an error object created if we can
     // stack traces are expensive, and we don't use them.
     try {
-      const st = statSync(resolved, { throwIfNoEntry: false })
+      const st = statSync(path, { throwIfNoEntry: false })
       if (!st || !st.isDirectory()) {
-        return (this.cache[resolved] = false)
+        return (this.cache[path] = false)
       }
-      return (this.cache[resolved] = origReaddirSync(resolved, {
+      return (this.cache[path] = origReaddirSync(path, {
         withFileTypes: true,
       }))
     } catch (_) {
-      return (this.cache[resolved] = false)
+      return (this.cache[path] = false)
     }
   }
 }

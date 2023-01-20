@@ -17,11 +17,11 @@
 
 import { Dirent, realpath, realpathSync } from 'fs'
 import { GLOBSTAR } from 'minimatch'
-import { posix, resolve } from 'path'
-// always use posix join because it's faster, and it's just for keys
-const { join } = posix
+import { isAbsolute, posix, resolve } from 'path'
 import { Ignore } from './ignore.js'
 import { GlobCache, Readdir } from './readdir.js'
+// always use posix join because it's faster, and it's just for keys
+const { join } = posix
 
 import { Pattern } from './pattern.js'
 
@@ -42,6 +42,7 @@ export interface GlobWalkerOptions {
   cwd?: string
   matches?: Set<string>
   seen?: Map<string, Set<string>>
+  absCwd?: string
 }
 
 export class GlobWalker {
@@ -61,6 +62,7 @@ export class GlobWalker {
   hasParent: boolean
   matches: Set<string>
   seen: Map<string, Set<string>>
+  absCwd: string
 
   constructor(
     pattern: Pattern,
@@ -82,6 +84,7 @@ export class GlobWalker {
       cwd = '',
       matches = new Set(),
       seen = new Map(),
+      absCwd,
     } = options
 
     this.matches = matches
@@ -91,6 +94,7 @@ export class GlobWalker {
     this.pattern = pattern
     this.path = path
     this.cwd = cwd
+    this.absCwd = absCwd || resolve(cwd || '.').replace(/\\/g, '/')
     this.start = this.setStart()
 
     // note that we've now tested this pattern at this path
@@ -119,9 +123,6 @@ export class GlobWalker {
     }
   }
 
-  // TODO: this belongs in the Glob class probably
-  // since then we can remove the parent bit.
-  // Also, then we can ditch the cwd
   setStart() {
     const first = this.pattern.pattern()
     // a pattern like /a/s/d/f discards the cwd
@@ -138,8 +139,9 @@ export class GlobWalker {
         // Only relevant if we WOULD have tried to mount it
         // We'll gobble those strings shortly, so use '/' for now
         const root = this.pattern.root(cwd)
-        this.cwd = root
-        this.path = root || '/'
+        this.cwd = root || '/'
+        this.absCwd = root || '/'
+        this.path = '/'
       }
     }
 
@@ -150,8 +152,14 @@ export class GlobWalker {
       this.pattern = this.pattern.rest() as Pattern
     }
 
-    // this is the dir to read
-    return this.join(this.path, this.cwd) || '.'
+    // console.error(
+    //   'ss',
+    //   this.path,
+    //   this.absCwd,
+    //   this.join(this.path, this.absCwd)
+    // )
+
+    return this.join(this.path, this.absCwd)
   }
 
   // don't do the same walk more than one time, ever
@@ -183,7 +191,10 @@ export class GlobWalker {
       return
     }
     if (this.nodir || this.mark) {
-      const isDir = this.rd.isDirectory(this.join(p, this.cwd))
+      const isDir = this.rd.isDirectory(
+        isAbsolute(p) ? p : resolve(this.join(p, this.cwd))
+      )
+      // console.error('finish mark', p, isAbsolute(p), isDir, require('fs').statSync(p).isDirectory(), this.cache)
       if (isDir) {
         if (this.nodir) {
           return
@@ -267,8 +278,12 @@ export class GlobWalker {
   join(p: string, base: string = this.path) {
     return base === ''
       ? p
-      : base === '/' && p
-      ? `${base}${p}`
+      : base === '/'
+      ? p.startsWith('/')
+        ? p
+        : p
+        ? `${base}${p}`
+        : `${base}/`
       : `${base}/${p}`
   }
 
