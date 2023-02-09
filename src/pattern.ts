@@ -1,19 +1,29 @@
 // this is just a very light wrapper around 2 arrays with an offset index
 
 import { GLOBSTAR } from 'minimatch'
-import { resolve } from 'path'
 type MMRegExp = RegExp & {
   _glob?: string
   _src?: string
 }
-type MMPattern = string | MMRegExp | typeof GLOBSTAR
+export type MMPattern = string | MMRegExp | typeof GLOBSTAR
 
 // an array of length >= 1
 type PatternList = [p: MMPattern, ...rest: MMPattern[]]
+type UNCPatternList = [
+  p0: '',
+  p1: '',
+  p2: string,
+  p3: string,
+  ...rest: MMPattern[]
+]
+type DrivePatternList = [p0: string, ...rest: MMPattern[]]
+type AbsolutePatternList = [p0: '', ...rest: MMPattern[]]
 type GlobList = [p: string, ...rest: string[]]
 
+// TODO: this should be a parameter
 const isWin = process.platform === 'win32'
-const isPatternList = (pl: MMPattern[]): pl is PatternList => pl.length >= 1
+const isPatternList = (pl: MMPattern[]): pl is PatternList =>
+  pl.length >= 1
 const isGlobList = (gl: string[]): gl is GlobList => gl.length >= 1
 
 export class Pattern {
@@ -107,6 +117,25 @@ export class Pattern {
     return this.length > this.index + 1
   }
 
+  copy(): Pattern {
+    return new Pattern(this.patternList, this.globList, this.index)
+  }
+  insert(p: MMPattern, g: string): Pattern {
+    return new Pattern(
+      [
+        ...this.patternList.slice(0, this.index),
+        p,
+        ...this.patternList.slice(this.index),
+      ],
+      [
+        ...this.globList.slice(0, this.index),
+        g,
+        ...this.globList.slice(this.index),
+      ],
+      this.index
+    )
+  }
+
   rest(): Pattern | null {
     return this.hasMore()
       ? new Pattern(this.patternList, this.globList, this.index + 1)
@@ -115,8 +144,7 @@ export class Pattern {
 
   // pattern like: //host/share/...
   // split = [ '', '', 'host', 'share', ... ]
-  isUNC(): boolean {
-    const pl = this.patternList
+  isUNC(pl = this.patternList): pl is UNCPatternList {
     return (
       isWin &&
       this.index === 0 &&
@@ -134,51 +162,44 @@ export class Pattern {
   // XXX: would be nice to handle patterns like `c:*` to test the cwd
   // in c: for *, but I don't know of a way to even figure out what that
   // cwd is without actually chdir'ing into it?
-  isDrive(): boolean {
-    const p = this.patternList[0]
+  isDrive(pl = this.patternList): pl is DrivePatternList {
     return (
       isWin &&
       this.index === 0 &&
       this.length > 1 &&
-      typeof p === 'string' &&
-      /^[a-z]:$/i.test(p)
+      typeof pl[0] === 'string' &&
+      /^[a-z]:$/i.test(pl[0])
     )
   }
 
   // pattern = '/' or '/...' or '/x/...'
   // split = ['', ''] or ['', ...] or ['', 'x', ...]
   // Drive and UNC both considered absolute on windows
-  isAbsolute(): boolean {
+  isAbsolute(pl = this.patternList): pl is AbsolutePatternList {
     return (
-      (this.patternList[0] === '' && this.length > 1) ||
-      this.isDrive() ||
-      this.isUNC()
+      (pl[0] === '' && this.length > 1) ||
+      this.isDrive(pl) ||
+      this.isUNC(pl)
     )
   }
 
-  // given a current working dir, what's the root that we should
-  // start looking in?
-  root(cwd: string): string {
+  // consume the root of the pattern, and return it
+  root(): string {
     if (this.index !== 0) {
       throw new Error('should only check root on initial walk')
     }
-    const driveRE = /^[a-z]:($|[\\\/])/i
-    return (
-      // UNC paths start at /, because we gobble the string parts anyway
-      (
-        this.isUNC()
-          ? '/'
-          : // drive letter pattern, start in the root of that drive letter
-          this.isDrive()
-          ? (this.patternList[0] as string) + '/'
-          : isWin && driveRE.test(cwd)
-          ? (cwd.match(driveRE) as RegExpMatchArray)[0]
-          : this.isAbsolute()
-          ? isWin
-            ? resolve(cwd, '/')
-            : '/'
-          : cwd
-      ).replace(/\\/g, '/')
-    )
+    // //x/y/z -> ['', '', x, y, z]
+    // c:/x -> ['c:', x]
+    // /x -> ['', 'x']
+    const pl = this.patternList
+    if (this.isUNC(pl)) {
+      this.index = 4
+      return pl[0] + pl[1] + pl[2] + pl[3]
+    } else if (this.isDrive(pl) || this.isAbsolute(pl)) {
+      this.index = 1
+      return pl[0] + '/'
+    } else {
+      return ''
+    }
   }
 }

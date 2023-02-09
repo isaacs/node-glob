@@ -1,14 +1,15 @@
-import { Minimatch, MinimatchOptions } from 'minimatch'
-import { Pattern } from './pattern.js'
-import { GlobCache } from './readdir.js'
-import { GlobWalker } from './walker.js'
+import {Minimatch, MinimatchOptions} from 'minimatch'
+import {Path, PathScurry} from 'path-scurry'
+import {Ignore} from './ignore.js'
+import {Pattern} from './pattern.js'
+import {GlobWalker} from './walker.js'
 
 type MatchSet = Minimatch['set']
 type GlobSet = Exclude<Minimatch['globSet'], undefined>
 type GlobParts = Exclude<Minimatch['globParts'], undefined>
 
 export interface GlobOptions extends MinimatchOptions {
-  ignore?: string | string[]
+  ignore?: string | string[] | Ignore
   follow?: boolean
   mark?: boolean
   nodir?: boolean
@@ -17,12 +18,42 @@ export interface GlobOptions extends MinimatchOptions {
   cwd?: string
   realpath?: boolean
   absolute?: boolean
-  cache?: GlobCache
+  withFileTypes?: boolean
+  scurry?: PathScurry
 }
 
-export class Glob {
+export type GlobOptionsWithFileTypesTrue = GlobOptions & {
+  withFileTypes: true
+}
+
+export type GlobOptionsWithFileTypesFalse = GlobOptions & {
+  withFileTypes?: false
+}
+
+export type GlobOptionsWithFileTypesUnset = GlobOptions & {
+  withFileTypes?: undefined
+}
+
+type Results<Opts> = Opts extends GlobOptionsWithFileTypesTrue
+    ? Path[]
+    : Opts extends GlobOptionsWithFileTypesFalse
+    ? string[]
+    : Opts extends GlobOptionsWithFileTypesUnset
+    ? string[]
+    : string[] | Path[]
+
+type FileTypes<Opts> = Opts extends GlobOptionsWithFileTypesTrue
+    ? true
+    : Opts extends GlobOptionsWithFileTypesFalse
+    ? false
+    : Opts extends GlobOptionsWithFileTypesUnset
+    ? false
+    : boolean
+
+export class Glob<Opts extends GlobOptions> {
+  withFileTypes: FileTypes<Opts>
   pattern: string[]
-  ignore?: string | string[]
+  ignore?: Ignore
   follow: boolean
   dot: boolean
   mark: boolean
@@ -39,34 +70,51 @@ export class Glob {
   matchBase: boolean
   windowsPathsNoEscape: boolean
   noglobstar: boolean
-  cache: GlobCache
-  matches?: Set<string>
+  matches?: Set<Path>
+  nocase?: boolean
+  scurry: PathScurry
 
-  constructor(
-    pattern: string | string[],
-    options: GlobOptions | Glob = {}
-  ) {
-    this.ignore = options.ignore
+  constructor(pattern: string | string[], options: Opts) {
+    this.withFileTypes = !!options.withFileTypes as FileTypes<Opts>
+    const { ignore } = options
+    if (typeof ignore === 'string') {
+      this.ignore = new Ignore([ignore])
+    } else if (Array.isArray(ignore)) {
+      this.ignore = new Ignore(ignore)
+    } else if (ignore && (ignore instanceof Ignore)) {
+      this.ignore = ignore
+    }
     this.follow = !!options.follow
     this.dot = !!options.dot
     this.nodir = !!options.nodir
     this.mark = !!options.mark
     this.nounique = !!options.nounique
-    if (!this.nounique) {
-      this.matches = new Set()
-    }
     this.nosort = !!options.nosort
     this.cwd = options.cwd || ''
-    if (process.platform === 'win32') {
-      this.cwd = this.cwd.replace(/\\/g, '/')
-    }
     this.realpath = !!options.realpath
     this.nonull = !!options.nonull
     this.absolute = !!options.absolute
-    this.cache = options.cache || Object.create(null)
 
     this.noglobstar = !!options.noglobstar
     this.matchBase = !!options.matchBase
+
+    // if we're returning Path objects, we can't do nonull, because
+    // the pattern is a string, not a Path
+    if (this.withFileTypes) {
+      if (this.nonull) {
+        throw new TypeError(
+          'cannot set nonull:true and withFileTypes:true'
+        )
+      }
+      if (this.absolute) {
+        throw new Error('cannot set absolute:true and withFileTypes:true')
+      }
+    }
+
+    // if we want unique entries, we need a single set to hold them all
+    if (!this.nounique) {
+      this.matches = new Set()
+    }
 
     if (typeof pattern === 'string') {
       pattern = [pattern]
@@ -109,54 +157,64 @@ export class Glob {
     this.matchSet = matchSet
     this.globSet = globSet
     this.globParts = globParts
+    this.scurry =
+      options.scurry ||
+      new PathScurry(this.cwd, { nocase: options.nocase })
   }
 
-  async process() {
-    const matches = await Promise.all(
+  process(): Promise<Results<Opts>>
+  async process(): Promise<string[] | Path[]> {
+    // Walkers always return array of Path objects, so we just have to
+    // coerce them into the right shape.  It will have already called
+    // realpath() if the option was set to do so, so we know that's cached.
+    const matches: Set<Path>[] = await Promise.all(
       this.matchSet.map(async (set, i) => {
         const p = new Pattern(set, this.globParts[i], 0)
         return await this.getWalker(p).walk()
       })
     )
-    return this.finish(this.doNonull(matches))
+    // TODO: nonull filling in the blanks
+    return this.finish(matches)
   }
 
   processSync() {
-    const matches = this.matchSet.map((set, i) => {
+    const matches: Set<Path>[] = this.matchSet.map((set, i) => {
       const p = new Pattern(set, this.globParts[i], 0)
       return this.getWalker(p).walkSync()
     })
-    return this.finish(this.doNonull(matches))
+    return this.finish(matches)
   }
 
-  doNonull(matches: Set<string>[]): Set<string>[] {
-    const nulls: string[] = []
-    matches.forEach((set, i) => {
-      if (!set.size && this.nonull) {
-        nulls.push(this.globSet[i])
-      }
-    })
-    for (const n of nulls) {
-      matches[0].add(n)
-    }
-    return matches
-  }
-
-  finish(matches: Set<string>[]): string[] {
-    const raw: string[] = [...matches[0]]
+  finish(
+    matches: Set<Path>[]
+  ): Results<Opts>
+  finish(matches: Set<Path>[]): string[] | Path[] {
+    const raw: Path[] = []
     if (this.nounique) {
       for (const set of matches) {
         raw.push(...set)
       }
+    } else {
+      raw.push(...matches[0])
     }
-    return this.nosort ? raw : this.sort(raw)
+    return this.withFileTypes
+      ? raw
+      : this.absolute
+      ? this.sort(raw.map(r => r.fullpath()))
+      : this.realpath
+      ? this.sort(
+          raw.map(r => (r.realpathCached() || r).fullpath())
+        )
+      : this.sort(raw.map(r => r.fullpath()))
   }
 
   sort(flat: string[]) {
-    return flat.sort((a, b) => a.localeCompare(b, 'en'))
+    return this.nosort
+      ? flat
+      : flat.sort((a, b) => a.localeCompare(b, 'en'))
   }
 
   getWalker(pattern: Pattern) {
-    return new GlobWalker(pattern, '', this, false)
+    return new GlobWalker(pattern, this.scurry.cwd, this.matches)
   }
 }
