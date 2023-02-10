@@ -4,13 +4,15 @@ import { hasMagic } from './has-magic.js'
 export const globSync = (
   pattern: string | string[],
   options: GlobOptions = {}
-): string[] => new Glob(pattern, { ...options, withFileTypes: false }).processSync()
+): string[] =>
+  new Glob(pattern, { ...options, withFileTypes: false }).processSync()
 
 export const glob = Object.assign(
   async (
     pattern: string | string[],
     options: GlobOptions = {}
-  ): Promise<string[]> => new Glob(pattern, { ...options, withFileTypes: false }).process(),
+  ): Promise<string[]> =>
+    new Glob(pattern, { ...options, withFileTypes: false }).process(),
   {
     sync: globSync,
     globSync,
