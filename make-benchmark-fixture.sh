@@ -13,4 +13,17 @@ if ! [ -d "$tmp/0" ]; then
   filenames=`echo {0..9}/{0..9}/{0..9}/{0..9}/{0..9}.txt`
   echo $dirnames | xargs mkdir -p
   echo $filenames | xargs touch
+  # add 10k more that are not single chars
+  for i in {0..9}; do
+    for j in {0..9}; do
+      for k in {0..9}; do
+        for l in {0..9}; do
+          mkdir -p "$i$i$i$i/$j$j$j$j/$k$k$k$k/$l$l$l$l"
+          for m in {0..9}; do
+            touch "$i$i$i$i/$j$j$j$j/$k$k$k$k/$l$l$l$l/$m$m$m$m.txt"
+          done
+        done
+      done
+    done
+  done
 fi

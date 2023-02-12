@@ -1,3 +1,24 @@
+// TODO: ok, new algorithm for this is needed, clearly
+// forking out GlobWalkers for the set of children is just no good.
+// When not the last piece of the pattern:
+// if the pattern is a ** or regexp, we need to build a set of children
+// paths that need to be walked once the piece is consumed.
+//
+// For **, this is a Scurry walk of all directories under the path
+// For regexp, this is the children that match the regexp
+//
+// Then we iterate over that set, creating a new set of each child path
+// that matches the next part of the pattern, and so on.
+//
+// At the end, we have the set of all the child paths that matched up to
+// the last part of the pattern.
+//
+// If the last part is:
+// '', ensure they're all directories, and return
+// string, then .child it and maybe lstat
+// **, scurry walk for all entries, only walking directories
+// regexp, readdir and filter
+
 import { Path } from 'path-scurry'
 
 // a single minimatch set entry with 1 or more parts
@@ -112,7 +133,42 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
     return e
   }
 
+  matchPrecheckSync(e: Path): Path | undefined {
+    let rpc: Path | undefined
+    if (this.opts.realpath) {
+      rpc = e.realpathCached()
+      if (rpc) {
+        if (this.seen.has(rpc) || (e.isDirectory() && this.opts.nodir)) {
+          return undefined
+        }
+        e = rpc
+      }
+    }
+    if (e.isDirectory() && this.opts.nodir) {
+      return undefined
+    }
+    const needRealPath = this.opts.realpath && !rpc
+    const needStat = (this.opts.nodir || this.opts.mark) && e.isUnknown()
+    if (needRealPath && needStat) {
+      const r = e.realpathSync()?.lstatSync()
+      if (!r || this.seen.has(r) || (e.isDirectory() && this.opts.nodir)) {
+        return undefined
+      }
+      return r
+    } else if (needRealPath) {
+      const r = e.realpathSync()
+      if (!r || this.seen.has(r) || (e.isDirectory() && this.opts.nodir)) {
+        return undefined
+      }
+      return r
+    } else if (needStat) {
+      return e.lstatSync()
+    }
+    return e
+  }
+
   matchFinal(e: Path) {
+    this.seen.add(e)
     const mark = this.opts.mark && e.isDirectory() ? '/' : ''
     // ok, we have what we need!
     if (this.opts.withFileTypes) {
@@ -131,104 +187,184 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
     if (p) this.matchFinal(p)
   }
 
-  matchSync(e: Path) {
-    if (this.opts.realpath) {
-      const r = e.realpathSync()
-      if (!r) return
-      e = r
-    }
-    if (e.isUnknown() && (this.opts.nodir || this.opts.mark)) {
-      const ls = e.lstatSync()
-      if (!ls) return
-    }
-    if (this.opts.nodir && e.isDirectory()) {
-      return
-    }
-    const mark = this.opts.mark && e.isDirectory() ? '/' : ''
-    // ok, we have what we need!
-    if (this.opts.withFileTypes) {
-      this.matches.add(e)
-    } else if (this.opts.absolute) {
-      this.matches.add(e.fullpath() + mark)
-    } else {
-      this.matches.add(e.relative() + mark)
-    }
+  matchSync(e: Path): void {
+    const p = this.matchPrecheckSync(e)
+    if (p) this.matchFinal(p)
   }
 
-  async walk(): Promise<Matches<O>> {
-    // consume all pattern portions except the last one.
-    // if the last one is a string, then we stat and add it.
-    while (this.pattern.hasMore()) {
-      const p = this.pattern.pattern()
-      if (typeof p === 'string') {
-        this.pattern.shift()
-        this.path = this.path.child(p)
-      } else if (p instanceof RegExp) {
-        // this fans out, but we must match the pattern against
-        // something, so nothing else to do here.
-        await this.walkRegExp(p, this.pattern)
-        return this.matches
-      } else {
-        // globstar!
-        // this fans out, but also continues without the **
-        await this.walkGlobStar(this.pattern)
-        this.pattern.shift()
-      }
-    }
-    const p = this.pattern.pattern()
-    if (typeof p === 'string') {
-      this.path = this.path.child(p)
-      await this.maybeMatchPath()
-    } else if (p instanceof RegExp) {
-      await this.walkRegExp(p, this.pattern)
-    } else {
-      // globstar at the end is either nothing, or all children
-      // make sure our path actually exists, if it was something
-      // like a/b/** we might've got here without checking
-      await Promise.all([
-        this.maybeMatchPath(),
-        this.walkGlobStar(this.pattern),
-      ])
-    }
-    return this.matches
-  }
-
-  walkSync(): Matches<O> {
-    // consume all pattern portions except the last one.
-    // if the last one is a string, then we stat and add it.
-    while (this.pattern.hasMore()) {
-      const p = this.pattern.pattern()
-      if (typeof p === 'string') {
-        this.path = this.path.child(p)
-        this.pattern.shift()
-      } else if (p instanceof RegExp) {
-        // this fans out, but we must match the pattern against
-        // something, so nothing else to do here.
-        this.walkRegExpSync(p, this.pattern)
-        this.pattern.shift()
-        return this.matches
-      } else {
-        // globstar!
-        // this fans out, but also continues without the **
-        this.walkGlobStarSync(this.pattern)
-        this.pattern.shift()
-      }
-    }
-    const p = this.pattern.pattern()
-    if (typeof p === 'string') {
-      this.path = this.path.child(p)
-      this.maybeMatchPathSync()
-    } else if (p instanceof RegExp) {
-      this.walkRegExpSync(p, this.pattern)
+  // used to gather children to walk when ** appears mid-pattern
+  // pattern here is everything AFTER the **
+  async walkGlobStarDirs(
+    path: Path,
+    pattern: Pattern
+  ): Promise<Matches<O>> {
+    //     return new Promise<Matches<O>>(res => {
+    //       this.walkGlobStarDirsEntriesCB([path], pattern, () =>
+    //         res(this.matches)
+    //       )
+    //     })
+    if (
+      !(path.isDirectory() || path.isUnknown()) ||
+      path.name.startsWith('.')
+    ) {
       return this.matches
-    } else {
-      // globstar at the end is either nothing, or all children
-      // make sure our path actually exists, if it was something
-      // like a/b/** we might've got here without checking
-      this.maybeMatchPathSync()
-      this.walkGlobStarSync(this.pattern)
+    }
+    await this.match(path)
+    const entriesCached = path.readdirCached()
+    const entries = path.calledReaddir()
+      ? entriesCached
+      : await path.readdir()
+    if (!entries.length) return this.matches
+    const promises: Promise<any>[] = []
+    // collect all matches from this dir the rest of the pattern
+    await this.walk(path, pattern)
+    for (const e of entries) {
+      if (!(e.isDirectory() || e.isUnknown()) || e.name.startsWith('.')) {
+        continue
+      }
+      promises.push(this.walkGlobStarDirs(e, pattern))
+    }
+    if (promises.length) await Promise.all(promises)
+    return this.matches
+  }
+
+  walkGlobStarDirsSync(path: Path, pattern: Pattern): Matches<O> {
+    if (
+      !(path.isDirectory() || path.isUnknown()) ||
+      path.name.startsWith('.')
+    ) {
+      return this.matches
+    }
+    this.matchSync(path)
+    const entries = path.readdirSync()
+    if (!entries.length) return this.matches
+    this.walkSync(path, pattern)
+    for (const e of entries) {
+      if (!(e.isDirectory() || e.isUnknown()) || e.name.startsWith('.'))
+        continue
+      this.walkGlobStarDirsSync(e, pattern)
     }
     return this.matches
+  }
+
+  // used when the last item in the pattern is **
+  async walkGlobStarAll(path: Path): Promise<Matches<O>> {
+    if (path.name.startsWith('.')) {
+      return this.matches
+    }
+    await this.match(path)
+    if (!path.isDirectory()) return this.matches
+    const entriesCached = path.readdirCached()
+    const entries = path.calledReaddir()
+      ? entriesCached
+      : await path.readdir()
+    if (!entries.length) return this.matches
+    const promises: Promise<any>[] = []
+    for (const e of entries) {
+      if (e.name.startsWith('.')) continue
+      promises.push(this.match(e))
+      if (e.isDirectory()) promises.push(this.walkGlobStarAll(e))
+    }
+    if (promises.length) await Promise.all(promises)
+    return this.matches
+  }
+
+  walkGlobStarAllSync(path: Path): Matches<O> {
+    if (path.name.startsWith('.')) {
+      return this.matches
+    }
+    this.matchSync(path)
+    if (!path.isDirectory()) return this.matches
+    const entries = path.readdirSync()
+    if (!entries.length) return this.matches
+    for (const e of entries) {
+      if (e.name.startsWith('.')) continue
+      this.matchSync(e)
+      if (e.isDirectory()) this.walkGlobStarAllSync(e)
+    }
+    return this.matches
+  }
+
+  async walk(
+    target: Path = this.path,
+    pattern: Pattern = this.pattern
+  ): Promise<Matches<O>> {
+    // each step, we get the set of all items that match
+    // the current piece of the pattern, and recurse if there's
+    // pattern left.
+    // have more pattern:
+    // **: do a globStarDirs walk, attach rest to all found, return
+    // string: path.child(), walk rest of the pattern
+    // regexp: filter children, walk rest on all of them
+    // last pattern:
+    // **: if path is a dir, add to matches, along with all descendants
+    // string: if path exists, add to matches
+    // regexp: filter children, all are matches
+
+    const p = pattern.pattern()
+    const rest = pattern.rest()
+    if (rest) {
+      if (!target.canReaddir()) return this.matches
+      if (typeof p === 'string') {
+        return this.walk(target.child(p), rest)
+      } else if (p instanceof RegExp) {
+        return this.walkRegExp(target, pattern)
+      } else {
+        // globstar
+        return this.walkGlobStar(target, pattern)
+      }
+    } else {
+      if (p === '') {
+        //matches only if path is a dir
+        if (target.isUnknown()) await target.lstat()
+        if (target.isDirectory()) await this.match(target)
+        return this.matches
+      } else if (typeof p === 'string') {
+        // last item! will stat etc if needed.
+        const e = target.isUnknown() ? await target.lstat() : target
+        if (e) await this.match(e)
+        return this.matches
+      } else if (p instanceof RegExp) {
+        return this.walkRegExp(target, pattern)
+      } else {
+        return this.walkGlobStar(target, pattern)
+      }
+    }
+  }
+
+  walkSync(
+    target: Path = this.path,
+    pattern: Pattern = this.pattern
+  ): Matches<O> {
+    const p = pattern.pattern()
+    const rest = pattern.rest()
+    if (rest) {
+      if (!target.canReaddir()) return this.matches
+      if (typeof p === 'string') {
+        return this.walkSync(target.child(p), rest)
+      } else if (p instanceof RegExp) {
+        return this.walkRegExpSync(target, pattern)
+      } else {
+        // globstar
+        return this.walkGlobStarSync(target, pattern)
+      }
+    } else {
+      if (p === '') {
+        //matches only if path is a dir
+        if (target.isUnknown()) target.lstatSync()
+        if (target.isDirectory()) this.matchSync(target)
+        return this.matches
+      } else if (typeof p === 'string') {
+        // last item! will stat etc if needed.
+        const e = target.isUnknown() ? target.lstatSync() : target
+        if (e) this.matchSync(e)
+        return this.matches
+      } else if (p instanceof RegExp) {
+        return this.walkRegExpSync(target, pattern)
+      } else {
+        return this.walkGlobStarSync(target, pattern)
+      }
+    }
   }
 
   async maybeMatchPath(): Promise<void> {
@@ -257,117 +393,99 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
   }
 
-  async walkGlobStar(pattern: Pattern): Promise<void> {
+  // note: we do not need to add the current path as a match here,
+  // ONLY process children.  The current path will be added in the walk
+  // method itself.
+  async walkGlobStar(path: Path, pattern: Pattern): Promise<Matches<O>> {
     // get all children, and walk from there
-    if (!this.path.canReaddir()) {
-      return
+    if (!path.canReaddir()) {
+      return this.matches
     }
-    return new Promise<void>(res => {
-      this.path.readdirCB((_er, entries) => {
-        const promises: Promise<any>[] = []
-        for (const e of entries) {
-          if (e.name.startsWith('.')) continue
-          else if (!e.isDirectory()) {
-            promises.push(this.match(e))
-          } else {
-            const w = new GlobWalker<O>(
-              pattern.copy(),
-              e,
-              this.matches,
-              this.seen,
-              this.opts
-            )
-            promises.push(w.walk())
-          }
-        }
-        if (promises.length) return Promise.all(promises).then(() => res())
-        else return res()
-      }, true)
-    })
+    const rest = pattern.rest()
+    return rest
+      ? this.walkGlobStarDirs(path, rest)
+      : this.walkGlobStarAll(path)
   }
 
-  walkGlobStarSync(pattern: Pattern): void {
+  walkGlobStarSync(path: Path, pattern: Pattern): Matches<O> {
     // get all children, and walk from there
-    if (!this.path.canReaddir()) {
-      return
+    if (!path.canReaddir()) {
+      return this.matches
     }
-    const entries = this.path.readdirSync()
+    const rest = pattern.rest()
+    return rest
+      ? this.walkGlobStarDirsSync(path, rest)
+      : this.walkGlobStarAllSync(path)
+  }
+
+  // kind of like walkGlobStar, but without the recursion, just one level
+  // and attach the rest of the pattern to it, or call it a match
+  async walkRegExp(path: Path, pattern: Pattern): Promise<Matches<O>> {
+    if (!path.canReaddir()) {
+      return this.matches
+    }
+    const p = pattern.pattern() as RegExp
+    const rest = pattern.rest()
+    const promises: Promise<any>[] = []
+    const entries = path.calledReaddir()
+      ? path.readdirCached()
+      : await path.readdir()
     for (const e of entries) {
-      if (e.name.startsWith('.')) continue
-      if (e.isSymbolicLink()) {
-        // we can MATCH a symlink, just not traverse it
+      if (!p.test(e.name)) continue
+      if (rest) {
+        if (!e.canReaddir()) continue
+        promises.push(this.walk(e, rest))
+      } else {
+        promises.push(this.match(e))
+      }
+    }
+    if (promises.length) await Promise.all(promises)
+    return this.matches
+    // if (!path.canReaddir()) {
+    //   return this.matches
+    // }
+    // const p = pattern.pattern() as RegExp
+    // const rest = pattern.rest()
+    // return new Promise<Matches<O>>(res => {
+    //   const cb = () => res(this.matches)
+    //   path.readdirCB((_, entries) => {
+    //     if (!entries.length) return cb()
+    //     let len = 1
+    //     for (const e of entries) {
+    //       if (!p.test(e.name)) continue
+    //       if (rest) {
+    //         if (!e.canReaddir()) continue
+    //         len++
+    //         this.walk(e, rest).then(() => {
+    //           if (--len === 0) cb()
+    //         })
+    //       } else {
+    //         len++
+    //         this.match(e).then(() => {
+    //           if (--len === 0) cb()
+    //         })
+    //       }
+    //     }
+    //     if (--len === 0) cb()
+    //   }, true)
+    // })
+  }
+
+  walkRegExpSync(path: Path, pattern: Pattern): Matches<O> {
+    if (!path.canReaddir()) {
+      return this.matches
+    }
+    const p = pattern.pattern() as RegExp
+    const rest = pattern.rest()
+    for (const e of path.readdirSync()) {
+      if (!p.test(e.name)) continue
+      if (rest) {
+        if (!e.canReaddir()) continue
+        this.walkSync(e, rest)
+      } else {
         this.matchSync(e)
-        continue
-      }
-      const w = new GlobWalker<O>(
-        pattern.copy(),
-        e,
-        this.matches,
-        this.seen,
-        this.opts
-      )
-      w.walkSync()
-    }
-  }
-
-  async walkRegExp(p: RegExp, pattern: Pattern): Promise<void> {
-    if (!this.path.canReaddir()) {
-      return
-    }
-    return new Promise<void>(res => {
-      this.path.readdirCB((_, entries) => {
-        if (!pattern.hasMore()) {
-          const promises: Promise<void>[] = []
-          for (const e of entries) {
-            if (p.test(e.name)) {
-              promises.push(this.match(e))
-            }
-          }
-          if (!entries.length) return res()
-          Promise.all(promises).then(() => res())
-        } else {
-          const promises: Promise<any>[] = []
-          for (const e of entries) {
-            if (p.test(e.name)) {
-              const w = new GlobWalker<O>(
-                pattern.rest() as Pattern,
-                e,
-                this.matches,
-                this.seen,
-                this.opts
-              )
-              promises.push(w.walk())
-            }
-          }
-          if (!entries.length) return res()
-          Promise.all(promises).then(() => res())
-        }
-      }, true)
-    })
-  }
-
-  walkRegExpSync(p: RegExp, pattern: Pattern): void {
-    if (!this.path.canReaddir()) {
-      return
-    }
-    const entries = this.path.readdirSync()
-    if (!pattern.hasMore()) {
-      for (const e of entries) {
-        if (p.test(e.name)) this.matchSync(e)
-      }
-    } else {
-      for (const e of entries) {
-        if (p.test(e.name)) {
-          const w = new GlobWalker<O>(
-            pattern.rest() as Pattern,
-            e,
-            this.matches,
-            this.seen,
-            this.opts
-          )
-          w.walkSync()
-        }
       }
     }
+    return this.matches
   }
 }

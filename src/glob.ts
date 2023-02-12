@@ -171,6 +171,8 @@ export class Glob<Opts extends GlobOptions> {
     // Walkers always return array of Path objects, so we just have to
     // coerce them into the right shape.  It will have already called
     // realpath() if the option was set to do so, so we know that's cached.
+    // start out knowing the cwd, at least
+    await this.scurry.lstat()
     const matches: Matches<Opts>[] = await Promise.all(
       this.matchSet.map(async (set, i) => {
         const p = new Pattern(set, this.globParts[i], 0)
@@ -182,6 +184,8 @@ export class Glob<Opts extends GlobOptions> {
   }
 
   processSync() {
+    // start out knowing the cwd, at least
+    this.scurry.lstatSync()
     const matches: Matches<Opts>[] = this.matchSet.map((set, i) => {
       const p = new Pattern(set, this.globParts[i], 0)
       return this.getWalker(p).walkSync()
@@ -191,15 +195,17 @@ export class Glob<Opts extends GlobOptions> {
 
   finish(matches: Matches<Opts>[]): Results<Opts>
   finish(matches: Set<Path | string>[]): (string | Path)[] {
-    const raw: (string | Path)[] = []
     if (this.nounique) {
+      const raw: (string | Path)[] = []
       for (const set of matches) {
-        raw.push(...set)
+        for (const e of set) {
+          raw.push(e)
+        }
       }
+      return raw
     } else {
-      raw.push(...matches[0])
+      return [...matches[0]]
     }
-    return raw
   }
 
   sort(flat: string[]) {
