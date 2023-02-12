@@ -27,10 +27,12 @@ const isPatternList = (pl: MMPattern[]): pl is PatternList =>
 const isGlobList = (gl: string[]): gl is GlobList => gl.length >= 1
 
 export class Pattern {
-  patternList: PatternList
-  globList: GlobList
+  readonly patternList: PatternList
+  readonly globList: GlobList
   index: number
-  length: number
+  readonly length: number
+  #rest?: Pattern | null
+  #globString?: string
 
   constructor(
     patternList: MMPattern[],
@@ -76,7 +78,7 @@ export class Pattern {
         this.index < this.length - 1 &&
         this.pattern() === ''
       ) {
-        this.shift()
+        this.index++
       }
     }
   }
@@ -94,23 +96,18 @@ export class Pattern {
   isMagic(): boolean {
     return this.patternList[this.index] instanceof RegExp
   }
-  shift() {
-    if (this.index === this.length - 1) {
-      throw new Error('cannot shift final pattern')
-    }
-    const p = this.pattern()
-    this.index++
-    return p
-  }
 
   glob(): string {
     return this.globList[this.index]
   }
 
   globString(): string {
-    return (
-      this.index === 0 ? this.globList : this.globList.slice(this.index)
-    ).join('/')
+    return (this.#globString =
+      this.#globString ||
+      (this.index === 0
+        ? this.globList
+        : this.globList.slice(this.index)
+      ).join('/'))
   }
 
   hasMore(): boolean {
@@ -120,26 +117,13 @@ export class Pattern {
   copy(): Pattern {
     return new Pattern(this.patternList, this.globList, this.index)
   }
-  insert(p: MMPattern, g: string): Pattern {
-    return new Pattern(
-      [
-        ...this.patternList.slice(0, this.index),
-        p,
-        ...this.patternList.slice(this.index),
-      ],
-      [
-        ...this.globList.slice(0, this.index),
-        g,
-        ...this.globList.slice(this.index),
-      ],
-      this.index
-    )
-  }
 
   rest(): Pattern | null {
-    return this.hasMore()
-      ? new Pattern(this.patternList, this.globList, this.index + 1)
-      : null
+    return this.#rest !== undefined
+      ? this.#rest
+      : (this.#rest = this.hasMore()
+          ? new Pattern(this.patternList, this.globList, this.index + 1)
+          : null)
   }
 
   // pattern like: //host/share/...
