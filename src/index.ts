@@ -1,11 +1,27 @@
+import Minipass from 'minipass'
 import { Glob, GlobOptions } from './glob.js'
 import { hasMagic } from './has-magic.js'
 
-export const globSync = (
+export const globStreamSync = (
   pattern: string | string[],
   options: GlobOptions = {}
-): string[] =>
-  new Glob(pattern, { ...options, withFileTypes: false }).walkSync()
+): Minipass<string> =>
+  new Glob(pattern, { ...options, withFileTypes: false }).streamSync()
+
+export const globStream = Object.assign(
+  (
+    pattern: string | string[],
+    options: GlobOptions = {}
+  ): Minipass<string> =>
+    new Glob(pattern, { ...options, withFileTypes: false }).stream(),
+  { sync: globStreamSync }
+)
+
+export const globSync = Object.assign(
+  (pattern: string | string[], options: GlobOptions = {}): string[] =>
+    new Glob(pattern, { ...options, withFileTypes: false }).walkSync(),
+  { stream: globStreamSync }
+)
 
 export const glob = Object.assign(
   async (
@@ -16,6 +32,10 @@ export const glob = Object.assign(
   {
     sync: globSync,
     globSync,
+    stream: globStream,
+    streamSync: globStreamSync,
+    globStream,
+    globStreamSync,
     Glob,
     hasMagic,
   }

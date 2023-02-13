@@ -4,8 +4,10 @@ set -e
 
 patterns=(
   './**/?/**/?/**/?/**/?/**/*.txt'
+  './{**/?{/**/?{/**/?{/**/?,},},},}/**/*.txt'
   './*/**/../*/**/../*/**/../*/**/../*/**/../*/**/../*/**/../*/**/*.txt'
   './*/**/../*/**/../*/**/../*/**/../*/**/*.txt'
+  './{*/**/../{*/**/../{*/**/../{*/**/../{*/**,},},},},}/*.txt'
   './**/0/**/../[01]/**/0/../**/0/*.txt'
   '**/????/????/????/????/*.txt'
   './**/[01]/**/[12]/**/[23]/**/[45]/**/*.txt'
@@ -143,6 +145,20 @@ MJS
   glob(process.argv[2]).then(files => console.log(files.length))
 MJS
   t node "$wd/bench-working-dir/async.mjs" "$p"
+
+  echo -n $'node current glob syncStream  \t'
+  cat > "$wd/bench-working-dir/stream-sync.mjs" <<MJS
+  import glob from '$wd/dist/mjs/index.js'
+  glob.streamSync(process.argv[2]).resume()
+MJS
+  t node "$wd/bench-working-dir/stream-sync.mjs" "$p"
+
+  echo -n $'node current glob stream      \t'
+  cat > "$wd/bench-working-dir/stream.mjs" <<MJS
+  import glob from '$wd/dist/mjs/index.js'
+  glob.stream(process.argv[2]).resume()
+MJS
+  t node "$wd/bench-working-dir/stream.mjs" "$p"
 
   # echo -n $'node current glob sync cjs -e \t'
   # t node -e '

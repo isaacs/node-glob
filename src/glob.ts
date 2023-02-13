@@ -1,4 +1,5 @@
 import { Minimatch, MinimatchOptions } from 'minimatch'
+import Minipass from 'minipass'
 import {
   Path,
   PathScurry,
@@ -8,7 +9,7 @@ import {
 } from 'path-scurry'
 import { Ignore } from './ignore.js'
 import { Pattern } from './pattern.js'
-import { GlobWalker, Matches } from './walker.js'
+import { GlobStream, GlobWalker, Matches } from './walker.js'
 
 type MatchSet = Minimatch['set']
 type GlobSet = Exclude<Minimatch['globSet'], undefined>
@@ -29,7 +30,6 @@ export interface GlobOptions extends MinimatchOptions {
   mark?: boolean
   nodir?: boolean
   nounique?: boolean
-  nosort?: boolean
   cwd?: string
   realpath?: boolean
   absolute?: boolean
@@ -76,7 +76,6 @@ export class Glob<Opts extends GlobOptions> {
   mark: boolean
   nodir: boolean
   nounique: boolean
-  nosort: boolean
   cwd: string
   matchSet: MatchSet
   globSet: GlobSet
@@ -111,7 +110,6 @@ export class Glob<Opts extends GlobOptions> {
     this.nodir = !!opts.nodir
     this.mark = !!opts.mark
     this.nounique = !!opts.nounique
-    this.nosort = !!opts.nosort
     this.cwd = opts.cwd || ''
     this.realpath = !!opts.realpath
     this.nonull = !!opts.nonull
@@ -201,7 +199,6 @@ export class Glob<Opts extends GlobOptions> {
     this.globParts = globParts
   }
 
-  walk(): Promise<Results<Opts>>
   async walk(): Promise<Results<Opts>> {
     // Walkers always return array of Path objects, so we just have to
     // coerce them into the right shape.  It will have already called
@@ -217,7 +214,7 @@ export class Glob<Opts extends GlobOptions> {
     return this.finish(matches)
   }
 
-  walkSync() {
+  walkSync(): Results<Opts> {
     const matches: Matches<Opts>[] = this.matchSet.map((set, i) => {
       const p = new Pattern(set, this.globParts[i], 0)
       return this.getWalker(p).walkSync()
@@ -240,10 +237,50 @@ export class Glob<Opts extends GlobOptions> {
     }
   }
 
-  sort(flat: string[]) {
-    return this.nosort
-      ? flat
-      : flat.sort((a, b) => a.localeCompare(b, 'en'))
+  stream(): Minipass<Result<Opts>>
+  stream(): Minipass<string | Path> {
+    const s = new Minipass<string | Path>({
+      objectMode: true,
+    }) as Minipass<Result<Opts>>
+    for (let i = 0; i < this.matchSet.length; i++) {
+      const p = new Pattern(this.matchSet[i], this.globParts[i], 0)
+      this.getStream(p).stream().pipe(s)
+    }
+    if (!this.nounique) {
+      // reset the stream so we can call multiple times.
+      this.matches = new Set() as Matches<Opts>
+      this.seen = new Set()
+      this.walked = new Map()
+    }
+    return s
+  }
+
+  streamSync(): Minipass<Result<Opts>>
+  streamSync(): Minipass<string | Path> {
+    const s = new Minipass<string | Path>({
+      objectMode: true,
+    }) as Minipass<Result<Opts>>
+    for (let i = 0; i < this.matchSet.length; i++) {
+      const p = new Pattern(this.matchSet[i], this.globParts[i], 0)
+      this.getStream(p).streamSync().pipe(s)
+    }
+    if (!this.nounique) {
+      // reset the stream so we can call multiple times.
+      this.matches = new Set() as Matches<Opts>
+      this.seen = new Set()
+      this.walked = new Map()
+    }
+    return s
+  }
+
+  getStream(pattern: Pattern): GlobStream<Opts> {
+    return new GlobStream<Opts>(
+      pattern,
+      this.scurry.cwd,
+      this.seen,
+      this.walked,
+      this.opts
+    )
   }
 
   getWalker(pattern: Pattern): GlobWalker<Opts> {
