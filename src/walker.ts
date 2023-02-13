@@ -283,8 +283,9 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
     })//, true)
   }
 
-  walkCB2(target: Path, patterns: Pattern[], cb: () => any) {
-    // console.error('WCB', target.fullpath(), patterns.map(p => p.globString()))
+  // returns 0-2 length array of [path, isMatch, sub patterns][]
+  getActions(target: Path, patterns: Pattern[]): [Path, boolean, Pattern[]][] {
+    const actions: [Path, boolean, Pattern[]][] = []
     const parent = target.parent || target
     const isGSWalkable = target.isDirectory()
     const isWalkable = isGSWalkable || target.canReaddir()
@@ -319,25 +320,30 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
         else if (isWalkable) targetWalkPatterns.push(rest)
       }
     }
+    if (isParentMatch || parentWalkPatterns.length) {
+      actions.push([parent, isParentMatch, parentWalkPatterns])
+    }
+    if (isTargetMatch || targetWalkPatterns.length) {
+      actions.push([target, isTargetMatch, targetWalkPatterns])
+    }
+    return actions
+  }
+
+  walkCB2(target: Path, patterns: Pattern[], cb: () => any) {
+    const actions = this.getActions(target, patterns)
     let tasks = 1
     const doneTask = () => {
       if (--tasks === 0) cb()
     }
-    if (isParentMatch && !this.seen.has(parent)) {
-      tasks++
-      this.match(parent).then(doneTask)
-    }
-    if (isTargetMatch && !this.seen.has(target)) {
-      tasks++
-      this.match(target).then(doneTask)
-    }
-    if (parentWalkPatterns.length) {
-      tasks++
-      this.walkCB(parent, parentWalkPatterns, doneTask)
-    }
-    if (targetWalkPatterns.length) {
-      tasks++
-      this.walkCB(target, targetWalkPatterns, doneTask)
+    for (const [path, isMatch, patterns] of actions) {
+      if (isMatch && !this.seen.has(path)) {
+        tasks ++
+        this.match(path).then(doneTask)
+      }
+      if (patterns.length) {
+        tasks ++
+        this.walkCB(path, patterns, doneTask)
+      }
     }
     doneTask()
   }
@@ -359,51 +365,14 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   walkCB2Sync(target: Path, patterns: Pattern[]) {
-    const parent = target.parent || target
-    const isGSWalkable = target.isDirectory()
-    const isWalkable = isGSWalkable || target.canReaddir()
-    // console.error({ isGSWalkable, isWalkable })
-    const matchGS = !target.name.startsWith('.')
-    const parentWalkPatterns: Pattern[] = []
-    const targetWalkPatterns: Pattern[] = []
-    let isParentMatch = false
-    let isTargetMatch = false
-    for (const pattern of patterns) {
-      const p = pattern.pattern()
-      const rest = pattern.rest()
-      if (p === GLOBSTAR) {
-        if (!matchGS) continue
-        if (!rest) {
-          if (isGSWalkable) targetWalkPatterns.push(pattern)
-          isTargetMatch = true
-        } else {
-          if (isGSWalkable) targetWalkPatterns.push(pattern, rest)
-        }
-      } else if (p === '..') {
-        if (!rest) isParentMatch = true
-        else parentWalkPatterns.push(rest)
-      } else if (p === '' || p === '.') {
-        if (!rest) isTargetMatch = true
-        else if (isWalkable) targetWalkPatterns.push(rest)
-      } else if (typeof p === 'string' && p === target.name) {
-        if (!rest) isTargetMatch = true
-        else if (isWalkable) targetWalkPatterns.push(rest)
-      } else if (p instanceof RegExp && p.test(target.name)) {
-        if (!rest) isTargetMatch = true
-        else if (isWalkable) targetWalkPatterns.push(rest)
+    const actions = this.getActions(target, patterns)
+    for (const [path, isMatch, patterns] of actions) {
+      if (isMatch && !this.seen.has(path)) {
+        this.matchSync(path)
       }
-    }
-    if (isParentMatch && !this.seen.has(parent)) {
-      this.matchSync(parent)
-    }
-    if (isTargetMatch && !this.seen.has(target)) {
-      this.matchSync(target)
-    }
-    if (parentWalkPatterns.length) {
-      this.walkCBSync(parent, parentWalkPatterns)
-    }
-    if (targetWalkPatterns.length) {
-      this.walkCBSync(target, targetWalkPatterns)
+      if (patterns.length) {
+        this.walkCBSync(path, patterns)
+      }
     }
   }
 
