@@ -5,14 +5,14 @@ export const globSync = (
   pattern: string | string[],
   options: GlobOptions = {}
 ): string[] =>
-  new Glob(pattern, { ...options, withFileTypes: false }).processSync()
+  new Glob(pattern, { ...options, withFileTypes: false }).walkSync()
 
 export const glob = Object.assign(
   async (
     pattern: string | string[],
     options: GlobOptions = {}
   ): Promise<string[]> =>
-    new Glob(pattern, { ...options, withFileTypes: false }).process(),
+    new Glob(pattern, { ...options, withFileTypes: false }).walk(),
   {
     sync: globSync,
     globSync,

@@ -1,47 +1,10 @@
-// TODO: ok, new algorithm for this is needed, clearly
-// forking out GlobWalkers for the set of children is just no good.
-// When not the last piece of the pattern:
-// if the pattern is a ** or regexp, we need to build a set of children
-// paths that need to be walked once the piece is consumed.
-//
-// For **, this is a Scurry walk of all directories under the path
-// For regexp, this is the children that match the regexp
-//
-// Then we iterate over that set, creating a new set of each child path
-// that matches the next part of the pattern, and so on.
-//
-// At the end, we have the set of all the child paths that matched up to
-// the last part of the pattern.
-//
-// If the last part is:
-// '', ensure they're all directories, and return
-// string, then .child it and maybe lstat
-// **, scurry walk for all entries, only walking directories
-// regexp, readdir and filter
-//
-//
-// NEW APPROACH
-// Instead of recursively forking for each new chunk of the pattern, which gets
-// a bit ridiculous when there's multiple globstars, let's try another
-// approach.
-// We just do a normal naive scurry, but where the set of possibly-matching
-// patterns serve as a filter, which we update as we descend, passing them
-// along.
-//
-// This ends up being equivalent if no globstars are present.  We just
-// walk the dirs, consuming pattern parts as they match.
-//
-// However, when we have a **, the descent gets *both* the "consumed"
-// pattern, *and* the full pattern with the **.
-//
-// Then for each child entry, for each active pattern, if it matches, then
-// it consumes the next bit of the pattern, and continues with all the patterns
-// that it matched on.  But if it's a globstar, then "consuming" means that we
-// take the full globstar pattern set, as well as the pattern set without the
-// globstar (ie, as if * was matched).
-//
-// This should result in only ever walking the tree a single time, as well as
-// filtering out walk paths that can't possibly match anything.
+// TODO: provide all the same iteration patterns that PathScurry has
+// - [x] walk
+// - [x] walkSync
+// - [ ] stream
+// - [ ] streamSync
+// - [ ] iterator
+// - [ ] iteratorSync
 
 import { GLOBSTAR } from 'minimatch'
 import { Path } from 'path-scurry'
@@ -56,7 +19,6 @@ export interface GlobWalkerOpts {
   mark?: boolean
   withFileTypes?: boolean
 }
-
 export type GWOFileTypesTrue = GlobWalkerOpts & {
   withFileTypes: true
 }
@@ -66,6 +28,7 @@ export type GWOFileTypesFalse = GlobWalkerOpts & {
 export type GWOFileTypesUnset = GlobWalkerOpts & {
   withFileTypes?: undefined
 }
+
 export type Result<O extends GlobWalkerOpts> = O extends GWOFileTypesTrue
   ? Path
   : O extends GWOFileTypesFalse
@@ -73,6 +36,7 @@ export type Result<O extends GlobWalkerOpts> = O extends GWOFileTypesTrue
   : O extends GWOFileTypesUnset
   ? string
   : Path | string
+
 export type Matches<O extends GlobWalkerOpts> = O extends GWOFileTypesTrue
   ? Set<Path>
   : O extends GWOFileTypesFalse
@@ -81,23 +45,9 @@ export type Matches<O extends GlobWalkerOpts> = O extends GWOFileTypesTrue
   ? Set<string>
   : Set<Path | string>
 
-// the "matches" set is a set of either:
-// - Path objects (if withFileTypes:true)
-// - resolved paths (if absolute:true)
-// - real paths (if realpath:true)
-// - built-up path strings (all other cases)
-
-// get the Path objects that match the pattern
-export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
+export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   path: Path
   pattern: Pattern
-  matches: O extends GWOFileTypesTrue
-    ? Set<Path>
-    : O extends GWOFileTypesFalse
-    ? Set<string>
-    : O extends GWOFileTypesUnset
-    ? Set<string>
-    : Set<Path | string>
   opts: O
   seen: Set<Path>
   walked: Map<Path, Pattern[]>
@@ -129,7 +79,55 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
       this.pattern.index++
       this.path = this.path.parent || this.path
     }
-    this.matches = (matches || new Set()) as Matches<O>
+    this.opts = {
+      absolute: !!root,
+      ...opts,
+    }
+    this.seen = seen || new Set()
+    this.walked = walked || new Map()
+  }
+}
+
+export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
+  path: Path
+  pattern: Pattern
+  matches: O extends GWOFileTypesTrue
+    ? Set<Path>
+    : O extends GWOFileTypesFalse
+    ? Set<string>
+    : O extends GWOFileTypesUnset
+    ? Set<string>
+    : Set<Path | string>
+  opts: O
+  seen: Set<Path>
+  walked: Map<Path, Pattern[]>
+
+  constructor(
+    pattern: Pattern,
+    path: Path,
+    seen: Set<Path> | undefined,
+    walked: Map<Path, Pattern[]> | undefined,
+    opts: O
+  )
+  constructor(
+    pattern: Pattern,
+    path: Path,
+    seen: Set<Path> | undefined,
+    walked: Map<Path, Pattern[]> | undefined,
+    opts: O
+  ) {
+    const root = pattern.root()
+    if (root) {
+      this.path = path.resolve(root)
+    } else {
+      this.path = path
+    }
+    this.pattern = pattern
+    while (this.pattern.pattern() === '..') {
+      this.pattern.index++
+      this.path = this.path.parent || this.path
+    }
+    this.matches = new Set() as Matches<O>
     this.opts = {
       absolute: !!root,
       ...opts,
@@ -171,7 +169,7 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
       return undefined
     }
     const needRealPath = this.opts.realpath && !rpc
-    const needStat = (this.opts.nodir || this.opts.mark) && e.isUnknown()
+    const needStat = e.isUnknown()
     if (needRealPath && needStat) {
       const r = await e.realpath().then(e => e && e.lstat())
       if (!r || this.seen.has(r) || (e.isDirectory() && this.opts.nodir)) {
@@ -189,6 +187,7 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
       if (!r || this.seen.has(r) || (r.isDirectory() && this.opts.nodir)) {
         return undefined
       }
+      return r
     } else if (this.seen.has(e) || (e.isDirectory() && this.opts.nodir)) {
       return undefined
     } else {
@@ -211,7 +210,7 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
       return undefined
     }
     const needRealPath = this.opts.realpath && !rpc
-    const needStat = (this.opts.nodir || this.opts.mark) && e.isUnknown()
+    const needStat = e.isUnknown()
     if (needRealPath && needStat) {
       const r = e.realpathSync()?.lstatSync()
       if (!r || this.seen.has(r) || (e.isDirectory() && this.opts.nodir)) {
@@ -229,6 +228,7 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
       if (!r || this.seen.has(r) || (r.isDirectory() && this.opts.nodir)) {
         return undefined
       }
+      return r
     } else if (this.seen.has(e) || (e.isDirectory() && this.opts.nodir)) {
       return undefined
     } else {
@@ -271,35 +271,6 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
     })
   }
 
-  // XXX
-  // ok just write this down then, this is getting hairy
-  //
-  // Get the list of patterns that the current target matches,
-  // and also, any that the parent matches (if the pattern is ..)
-  //
-  // If any of those matches (for self or parent) are a single
-  // part, then emit the match for them.
-  //
-  // If any matches for target have more, then walkCB with those on target
-  // If any matches for parent have more, then walkCB with those on parent
-  // but in both cases, only if the Path is walkable.
-  // When we walkCB, it's with pattern.rest() in the case of everything
-  // except globstar, which dupes both pattern and rest in the child set.
-  //
-  // So, for both target and parent:
-  // 1 all that match and have more and start with **
-  // 2 all that match and have more and do not start with **
-  // 3 all that match and do not have more and are **
-  // 4 all that match and do not have more and are not **
-  // if dir:
-  // - walk with all (1) duped+subbed, all (2) subbed, all (3) duped
-  // - match if any (3) or (4)
-  // if walkable:
-  // - walk with all (1) subbed, all (2) subbed
-  // - match if any (3) or (4)
-  // else:
-  // - match if any (3) or (4)
-
   walkCB(target: Path, patterns: Pattern[], cb: () => any) {
     // don't readdir just to get a string match, wasteful
     if (patterns.length === 1) {
@@ -312,8 +283,16 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
         target = target.child(p)
         patterns[0] = rest
       }
+      // if the last item is ALSO a string, then just match it.
+      p = patterns[0].pattern()
+      if (typeof p === 'string' && !patterns[0].hasMore()) {
+        this.match(target.child(p)).then(cb)
+        return
+      }
     }
 
+    // skip the readdir if we can't read it, eg if it's a full
+    // path to a file or something.
     target.readdirCB((_, entries) => {
       let tasks = 1
       const next = () => {
@@ -358,7 +337,7 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
       } else if (p === '' || p === '.') {
         if (!rest) isTargetMatch = true
         else if (isWalkable) targetWalkPatterns.push(rest)
-      } else if (typeof p === 'string' && p === target.name) {
+      } else if (typeof p === 'string' && target.isNamed(p)) {
         if (!rest) isTargetMatch = true
         else if (isWalkable) targetWalkPatterns.push(rest)
       } else if (p instanceof RegExp && p.test(target.name)) {
@@ -422,8 +401,16 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
         target = target.child(p)
         patterns[0] = rest
       }
+      // if the last item is ALSO a string, then just match it.
+      p = patterns[0].pattern()
+      if (typeof p === 'string' && !patterns[0].hasMore()) {
+        this.matchSync(target.child(p))
+        return
+      }
     }
 
+    // skip the readdir if we can't read it, eg if it's a full
+    // path to a file or something.
     const entries = target.readdirSync()
     for (const e of entries) {
       this.walkCB2Sync(e, patterns)
@@ -442,33 +429,6 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
       if (patterns.length) {
         this.walkCBSync(path, patterns)
       }
-    }
-  }
-
-  async maybeMatchPath(): Promise<void> {
-    if (this.path.isUnknown()) {
-      const lsc = this.path.lstatCached()
-      if (lsc) {
-        return this.match(lsc)
-      } else {
-        return this.path.lstat().then(p => p && this.match(p))
-      }
-    } else {
-      return this.match(this.path)
-    }
-  }
-
-  maybeMatchPathSync() {
-    if (this.path.isUnknown()) {
-      const lsc = this.path.lstatCached()
-      if (lsc) {
-        this.matchSync(lsc)
-      } else {
-        const p = this.path.lstatSync()
-        if (p) this.matchSync(p)
-      }
-    } else {
-      this.matchSync(this.path)
     }
   }
 }

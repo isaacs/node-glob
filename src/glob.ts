@@ -14,6 +14,15 @@ type MatchSet = Minimatch['set']
 type GlobSet = Exclude<Minimatch['globSet'], undefined>
 type GlobParts = Exclude<Minimatch['globParts'], undefined>
 
+// if no process global, just call it linux.
+// so we default to case-sensitive, / separators
+const defaultPlatform =
+  typeof process === 'object' &&
+  process &&
+  typeof process.platform === 'string'
+    ? process.platform
+    : 'linux'
+
 export interface GlobOptions extends MinimatchOptions {
   ignore?: string | string[] | Ignore
   follow?: boolean
@@ -152,7 +161,7 @@ export class Glob<Opts extends GlobOptions> {
 
     this.pattern = pattern
 
-    this.platform = opts.platform || process.platform
+    this.platform = opts.platform || defaultPlatform
     if (opts.scurry) {
       this.scurry = opts.scurry
     } else {
@@ -192,8 +201,8 @@ export class Glob<Opts extends GlobOptions> {
     this.globParts = globParts
   }
 
-  process(): Promise<Results<Opts>>
-  async process(): Promise<Results<Opts>> {
+  walk(): Promise<Results<Opts>>
+  async walk(): Promise<Results<Opts>> {
     // Walkers always return array of Path objects, so we just have to
     // coerce them into the right shape.  It will have already called
     // realpath() if the option was set to do so, so we know that's cached.
@@ -208,7 +217,7 @@ export class Glob<Opts extends GlobOptions> {
     return this.finish(matches)
   }
 
-  processSync() {
+  walkSync() {
     const matches: Matches<Opts>[] = this.matchSet.map((set, i) => {
       const p = new Pattern(set, this.globParts[i], 0)
       return this.getWalker(p).walkSync()
@@ -241,7 +250,6 @@ export class Glob<Opts extends GlobOptions> {
     return new GlobWalker<Opts>(
       pattern,
       this.scurry.cwd,
-      this.matches,
       this.seen,
       this.walked,
       this.opts
