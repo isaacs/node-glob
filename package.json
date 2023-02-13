@@ -59,7 +59,7 @@
   },
   "dependencies": {
     "fs.realpath": "^1.0.0",
-    "minimatch": "^6.1.8",
+    "minimatch": "^6.1.9",
     "path-scurry": "^1.3.0"
   },
   "devDependencies": {
