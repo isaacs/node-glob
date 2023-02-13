@@ -1,5 +1,11 @@
 import { Minimatch, MinimatchOptions } from 'minimatch'
-import { Path, PathScurry } from 'path-scurry'
+import {
+  Path,
+  PathScurry,
+  PathScurryDarwin,
+  PathScurryPosix,
+  PathScurryWin32,
+} from 'path-scurry'
 import { Ignore } from './ignore.js'
 import { Pattern } from './pattern.js'
 import { GlobWalker, Matches } from './walker.js'
@@ -20,6 +26,7 @@ export interface GlobOptions extends MinimatchOptions {
   absolute?: boolean
   withFileTypes?: boolean
   scurry?: PathScurry
+  platform?: typeof process.platform
 }
 
 export type GlobOptionsWithFileTypesTrue = GlobOptions & {
@@ -73,9 +80,11 @@ export class Glob<Opts extends GlobOptions> {
   noglobstar: boolean
   matches?: Matches<Opts>
   seen?: Set<Path>
+  walked?: Map<Path, Pattern[]>
   nocase?: boolean
   scurry: PathScurry
   opts: Opts
+  platform?: typeof process.platform
 
   constructor(pattern: string | string[], opts: Opts) {
     this.withFileTypes = !!opts.withFileTypes as FileTypes<Opts>
@@ -119,6 +128,7 @@ export class Glob<Opts extends GlobOptions> {
     if (!this.nounique) {
       this.matches = new Set() as Matches<Opts>
       this.seen = new Set()
+      this.walked = new Map()
     }
 
     if (typeof pattern === 'string') {
@@ -142,11 +152,29 @@ export class Glob<Opts extends GlobOptions> {
 
     this.pattern = pattern
 
+    this.platform = opts.platform || process.platform
+    if (opts.scurry) {
+      this.scurry = opts.scurry
+    } else {
+      const Scurry =
+        opts.platform === 'win32'
+          ? PathScurryWin32
+          : opts.platform === 'darwin'
+          ? PathScurryDarwin
+          : opts.platform
+          ? PathScurryPosix
+          : PathScurry
+      this.scurry = new Scurry(this.cwd, { nocase: opts.nocase })
+    }
+
     const mmo: MinimatchOptions = {
+      // default nocase based on platform
+      nocase: this.scurry.nocase,
       ...opts,
       nonegate: true,
       nocomment: true,
       preserveMultipleSlashes: true,
+      nocaseMagicOnly: true,
     }
 
     const mms = this.pattern.map(p => new Minimatch(p, mmo))
@@ -162,8 +190,6 @@ export class Glob<Opts extends GlobOptions> {
     this.matchSet = matchSet
     this.globSet = globSet
     this.globParts = globParts
-    this.scurry =
-      opts.scurry || new PathScurry(this.cwd, { nocase: opts.nocase })
   }
 
   process(): Promise<Results<Opts>>
@@ -172,7 +198,6 @@ export class Glob<Opts extends GlobOptions> {
     // coerce them into the right shape.  It will have already called
     // realpath() if the option was set to do so, so we know that's cached.
     // start out knowing the cwd, at least
-    await this.scurry.lstat()
     const matches: Matches<Opts>[] = await Promise.all(
       this.matchSet.map(async (set, i) => {
         const p = new Pattern(set, this.globParts[i], 0)
@@ -184,8 +209,6 @@ export class Glob<Opts extends GlobOptions> {
   }
 
   processSync() {
-    // start out knowing the cwd, at least
-    this.scurry.lstatSync()
     const matches: Matches<Opts>[] = this.matchSet.map((set, i) => {
       const p = new Pattern(set, this.globParts[i], 0)
       return this.getWalker(p).walkSync()
@@ -220,6 +243,7 @@ export class Glob<Opts extends GlobOptions> {
       this.scurry.cwd,
       this.matches,
       this.seen,
+      this.walked,
       this.opts
     )
   }

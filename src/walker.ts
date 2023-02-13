@@ -47,7 +47,7 @@ import { GLOBSTAR } from 'minimatch'
 import { Path } from 'path-scurry'
 
 // a single minimatch set entry with 1 or more parts
-import { Pattern } from './pattern.js'
+import { MMPattern, Pattern } from './pattern.js'
 
 export interface GlobWalkerOpts {
   absolute?: boolean
@@ -100,12 +100,14 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
     : Set<Path | string>
   opts: O
   seen: Set<Path>
+  walked: Map<Path, Pattern[]>
 
   constructor(
     pattern: Pattern,
     path: Path,
     matches: Matches<O> | undefined,
     seen: Set<Path> | undefined,
+    walked: Map<Path, Pattern[]> | undefined,
     opts: O
   )
   constructor(
@@ -113,13 +115,43 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
     path: Path,
     matches: Matches<O> | undefined,
     seen: Set<Path> | undefined,
+    walked: Map<Path, Pattern[]> | undefined,
     opts: O
   ) {
+    const root = pattern.root()
+    if (root) {
+      this.path = path.resolve(root)
+    } else {
+      this.path = path
+    }
     this.pattern = pattern
-    this.path = path
+    while (this.pattern.pattern() === '..') {
+      this.pattern.index++
+      this.path = this.path.parent || this.path
+    }
     this.matches = (matches || new Set()) as Matches<O>
-    this.opts = opts
+    this.opts = {
+      absolute: !!root,
+      ...opts,
+    }
     this.seen = seen || new Set()
+    this.walked = walked || new Map()
+  }
+
+  newWalks(target: Path, patterns: Pattern[]): Pattern[] {
+    const walked = this.walked.get(target)
+    if (!walked) {
+      this.walked.set(target, patterns)
+      return patterns
+    }
+    const todo: Pattern[] = []
+    for (const p of patterns) {
+      if (!walked.includes(p)) {
+        todo.push(p)
+        walked.push(p)
+      }
+    }
+    return todo
   }
 
   // do the requisite realpath/stat checking, and return true/false
@@ -269,7 +301,19 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
   // - match if any (3) or (4)
 
   walkCB(target: Path, patterns: Pattern[], cb: () => any) {
-    // console.error('WCB2', target.relative(), patterns.map(p => p.globString()))
+    // don't readdir just to get a string match, wasteful
+    if (patterns.length === 1) {
+      let p: MMPattern
+      let rest: Pattern | null
+      while (
+        typeof (p = patterns[0].pattern()) === 'string' &&
+        (rest = patterns[0].rest())
+      ) {
+        target = target.child(p)
+        patterns[0] = rest
+      }
+    }
+
     target.readdirCB((_, entries) => {
       let tasks = 1
       const next = () => {
@@ -280,16 +324,18 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
         this.walkCB2(e, patterns, next)
       }
       next()
-    })//, true)
+    }, true)
   }
 
   // returns 0-2 length array of [path, isMatch, sub patterns][]
-  getActions(target: Path, patterns: Pattern[]): [Path, boolean, Pattern[]][] {
+  getActions(
+    target: Path,
+    patterns: Pattern[]
+  ): [Path, boolean, Pattern[]][] {
     const actions: [Path, boolean, Pattern[]][] = []
     const parent = target.parent || target
     const isGSWalkable = target.isDirectory()
     const isWalkable = isGSWalkable || target.canReaddir()
-    // console.error({ isGSWalkable, isWalkable })
     const matchGS = !target.name.startsWith('.')
     const parentWalkPatterns: Pattern[] = []
     const targetWalkPatterns: Pattern[] = []
@@ -321,7 +367,11 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
       }
     }
     if (isParentMatch || parentWalkPatterns.length) {
-      actions.push([parent, isParentMatch, parentWalkPatterns])
+      actions.push([
+        parent,
+        isParentMatch,
+        this.newWalks(parent, parentWalkPatterns),
+      ])
     }
     if (isTargetMatch || targetWalkPatterns.length) {
       actions.push([target, isTargetMatch, targetWalkPatterns])
@@ -330,18 +380,21 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   walkCB2(target: Path, patterns: Pattern[], cb: () => any) {
-    const actions = this.getActions(target, patterns)
+    const actions = this.getActions(
+      target,
+      this.newWalks(target, patterns)
+    )
     let tasks = 1
     const doneTask = () => {
       if (--tasks === 0) cb()
     }
     for (const [path, isMatch, patterns] of actions) {
       if (isMatch && !this.seen.has(path)) {
-        tasks ++
+        tasks++
         this.match(path).then(doneTask)
       }
       if (patterns.length) {
-        tasks ++
+        tasks++
         this.walkCB(path, patterns, doneTask)
       }
     }
@@ -358,6 +411,19 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   walkCBSync(target: Path, patterns: Pattern[]) {
+    // don't readdir just to get a string match, wasteful
+    if (patterns.length === 1) {
+      let p: MMPattern
+      let rest: Pattern | null
+      while (
+        typeof (p = patterns[0].pattern()) === 'string' &&
+        (rest = patterns[0].rest())
+      ) {
+        target = target.child(p)
+        patterns[0] = rest
+      }
+    }
+
     const entries = target.readdirSync()
     for (const e of entries) {
       this.walkCB2Sync(e, patterns)
@@ -365,7 +431,10 @@ export class GlobWalker<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   walkCB2Sync(target: Path, patterns: Pattern[]) {
-    const actions = this.getActions(target, patterns)
+    const actions = this.getActions(
+      target,
+      this.newWalks(target, patterns)
+    )
     for (const [path, isMatch, patterns] of actions) {
       if (isMatch && !this.seen.has(path)) {
         this.matchSync(path)

@@ -4,6 +4,7 @@ set -e
 
 patterns=(
   './**/?/**/?/**/?/**/?/**/*.txt'
+  './*/**/../*/**/../*/**/../*/**/../*/**/../*/**/../*/**/../*/**/*.txt'
   './*/**/../*/**/../*/**/../*/**/../*/**/*.txt'
   './**/0/**/../[01]/**/0/../**/0/*.txt'
   '**/????/????/????/????/*.txt'
@@ -115,19 +116,19 @@ MJS
 MJS
   t node "$wd/bench-working-dir/globby-async.mjs" "$p"
 
-  echo -n $'node current glob.sync cjs    \t'
-  cat > "$wd/bench-working-dir/sync.cjs" <<CJS
-  const glob = require("$wd/dist/cjs/index-cjs.js")
-  console.log(glob.sync(process.argv[2]).length)
-CJS
-  t node "$wd/bench-working-dir/sync.cjs" "$p"
-
-  echo -n $'node current glob async cjs   \t'
-  cat > "$wd/bench-working-dir/async.cjs" <<CJS
-  const glob = require("$wd/dist/cjs/index-cjs.js")
-  glob(process.argv[2]).then(files => console.log(files.length))
-CJS
-  t node "$wd/bench-working-dir/async.cjs" "$p"
+#  echo -n $'node current glob.sync cjs    \t'
+#  cat > "$wd/bench-working-dir/sync.cjs" <<CJS
+#  const glob = require("$wd/dist/cjs/index-cjs.js")
+#  console.log(glob.sync(process.argv[2]).length)
+#CJS
+#  t node "$wd/bench-working-dir/sync.cjs" "$p"
+#
+#  echo -n $'node current glob async cjs   \t'
+#  cat > "$wd/bench-working-dir/async.cjs" <<CJS
+#  const glob = require("$wd/dist/cjs/index-cjs.js")
+#  glob(process.argv[2]).then(files => console.log(files.length))
+#CJS
+#  t node "$wd/bench-working-dir/async.cjs" "$p"
 
   echo -n $'node current glob.sync mjs    \t'
   cat > "$wd/bench-working-dir/sync.mjs" <<MJS

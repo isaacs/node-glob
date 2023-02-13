@@ -50,7 +50,6 @@ export class Pattern {
     }
     this.length = patternList.length
     if (index >= this.length) {
-      //console.error('P', [index, globList])
       throw new TypeError('index out of range')
     }
     this.patternList = patternList
@@ -112,10 +111,6 @@ export class Pattern {
 
   hasMore(): boolean {
     return this.length > this.index + 1
-  }
-
-  copy(): Pattern {
-    return new Pattern(this.patternList, this.globList, this.index)
   }
 
   rest(): Pattern | null {
