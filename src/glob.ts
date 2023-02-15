@@ -93,6 +93,7 @@ export class Glob<Opts extends GlobOptions> {
   scurry: PathScurry
   opts: Opts
   platform?: typeof process.platform
+  patterns: Pattern[]
 
   constructor(pattern: string | string[], opts: Opts) {
     this.withFileTypes = !!opts.withFileTypes as FileTypes<Opts>
@@ -194,6 +195,10 @@ export class Glob<Opts extends GlobOptions> {
       },
       [[], [], []]
     )
+    this.patterns = matchSet
+      .map((set, i) => new Pattern(set, globParts[i], 0))
+      .map(p => p.expandGlobstarDotDot())
+      .reduce((set: Pattern[], p) => set.concat(p), [])
     this.matchSet = matchSet
     this.globSet = globSet
     this.globParts = globParts
@@ -204,92 +209,43 @@ export class Glob<Opts extends GlobOptions> {
     // coerce them into the right shape.  It will have already called
     // realpath() if the option was set to do so, so we know that's cached.
     // start out knowing the cwd, at least
-    const matches: Matches<Opts>[] = await Promise.all(
-      this.matchSet.map(async (set, i) => {
-        const p = new Pattern(set, this.globParts[i], 0)
-        return await this.getWalker(p).walk()
-      })
+    const walker = new GlobWalker(
+      this.patterns,
+      this.scurry.cwd,
+      this.opts
     )
-    // TODO: nonull filling in the blanks
-    return this.finish(matches)
+    return this.finish(await walker.walk())
   }
 
   walkSync(): Results<Opts> {
-    const matches: Matches<Opts>[] = this.matchSet.map((set, i) => {
-      const p = new Pattern(set, this.globParts[i], 0)
-      return this.getWalker(p).walkSync()
-    })
-    return this.finish(matches)
+    const walker = new GlobWalker(
+      this.patterns,
+      this.scurry.cwd,
+      this.opts
+    )
+    return this.finish(walker.walkSync())
   }
 
-  finish(matches: Matches<Opts>[]): Results<Opts>
-  finish(matches: Set<Path | string>[]): (string | Path)[] {
-    if (this.nounique) {
-      const raw: (string | Path)[] = []
-      for (const set of matches) {
-        for (const e of set) {
-          raw.push(e)
-        }
-      }
-      return raw
-    } else {
-      return [...matches[0]]
-    }
+  finish(matches: Matches<Opts>): Results<Opts>
+  finish(matches: Set<Path | string>): (string | Path)[] {
+    return [...matches]
   }
 
   stream(): Minipass<Result<Opts>>
   stream(): Minipass<string | Path> {
-    const s = new Minipass<string | Path>({
-      objectMode: true,
-    }) as Minipass<Result<Opts>>
-    for (let i = 0; i < this.matchSet.length; i++) {
-      const p = new Pattern(this.matchSet[i], this.globParts[i], 0)
-      this.getStream(p).stream().pipe(s)
-    }
-    if (!this.nounique) {
-      // reset the stream so we can call multiple times.
-      this.matches = new Set() as Matches<Opts>
-      this.seen = new Set()
-      this.walked = new Map()
-    }
-    return s
+    return new GlobStream(
+      this.patterns,
+      this.scurry.cwd,
+      this.opts
+    ).stream()
   }
 
   streamSync(): Minipass<Result<Opts>>
   streamSync(): Minipass<string | Path> {
-    const s = new Minipass<string | Path>({
-      objectMode: true,
-    }) as Minipass<Result<Opts>>
-    for (let i = 0; i < this.matchSet.length; i++) {
-      const p = new Pattern(this.matchSet[i], this.globParts[i], 0)
-      this.getStream(p).streamSync().pipe(s)
-    }
-    if (!this.nounique) {
-      // reset the stream so we can call multiple times.
-      this.matches = new Set() as Matches<Opts>
-      this.seen = new Set()
-      this.walked = new Map()
-    }
-    return s
-  }
-
-  getStream(pattern: Pattern): GlobStream<Opts> {
-    return new GlobStream<Opts>(
-      pattern,
+    return new GlobStream(
+      this.patterns,
       this.scurry.cwd,
-      this.seen,
-      this.walked,
       this.opts
-    )
-  }
-
-  getWalker(pattern: Pattern): GlobWalker<Opts> {
-    return new GlobWalker<Opts>(
-      pattern,
-      this.scurry.cwd,
-      this.seen,
-      this.walked,
-      this.opts
-    )
+    ).streamSync()
   }
 }

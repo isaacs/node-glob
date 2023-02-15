@@ -6,6 +6,22 @@
 // - [ ] iterator
 // - [ ] iteratorSync
 
+//  **/.. is really annoyingly slow, especially when repeated, because .. can't eliminate it.
+//  but!  <pre>/**/../<rest> is equivalent to <pre>/../<name>/**/<rest> plus <pre>/.. or in other words:  <pre>/**/./<rest> plus <pre>/../<rest>
+//  so <pre>/**/../*/**/../<rest> goes to: {<pre>/../*/**/../<rest>, <pre>/**/*/**/../<rest>}
+//  which goes to: {<pre>/../*/**/../<rest>, <pre>/*/**/**/../<rest>}
+//  {<pre>/../*/**/../<rest>, <pre>/*/**/../<rest>} then do the second **/..
+//  {<pre>/../*/**/<rest>, <pre>/../*/../<rest>, <pre>/*/../<rest>, <pre>/*/**/<rest>}
+//  {<pre>/../*/**/<rest>, <pre>/../<rest>, <pre>/<rest>, <pre>/*/**/<rest>}
+//  reordering:
+//   1                     2                  3                4
+//  {<pre>/../*/**/<rest>, <pre>/*/**/<rest>, <pre>/../<rest>, <pre>/<rest>}
+//
+//  When we walk 1, that'll end up walking over each child in 2 with **, and
+//  most of that pattern will be deduped out at some point, but we then can't
+//  rely on the Pattern objects being unique, I guess?
+
+import LRUCache from 'lru-cache'
 import { GLOBSTAR } from 'minimatch'
 import Minipass from 'minipass'
 import { Path } from 'path-scurry'
@@ -60,45 +76,25 @@ export type MatchStream<O extends GlobWalkerOpts> =
  */
 export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   path: Path
-  pattern: Pattern
+  patterns: Pattern[]
   opts: O
-  seen: Set<Path>
-  walked: Map<Path, Pattern[]>
+  seen: Set<Path> = new Set()
+  hasWalkedCache: LRUCache<Path, Pattern[]> = new LRUCache<
+    Path,
+    Pattern[]
+  >({
+    maxSize: 256,
+    sizeCalculation: v => v.length + 1,
+  })
 
   paused: boolean = false
   #onResume: (() => any)[] = []
 
-  constructor(
-    pattern: Pattern,
-    path: Path,
-    seen: Set<Path> | undefined,
-    walked: Map<Path, Pattern[]> | undefined,
-    opts: O
-  )
-  constructor(
-    pattern: Pattern,
-    path: Path,
-    seen: Set<Path> | undefined,
-    walked: Map<Path, Pattern[]> | undefined,
-    opts: O
-  ) {
-    const root = pattern.root()
-    if (root) {
-      this.path = path.resolve(root)
-    } else {
-      this.path = path
-    }
-    this.pattern = pattern
-    while (this.pattern.pattern() === '..') {
-      this.pattern.index++
-      this.path = this.path.parent || this.path
-    }
-    this.opts = {
-      absolute: !!root,
-      ...opts,
-    }
-    this.seen = seen || new Set()
-    this.walked = walked || new Map()
+  constructor(patterns: Pattern[], path: Path, opts: O)
+  constructor(patterns: Pattern[], path: Path, opts: O) {
+    this.patterns = patterns
+    this.path = path
+    this.opts = opts
   }
 
   // backpressure mechanism
@@ -118,25 +114,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     else this.#onResume.push(fn)
   }
 
-  newWalks(target: Path, patterns: Pattern[]): Pattern[] {
-    const walked = this.walked.get(target)
-    if (!walked) {
-      this.walked.set(target, patterns)
-      return patterns
-    }
-    const todo: Pattern[] = []
-    for (const p of patterns) {
-      if (!walked.includes(p)) {
-        todo.push(p)
-        walked.push(p)
-      }
-    }
-    return todo
-  }
-
   // do the requisite realpath/stat checking, and return true/false
   // to say whether to include the match or filter it out.
-  async matchCheck(e: Path): Promise<Path | undefined> {
+  async matchCheck(e: Path, ifDir: boolean): Promise<Path | undefined> {
     let rpc: Path | undefined
     if (this.opts.realpath) {
       rpc = e.realpathCached()
@@ -150,34 +130,53 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     if (e.isDirectory() && this.opts.nodir) {
       return undefined
     }
-    const needRealPath = this.opts.realpath && !rpc
+    const needRealPath = !rpc && this.opts.realpath
     const needStat = e.isUnknown()
     if (needRealPath && needStat) {
-      const r = await e.realpath().then(e => e && e.lstat())
-      if (!r || this.seen.has(r) || (e.isDirectory() && this.opts.nodir)) {
+      const r = await e.realpath().then(e => e?.lstat())
+      if (
+        !r ||
+        this.seen.has(r) ||
+        (!e.canReaddir() && ifDir) ||
+        (e.isDirectory() && this.opts.nodir)
+      ) {
         return undefined
       }
       return r
     } else if (needRealPath) {
       const r = await e.realpath()
-      if (!r || this.seen.has(r) || (e.isDirectory() && this.opts.nodir)) {
+      if (
+        !r ||
+        this.seen.has(r) ||
+        (!e.canReaddir() && ifDir) ||
+        (e.isDirectory() && this.opts.nodir)
+      ) {
         return undefined
       }
       return r
     } else if (needStat) {
       const r = await e.lstat()
-      if (!r || this.seen.has(r) || (r.isDirectory() && this.opts.nodir)) {
+      if (
+        !r ||
+        this.seen.has(r) ||
+        (!r.canReaddir() && ifDir) ||
+        (r.isDirectory() && this.opts.nodir)
+      ) {
         return undefined
       }
       return r
-    } else if (this.seen.has(e) || (e.isDirectory() && this.opts.nodir)) {
+    } else if (
+      this.seen.has(e) ||
+      (!e.canReaddir() && ifDir) ||
+      (e.isDirectory() && this.opts.nodir)
+    ) {
       return undefined
     } else {
       return e
     }
   }
 
-  matchCheckSync(e: Path): Path | undefined {
+  matchCheckSync(e: Path, ifDir: boolean): Path | undefined {
     let rpc: Path | undefined
     if (this.opts.realpath) {
       rpc = e.realpathCached()
@@ -191,27 +190,46 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     if (e.isDirectory() && this.opts.nodir) {
       return undefined
     }
-    const needRealPath = this.opts.realpath && !rpc
+    const needRealPath = !rpc && this.opts.realpath
     const needStat = e.isUnknown()
     if (needRealPath && needStat) {
       const r = e.realpathSync()?.lstatSync()
-      if (!r || this.seen.has(r) || (e.isDirectory() && this.opts.nodir)) {
+      if (
+        !r ||
+        this.seen.has(r) ||
+        (!r.canReaddir() && ifDir) ||
+        (e.isDirectory() && this.opts.nodir)
+      ) {
         return undefined
       }
       return r
     } else if (needRealPath) {
       const r = e.realpathSync()
-      if (!r || this.seen.has(r) || (e.isDirectory() && this.opts.nodir)) {
+      if (
+        !r ||
+        this.seen.has(r) ||
+        (!r.canReaddir() && ifDir) ||
+        (e.isDirectory() && this.opts.nodir)
+      ) {
         return undefined
       }
       return r
     } else if (needStat) {
       const r = e.lstatSync()
-      if (!r || this.seen.has(r) || (r.isDirectory() && this.opts.nodir)) {
+      if (
+        !r ||
+        this.seen.has(r) ||
+        (!r.canReaddir() && ifDir) ||
+        (r.isDirectory() && this.opts.nodir)
+      ) {
         return undefined
       }
       return r
-    } else if (this.seen.has(e) || (e.isDirectory() && this.opts.nodir)) {
+    } else if (
+      this.seen.has(e) ||
+      (!e.canReaddir() && ifDir) ||
+      (e.isDirectory() && this.opts.nodir)
+    ) {
       return undefined
     } else {
       return e
@@ -221,7 +239,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   abstract matchEmit(p: Result<O>): void
   abstract matchEmit(p: string | Path): void
 
-  matchFinish(e: Path) {
+  matchFinish(e: Path, absolute: boolean) {
     this.seen.add(e)
     const mark = this.opts.mark && e.isDirectory() ? '/' : ''
     // ok, we have what we need!
@@ -229,112 +247,130 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       this.matchEmit(e)
     } else if (this.opts.nodir && e.isDirectory()) {
       return
-    } else if (this.opts.absolute) {
+    } else if (this.opts.absolute || absolute) {
       this.matchEmit(e.fullpath() + mark)
     } else {
       this.matchEmit(e.relative() + mark)
     }
   }
 
-  async match(e: Path): Promise<void> {
-    const p = await this.matchCheck(e)
-    if (p) this.matchFinish(p)
+  async match(e: Path, absolute: boolean, ifDir: boolean): Promise<void> {
+    const p = await this.matchCheck(e, ifDir)
+    if (p) this.matchFinish(p, absolute)
   }
 
-  matchSync(e: Path): void {
-    const p = this.matchCheckSync(e)
-    if (p) this.matchFinish(p)
+  matchSync(e: Path, absolute: boolean, ifDir: boolean): void {
+    const p = this.matchCheckSync(e, ifDir)
+    if (p) this.matchFinish(p, absolute)
   }
 
-  // returns 0-2 length array of [path, isMatch, sub patterns][]
-  getActions(
+  hasWalked(target: Path, pattern: Pattern): boolean {
+    const cached = this.hasWalkedCache.get(target)
+    return !!cached?.includes(pattern)
+  }
+  storeWalked(target: Path, pattern: Pattern) {
+    const cached = this.hasWalkedCache.get(target)
+    if (!cached) this.hasWalkedCache.set(target, [pattern])
+    else if (!cached.includes(pattern)) cached.push(pattern)
+  }
+
+  processPatterns(
     target: Path,
     patterns: Pattern[]
-  ): [Path, boolean, Pattern[]][] {
-    const actions: [Path, boolean, Pattern[]][] = []
-    const parent = target.parent || target
-    const isGSWalkable = target.isDirectory()
-    const isWalkable = isGSWalkable || target.canReaddir()
-    const matchGS = !target.name.startsWith('.')
-    const parentWalkPatterns: Pattern[] = []
-    const targetWalkPatterns: Pattern[] = []
-    let isParentMatch = false
-    let isTargetMatch = false
-    for (const pattern of patterns) {
-      const p = pattern.pattern()
-      const rest = pattern.rest()
-      if (p === GLOBSTAR) {
-        if (!matchGS) continue
+  ): [Map<Path, Pattern[]>, Map<Path, [boolean, boolean]>] {
+    const processingSet = new Set<[Path, Pattern]>(
+      patterns
+        .filter(p => !this.hasWalked(target, p))
+        .map(p => [target, p])
+    )
+
+    // found matches, path => [absolute, ifdir]
+    const matches = new Map<Path, [boolean, boolean]>()
+
+    // map of paths to the magic-starting subwalks they need to walk
+    // first item in patterns is the filter
+    const subwalks = new Map<Path, Pattern[]>()
+
+    for (let [t, pattern] of processingSet) {
+      if (this.hasWalked(t, pattern)) continue
+      this.storeWalked(t, pattern)
+
+      // TODO: if (this.hasWalked(t, pattern)) continue
+      // TODO: update hasWalked to add the pattern to the list
+      // TODO: make hasWalked use an LRU
+      const root = pattern.root()
+      const absolute = pattern.isAbsolute()
+
+      // start absolute patterns at root
+      if (root) {
+        t = t.resolve(root)
+        const rest = pattern.rest()
         if (!rest) {
-          if (isGSWalkable) targetWalkPatterns.push(pattern)
-          isTargetMatch = true
+          matches.set(t, [true, false])
+          continue
         } else {
-          if (isGSWalkable) targetWalkPatterns.push(pattern, rest)
+          pattern = rest
         }
-      } else if (p === '..') {
-        if (!rest) isParentMatch = true
-        else parentWalkPatterns.push(rest)
-      } else if (p === '' || p === '.') {
-        if (!rest) isTargetMatch = true
-        else if (isWalkable) targetWalkPatterns.push(rest)
-      } else if (typeof p === 'string' && target.isNamed(p)) {
-        if (!rest) isTargetMatch = true
-        else if (isWalkable) targetWalkPatterns.push(rest)
-      } else if (p instanceof RegExp && p.test(target.name)) {
-        if (!rest) isTargetMatch = true
-        else if (isWalkable) targetWalkPatterns.push(rest)
+      }
+
+      // walk down strings
+      let p: MMPattern
+      let rest: Pattern | null
+      let changed = false
+      while (
+        typeof (p = pattern.pattern()) === 'string' &&
+        (rest = pattern.rest())
+      ) {
+        t = t.resolve(p)
+        pattern = rest
+        changed = true
+      }
+      rest = pattern.rest()
+      if (changed) {
+        if (this.hasWalked(t, pattern)) continue
+        this.storeWalked(t, pattern)
+      }
+
+      // now we have either a final string, or a pattern starting with magic,
+      // mounted on t.
+      if (typeof p === 'string') {
+        // must be final entry
+        const ifDir = p === '..' || p === '' || p === '.'
+        matches.set(t.resolve(p), [absolute, ifDir])
+        continue
+      } else if (p === GLOBSTAR) {
+        // if no rest, match and subwalk pattern
+        // if rest, process rest and subwalk pattern
+        const subs = subwalks.get(t)
+        if (!subs) {
+          subwalks.set(t, [pattern])
+        } else {
+          subs.push(pattern)
+        }
+        if (!rest) {
+          matches.set(t, [absolute, false])
+        } else if (!this.hasWalked(t, rest)) {
+          processingSet.add([t, rest])
+        }
+      } else if (p instanceof RegExp) {
+        const subs = subwalks.get(t)
+        if (!subs) {
+          subwalks.set(t, [pattern])
+        } else {
+          subs.push(pattern)
+        }
       }
     }
-    if (isParentMatch || parentWalkPatterns.length) {
-      actions.push([
-        parent,
-        isParentMatch,
-        this.newWalks(parent, parentWalkPatterns),
-      ])
-    }
-    if (isTargetMatch || targetWalkPatterns.length) {
-      actions.push([target, isTargetMatch, targetWalkPatterns])
-    }
-    return actions
+    return [subwalks, matches]
   }
 
   walkCB(target: Path, patterns: Pattern[], cb: () => any) {
+    this.hasWalkedCache.clear()
     if (this.paused) {
       this.onResume(() => this.walkCB(target, patterns, cb))
       return
     }
-    // don't readdir just to get a string match, wasteful
-    if (patterns.length === 1) {
-      let p: MMPattern
-      let rest: Pattern | null
-      while (
-        typeof (p = patterns[0].pattern()) === 'string' &&
-        (rest = patterns[0].rest())
-      ) {
-        target = target.child(p)
-        patterns[0] = rest
-      }
-      // if the last item is ALSO a string, then just match it.
-      p = patterns[0].pattern()
-      if (typeof p === 'string' && !patterns[0].hasMore()) {
-        this.match(target.child(p)).then(cb)
-        return
-      }
-    }
-
-    // skip the readdir if we can't read it, eg if it's a full
-    // path to a file or something.
-    target.readdirCB((_, entries) => {
-      let tasks = 1
-      const next = () => {
-        if (--tasks <= 0) cb()
-      }
-      for (const e of entries) {
-        tasks++
-        this.walkCB2(e, patterns, next)
-      }
-      next()
-    }, true)
+    this.walkCB2(target, patterns, cb)
   }
 
   walkCB2(target: Path, patterns: Pattern[], cb: () => any) {
@@ -342,25 +378,112 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       this.onResume(() => this.walkCB2(target, patterns, cb))
       return
     }
-    const actions = this.getActions(
-      target,
-      this.newWalks(target, patterns)
-    )
+    const [subwalks, matches] = this.processPatterns(target, patterns)
+
+    // done processing.  all of the above is sync, can be abstracted out.
+    // subwalks is a map of paths to the entry filters they need
+    // matches is a map of paths to [absolute, ifDir] tuples.
     let tasks = 1
-    const doneTask = () => {
+    const next = () => {
       if (--tasks === 0) cb()
     }
-    for (const [path, isMatch, patterns] of actions) {
-      if (isMatch && !this.seen.has(path)) {
-        tasks++
-        this.match(path).then(doneTask)
+
+    for (const [m, [absolute, ifDir]] of matches.entries()) {
+      tasks++
+      this.match(m, absolute, ifDir).then(() => next())
+    }
+
+    for (const [t, patterns] of subwalks.entries()) {
+      // if we can't read it, no sense trying
+      if (!t.canReaddir()) continue
+      // if they're all globstar, and it's a symlink, skip it.
+      if (
+        t.isSymbolicLink() &&
+        !patterns.some(p => p.pattern() instanceof RegExp)
+      ) {
+        continue
       }
-      if (patterns.length) {
-        tasks++
-        this.walkCB(path, patterns, doneTask)
+
+      tasks++
+      const childrenCached = t.readdirCached()
+      if (t.calledReaddir()) this.walkCB3(childrenCached, patterns, next)
+      else {
+        t.readdirCB(
+          (_, entries) => this.walkCB3(entries, patterns, next),
+          true
+        )
       }
     }
-    doneTask()
+
+    next()
+  }
+
+  filterEntries(
+    entries: Path[],
+    patterns: Pattern[]
+  ): [Map<Path, Pattern[]>, Map<Path, [boolean, boolean]>] {
+    const subwalks = new Map<Path, Pattern[]>()
+    const matches = new Map<Path, [boolean, boolean]>()
+    for (const e of entries) {
+      for (const pattern of patterns) {
+        const absolute = pattern.isAbsolute()
+        const p = pattern.pattern()
+        const rest = pattern.rest()
+        let doSub: Pattern | undefined = undefined
+        if (p === GLOBSTAR) {
+          if (e.name.startsWith('.')) continue
+          if (!rest) {
+            matches.set(e, [absolute, false])
+          } else if (e.isDirectory()) {
+            doSub = pattern
+          }
+        } else if (p instanceof RegExp) {
+          if (!p.test(e.name)) continue
+          if (!rest) {
+            matches.set(e, [absolute, false])
+          } else {
+            doSub = rest
+          }
+        } else {
+          // should never happen?
+          if (!e.isNamed(p)) continue
+          if (!rest) {
+            matches.set(e, [absolute, false])
+          } else {
+            doSub = rest
+          }
+        }
+        if (doSub && !this.hasWalked(e, doSub)) {
+          const subs = subwalks.get(e)
+          if (!subs) {
+            subwalks.set(e, [doSub])
+          } else {
+            subs.push(doSub)
+          }
+        }
+      }
+    }
+    return [subwalks, matches]
+  }
+
+  walkCB3(entries: Path[], patterns: Pattern[], cb: () => any) {
+    const [subwalks, matches] = this.filterEntries(entries, patterns)
+
+    let tasks = 1
+    const next = () => {
+      if (--tasks === 0) cb()
+    }
+
+    for (const [m, [absolute, ifDir]] of matches.entries()) {
+      tasks++
+      this.match(m, absolute, ifDir).then(() => next())
+    }
+    for (const [target, patterns] of subwalks.entries()) {
+      tasks++
+      this.walkCB2(target, patterns, next)
+    }
+
+    next()
   }
 
   walkCBSync(target: Path, patterns: Pattern[], cb: () => any) {
@@ -368,64 +491,75 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       this.onResume(() => this.walkCBSync(target, patterns, cb))
       return
     }
-    // don't readdir just to get a string match, wasteful
-    if (patterns.length === 1) {
-      let p: MMPattern
-      let rest: Pattern | null
-      while (
-        typeof (p = patterns[0].pattern()) === 'string' &&
-        (rest = patterns[0].rest())
-      ) {
-        target = target.child(p)
-        patterns[0] = rest
-      }
-      // if the last item is ALSO a string, then just match it.
-      p = patterns[0].pattern()
-      if (typeof p === 'string' && !patterns[0].hasMore()) {
-        this.matchSync(target.child(p))
-        cb()
-        return
-      }
+    if (target.isUnknown()) {
+      target.lstat().then(t => {
+        if (!t) cb()
+        else this.walkCB2Sync(t, patterns, cb)
+      })
+    } else {
+      this.walkCB2Sync(target, patterns, cb)
     }
-
-    // skip the readdir if we can't read it, eg if it's a full
-    // path to a file or something.
-    const entries = target.readdirSync()
-    let tasks = 1
-    const next = () => {
-      if (--tasks <= 0) cb()
-    }
-    for (const e of entries) {
-      tasks++
-      this.walkCB2Sync(e, patterns, next)
-    }
-    next()
   }
+
   walkCB2Sync(target: Path, patterns: Pattern[], cb: () => any) {
     if (this.paused) {
       this.onResume(() => this.walkCB2(target, patterns, cb))
       return
     }
-    const actions = this.getActions(
-      target,
-      this.newWalks(target, patterns)
-    )
+    const [subwalks, matches] = this.processPatterns(target, patterns)
+
+    // done processing.  all of the above is sync, can be abstracted out.
+    // subwalks is a map of paths to the entry filters they need
+    // matches is a map of paths to [absolute, ifDir] tuples.
     let tasks = 1
-    const doneTask = () => {
+    const next = () => {
       if (--tasks === 0) cb()
     }
-    for (const [path, isMatch, patterns] of actions) {
-      if (isMatch && !this.seen.has(path)) {
-        tasks++
-        this.matchSync(path)
-        doneTask()
-      }
-      if (patterns.length) {
-        tasks++
-        this.walkCBSync(path, patterns, doneTask)
-      }
+
+    for (const [m, [absolute, ifDir]] of matches.entries()) {
+      tasks++
+      this.matchSync(m, absolute, ifDir)
     }
-    doneTask()
+
+    for (const [t, patterns] of subwalks.entries()) {
+      // if we can't read it, no sense trying
+      if (!t.canReaddir()) continue
+      // if they're all globstar, and it's a symlink, skip it.
+      if (
+        t.isSymbolicLink() &&
+        !patterns.some(p => p.pattern() instanceof RegExp)
+      ) {
+        continue
+      }
+
+      tasks++
+      const childrenCached = t.readdirCached()
+      if (t.calledReaddir())
+        this.walkCB3Sync(childrenCached, patterns, next)
+      else this.walkCB3Sync(t.readdirSync(), patterns, next)
+    }
+
+    next()
+  }
+
+  walkCB3Sync(entries: Path[], patterns: Pattern[], cb: () => any) {
+    const [subwalks, matches] = this.filterEntries(entries, patterns)
+
+    let tasks = 1
+    const next = () => {
+      if (--tasks === 0) cb()
+    }
+
+    for (const [m, [absolute, ifDir]] of matches.entries()) {
+      tasks++
+      this.matchSync(m, absolute, ifDir)
+    }
+    for (const [target, patterns] of subwalks.entries()) {
+      tasks++
+      this.walkCB2Sync(target, patterns, next)
+    }
+
+    next()
   }
 }
 
@@ -440,14 +574,8 @@ export class GlobWalker<
     ? Set<string>
     : Set<Path | string>
 
-  constructor(
-    pattern: Pattern,
-    path: Path,
-    seen: Set<Path> | undefined,
-    walked: Map<Path, Pattern[]> | undefined,
-    opts: O
-  ) {
-    super(pattern, path, seen, walked, opts)
+  constructor(patterns: Pattern[], path: Path, opts: O) {
+    super(patterns, path, opts)
     this.matches = new Set() as Matches<O>
   }
 
@@ -457,20 +585,19 @@ export class GlobWalker<
   }
 
   async walk(): Promise<Matches<O>> {
-    const target = this.path
-    const patterns = [this.pattern]
-    if (target.isUnknown()) await target.lstat()
-    return new Promise(res => {
-      this.walkCB(target, patterns, () => res(this.matches))
-    })
+    const t = this.path.isUnknown() ? await this.path.lstat() : this.path
+    if (t) {
+      await new Promise(res => {
+        this.walkCB(t, this.patterns, () => res(this.matches))
+      })
+    }
+    return this.matches
   }
 
   walkSync(): Matches<O> {
-    const target = this.path
-    const patterns = [this.pattern]
-    if (target.isUnknown()) target.lstatSync()
+    const t = this.path.isUnknown() ? this.path.lstatSync() : this.path
     // nothing for the callback to do, because this never pauses
-    this.walkCBSync(target, patterns, () => {})
+    if (t) this.walkCBSync(t, this.patterns, () => {})
     return this.matches
   }
 }
@@ -486,14 +613,8 @@ export class GlobStream<
     ? Minipass<string>
     : Minipass<Path | string>
 
-  constructor(
-    pattern: Pattern,
-    path: Path,
-    seen: Set<Path> | undefined,
-    walked: Map<Path, Pattern[]> | undefined,
-    opts: O
-  ) {
-    super(pattern, path, seen, walked, opts)
+  constructor(patterns: Pattern[], path: Path, opts: O) {
+    super(patterns, path, opts)
     this.results = new Minipass({ objectMode: true }) as MatchStream<O>
     this.results.on('drain', () => this.resume())
   }
@@ -507,24 +628,27 @@ export class GlobStream<
 
   stream(): MatchStream<O> {
     const target = this.path
-    const patterns = [this.pattern]
     if (target.isUnknown()) {
-      target
-        .lstat()
-        .then(() =>
-          this.walkCB(target, patterns, () => this.results.end())
-        )
+      target.lstat().then(e => {
+        if (e) {
+          this.walkCB(target, this.patterns, () => this.results.end())
+        } else {
+          this.results.end()
+        }
+      })
     } else {
-      this.walkCB(target, patterns, () => this.results.end())
+      this.walkCB(target, this.patterns, () => this.results.end())
     }
     return this.results
   }
 
   streamSync(): MatchStream<O> {
-    const target = this.path
-    const patterns = [this.pattern]
-    if (target.isUnknown()) target.lstatSync()
-    this.walkCBSync(target, patterns, () => this.results.end())
+    const target = this.path.isUnknown()
+      ? this.path.lstatSync()
+      : this.path
+    if (target) {
+      this.walkCBSync(target, this.patterns, () => this.results.end())
+    }
     return this.results
   }
 }
