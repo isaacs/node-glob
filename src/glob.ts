@@ -181,13 +181,14 @@ export class Glob<Opts extends GlobOptions> {
       ...opts,
       nonegate: true,
       nocomment: true,
-      preserveMultipleSlashes: true,
       nocaseMagicOnly: true,
     }
 
+    // console.error('glob pattern arg', this.pattern)
     const mms = this.pattern.map(p => new Minimatch(p, mmo))
     const [matchSet, globSet, globParts] = mms.reduce(
       (set: [MatchSet, GlobSet, GlobParts], m) => {
+        // console.error('globparts', m.globParts)
         set[0].push(...m.set)
         set[1].push(...m.globSet)
         set[2].push(...m.globParts)
@@ -195,10 +196,10 @@ export class Glob<Opts extends GlobOptions> {
       },
       [[], [], []]
     )
-    this.patterns = matchSet
-      .map((set, i) => new Pattern(set, globParts[i], 0))
-      .map(p => p.expandGlobstarDotDot())
-      .reduce((set: Pattern[], p) => set.concat(p), [])
+    this.patterns = matchSet.map((set, i) => {
+      // console.error('globParts', globParts[i])
+      return new Pattern(set, globParts[i], 0)
+    })
     this.matchSet = matchSet
     this.globSet = globSet
     this.globParts = globParts

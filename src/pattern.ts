@@ -75,6 +75,8 @@ export class Pattern {
     if (
       this.patternList[this.#index] !== GLOBSTAR &&
       this.patternList[this.#index] !== '..' &&
+      this.patternList[this.#index] !== '.' &&
+      this.patternList[this.#index] !== '' &&
       this.patternList[this.#index + 1] === '..' &&
       this.length > this.#index + 2
     ) {
@@ -87,10 +89,10 @@ export class Pattern {
     // It won't cause any incorrect behavior on a cache miss, but it may
     // adversely affect performance in really weird cases, like lots of
     // **/.. patterns and such.
-    const key = cacheKey(index, patternList)
-    const cached = cache.get(key)
-    if (cached) return cached
-    cache.set(key, this)
+    // const key = cacheKey(index, patternList)
+    // const cached = cache.get(key)
+    // if (cached) return cached
+    // cache.set(key, this)
 
     // normalize root entries of absolute patterns on initial creation.
     if (this.#index === 0) {
@@ -152,143 +154,6 @@ export class Pattern {
   }
   isMagic(): boolean {
     return this.patternList[this.#index] instanceof RegExp
-  }
-
-  // This has to be ALL THE WAY THROUGH, and done early
-  expandGlobstarDotDot(): Pattern[] {
-    const sets: Map<string, [PatternList, GlobList]> = new Map([
-      [this.globList.join('/'), [this.patternList, this.globList]],
-    ])
-
-    let didSomething = false
-    let keepGoing = false
-    do {
-      keepGoing = false
-      for (const [globString, [patternList, globList]] of sets.entries()) {
-        // only expand up from the current index, for safety.
-        let gs: number = this.#index
-        while (-1 !== (gs = patternList.indexOf(GLOBSTAR, gs + 1))) {
-          const next = patternList[gs + 1]
-          if (next !== '..') {
-            continue
-          }
-
-          // ok, found one
-          // expand it, and replace plgl
-          sets.delete(globString)
-          didSomething = true
-          keepGoing = true
-
-          const headGL = gs === 0 ? [] : globList.slice(0, gs)
-          const headPL = gs === 0 ? [] : patternList.slice(0, gs)
-          const restGL = globList.slice(gs + 2)
-          const restPL = patternList.slice(gs + 2)
-          const dotRestGL = restGL.length ? restGL : ['.']
-          const dotRestPL = restPL.length ? restPL : ['.']
-
-          sets.set([...headGL, '**', ...dotRestGL].join('/'), [
-            [...headPL, GLOBSTAR, ...dotRestPL] as PatternList,
-            [...headGL, '**', ...dotRestGL] as GlobList,
-          ])
-          sets.set([...headGL, '..', ...restGL].join('/'), [
-            [...headPL, '..', ...restPL] as PatternList,
-            [...headGL, '..', ...restGL] as GlobList,
-          ])
-          break
-        }
-      }
-
-      for (const [globString, [patternList, globList]] of sets.entries()) {
-        let pl: PatternList = patternList
-        let gl: GlobList = globList
-        let dd: number = this.#index - 1
-        while (-1 !== (dd = patternList.indexOf('..', dd + 1))) {
-          if (dd <= this.#index) {
-            break
-          }
-          const prev = patternList[dd - 1]
-          if (prev && prev !== GLOBSTAR && prev !== '.') {
-            didSomething = true
-            keepGoing = true
-            sets.delete(globString)
-            pl = [
-              ...patternList.slice(0, dd - 1),
-              ...patternList.slice(dd + 1),
-            ] as PatternList
-            gl = [
-              ...globList.slice(0, dd - 1),
-              ...globList.slice(dd + 1),
-            ] as GlobList
-            sets.set(gl.join('/'), [pl, gl])
-            break
-          }
-        }
-      }
-      // **/*/<rest> -> */**/<rest>
-      for (const [globString, [patternList, globList]] of sets.entries()) {
-        let didSomething = false
-        for (let i = 0; i < globList.length - 2; i++) {
-          if (patternList[i] === GLOBSTAR) {
-            let j = i
-            while (j < patternList.length - 1 && globList[j + 1] === '*') {
-              j++
-            }
-            if (i !== j) {
-              didSomething = true
-              patternList[i] = patternList[j]
-              patternList[j] = GLOBSTAR
-              globList[i] = '*'
-              globList[j] = '**'
-            }
-          }
-        }
-        if (didSomething) {
-          keepGoing = true
-          sets.delete(globString)
-          sets.set(globList.join('/'), [patternList, globList])
-        }
-      }
-      // **/** => **
-      for (const [globString, [patternList, globList]] of sets.entries()) {
-        let didSomething = false
-        for (let i = 0; i < globList.length - 2; i++) {
-          if (patternList[i] === GLOBSTAR) {
-            let j = i
-            while (
-              j < patternList.length - 1 &&
-              patternList[j + 1] === GLOBSTAR
-            ) {
-              j++
-            }
-            if (i !== j) {
-              didSomething = true
-              patternList.splice(i, j - i)
-              globList.splice(i, j - i)
-            }
-          }
-        }
-        if (didSomething) {
-          keepGoing = true
-          sets.delete(globString)
-          sets.set(globList.join('/'), [patternList, globList])
-        }
-      }
-    } while (keepGoing)
-
-    if (!didSomething) return [this]
-
-    // now sets is the fully expanded versions of each
-    return [...sets.values()]
-      .map(plgl => {
-        if (!plgl) return undefined
-        const [patternList, globList] = plgl
-        const p = new Pattern(patternList, globList, this.#index)
-        p.#isAbsolute = this.#isAbsolute
-        p.#isUNC = this.#isUNC
-        p.#isDrive = this.#isDrive
-        return p
-      })
-      .filter(p => p) as Pattern[]
   }
 
   glob(): string {

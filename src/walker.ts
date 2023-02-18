@@ -21,7 +21,7 @@
 //  most of that pattern will be deduped out at some point, but we then can't
 //  rely on the Pattern objects being unique, I guess?
 
-import LRUCache from 'lru-cache'
+// import LRUCache from 'lru-cache'
 import { GLOBSTAR } from 'minimatch'
 import Minipass from 'minipass'
 import { Path } from 'path-scurry'
@@ -79,14 +79,6 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   patterns: Pattern[]
   opts: O
   seen: Set<Path> = new Set()
-  hasWalkedCache: LRUCache<Path, Pattern[]> = new LRUCache<
-    Path,
-    Pattern[]
-  >({
-    maxSize: 256,
-    sizeCalculation: v => v.length + 1,
-  })
-
   paused: boolean = false
   #onResume: (() => any)[] = []
 
@@ -264,25 +256,27 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     if (p) this.matchFinish(p, absolute)
   }
 
-  hasWalked(target: Path, pattern: Pattern): boolean {
-    const cached = this.hasWalkedCache.get(target)
-    return !!cached?.includes(pattern)
-  }
-  storeWalked(target: Path, pattern: Pattern) {
-    const cached = this.hasWalkedCache.get(target)
-    if (!cached) this.hasWalkedCache.set(target, [pattern])
-    else if (!cached.includes(pattern)) cached.push(pattern)
-  }
-
+  // TODO: this function is the hottest path here,
+  // need to optimize this.  Using a double-Map might
+  // not be the best idea. Maybe could get away with 2 arrays?
   processPatterns(
     target: Path,
     patterns: Pattern[]
   ): [Map<Path, Pattern[]>, Map<Path, [boolean, boolean]>] {
     const processingSet = new Set<[Path, Pattern]>(
       patterns
-        .filter(p => !this.hasWalked(target, p))
+        // .filter(p => !this.hasWalked(target, p))
         .map(p => [target, p])
     )
+
+    const hasWalkedCache = new Map<Path, Set<string>>()
+    const hasWalked = (target: Path, pattern: Pattern) =>
+      hasWalkedCache.get(target)?.has(pattern.globString())
+    const storeWalked = (target: Path, pattern: Pattern) => {
+      const cached = hasWalkedCache.get(target)
+      if (cached) cached.add(pattern.globString())
+      else hasWalkedCache.set(target, new Set([pattern.globString()]))
+    }
 
     // found matches, path => [absolute, ifdir]
     const matches = new Map<Path, [boolean, boolean]>()
@@ -292,12 +286,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     const subwalks = new Map<Path, Pattern[]>()
 
     for (let [t, pattern] of processingSet) {
-      if (this.hasWalked(t, pattern)) continue
-      this.storeWalked(t, pattern)
+      if (hasWalked(t, pattern)) continue
+      storeWalked(t, pattern)
 
-      // TODO: if (this.hasWalked(t, pattern)) continue
-      // TODO: update hasWalked to add the pattern to the list
-      // TODO: make hasWalked use an LRU
       const root = pattern.root()
       const absolute = pattern.isAbsolute()
 
@@ -327,8 +318,8 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       }
       rest = pattern.rest()
       if (changed) {
-        if (this.hasWalked(t, pattern)) continue
-        this.storeWalked(t, pattern)
+        if (hasWalked(t, pattern)) continue
+        storeWalked(t, pattern)
       }
 
       // now we have either a final string, or a pattern starting with magic,
@@ -349,8 +340,8 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
         }
         if (!rest) {
           matches.set(t, [absolute, false])
-        } else if (!this.hasWalked(t, rest)) {
-          processingSet.add([t, rest])
+        } else {
+          if (!hasWalked(t, rest)) processingSet.add([t, rest])
         }
       } else if (p instanceof RegExp) {
         const subs = subwalks.get(t)
@@ -365,7 +356,6 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   walkCB(target: Path, patterns: Pattern[], cb: () => any) {
-    this.hasWalkedCache.clear()
     if (this.paused) {
       this.onResume(() => this.walkCB(target, patterns, cb))
       return
@@ -395,7 +385,10 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
 
     for (const [t, patterns] of subwalks.entries()) {
       // if we can't read it, no sense trying
-      if (!t.canReaddir()) continue
+      if (!t.canReaddir()) {
+        continue
+      }
+
       // if they're all globstar, and it's a symlink, skip it.
       if (
         t.isSymbolicLink() &&
@@ -434,7 +427,8 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
           if (e.name.startsWith('.')) continue
           if (!rest) {
             matches.set(e, [absolute, false])
-          } else if (e.isDirectory()) {
+          }
+          if (e.isDirectory()) {
             doSub = pattern
           }
         } else if (p instanceof RegExp) {
@@ -453,7 +447,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
             doSub = rest
           }
         }
-        if (doSub && !this.hasWalked(e, doSub)) {
+        if (doSub /* && !this.hasWalked(e, doSub) */) {
           const subs = subwalks.get(e)
           if (!subs) {
             subwalks.set(e, [doSub])
@@ -617,13 +611,12 @@ export class GlobStream<
     super(patterns, path, opts)
     this.results = new Minipass({ objectMode: true }) as MatchStream<O>
     this.results.on('drain', () => this.resume())
+    this.results.on('resume', () => this.resume())
   }
 
   matchEmit(e: Result<O>): void
   matchEmit(e: Path | string): void {
-    if (!this.results.write(e)) {
-      this.pause()
-    }
+    if (!this.results.write(e)) this.pause()
   }
 
   stream(): MatchStream<O> {
