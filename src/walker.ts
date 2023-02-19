@@ -28,6 +28,56 @@ import { Path } from 'path-scurry'
 
 // a single minimatch set entry with 1 or more parts
 import { MMPattern, Pattern } from './pattern.js'
+import { Processor } from './processor.js'
+
+class HasWalkedCache {
+  store: Map<Path, Set<string>>
+  constructor(store: Map<Path, Set<string>> = new Map()) {
+    this.store = store
+  }
+  copy() {
+    return new HasWalkedCache(new Map(this.store))
+  }
+  hasWalked(target: Path, pattern: Pattern) {
+    return this.store.get(target)?.has(pattern.globString())
+  }
+  storeWalked(target: Path, pattern: Pattern) {
+    const cached = this.store.get(target)
+    if (cached) cached.add(pattern.globString())
+    else this.store.set(target, new Set([pattern.globString()]))
+  }
+}
+
+// bitflag of <absolute, matchifdir>
+class MatchRecord {
+  store: Map<Path, number> = new Map()
+  add(target: Path, absolute: boolean, ifDir: boolean) {
+    const n = (absolute ? 2 : 0) | (ifDir ? 1 : 0)
+    const current = this.store.get(target) || 0
+    this.store.set(target, n & current)
+  }
+  // match, absolute, ifdir
+  entries(): [Path, boolean, boolean][] {
+    return [...this.store.entries()].map(([path, n]) => [
+      path,
+      !!(n & 2),
+      !!(n & 1),
+    ])
+  }
+}
+
+class SubWalks {
+  store: Map<Path, Pattern[]> = new Map()
+  patterns: Map<string, Pattern> = new Map()
+  add(target: Path, pattern: Pattern) {
+    const subs = this.store.get(target)
+    if (subs) subs.push(pattern)
+    else this.store.set(target, [pattern])
+  }
+  entries() {
+    return this.store.entries()
+  }
+}
 
 export interface GlobWalkerOpts {
   absolute?: boolean
@@ -262,32 +312,21 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   processPatterns(
     target: Path,
     patterns: Pattern[]
-  ): [Map<Path, Pattern[]>, Map<Path, [boolean, boolean]>] {
-    const processingSet = new Set<[Path, Pattern]>(
-      patterns
-        // .filter(p => !this.hasWalked(target, p))
-        .map(p => [target, p])
-    )
+  ): [SubWalks, MatchRecord] {
+    const processingSet: [Path, Pattern][] = patterns.map(p => [target, p])
 
-    const hasWalkedCache = new Map<Path, Set<string>>()
-    const hasWalked = (target: Path, pattern: Pattern) =>
-      hasWalkedCache.get(target)?.has(pattern.globString())
-    const storeWalked = (target: Path, pattern: Pattern) => {
-      const cached = hasWalkedCache.get(target)
-      if (cached) cached.add(pattern.globString())
-      else hasWalkedCache.set(target, new Set([pattern.globString()]))
-    }
+    const hasWalkedCache = new HasWalkedCache()
 
     // found matches, path => [absolute, ifdir]
-    const matches = new Map<Path, [boolean, boolean]>()
+    const matches = new MatchRecord()
 
     // map of paths to the magic-starting subwalks they need to walk
     // first item in patterns is the filter
-    const subwalks = new Map<Path, Pattern[]>()
+    const subwalks = new SubWalks()
 
     for (let [t, pattern] of processingSet) {
-      if (hasWalked(t, pattern)) continue
-      storeWalked(t, pattern)
+      if (hasWalkedCache.hasWalked(t, pattern)) continue
+      hasWalkedCache.storeWalked(t, pattern)
 
       const root = pattern.root()
       const absolute = pattern.isAbsolute()
@@ -297,7 +336,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
         t = t.resolve(root)
         const rest = pattern.rest()
         if (!rest) {
-          matches.set(t, [true, false])
+          matches.add(t, true, false)
           continue
         } else {
           pattern = rest
@@ -318,8 +357,8 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       }
       rest = pattern.rest()
       if (changed) {
-        if (hasWalked(t, pattern)) continue
-        storeWalked(t, pattern)
+        if (hasWalkedCache.hasWalked(t, pattern)) continue
+        hasWalkedCache.storeWalked(t, pattern)
       }
 
       // now we have either a final string, or a pattern starting with magic,
@@ -327,29 +366,21 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       if (typeof p === 'string') {
         // must be final entry
         const ifDir = p === '..' || p === '' || p === '.'
-        matches.set(t.resolve(p), [absolute, ifDir])
+        matches.add(t.resolve(p), absolute, ifDir)
         continue
       } else if (p === GLOBSTAR) {
         // if no rest, match and subwalk pattern
         // if rest, process rest and subwalk pattern
-        const subs = subwalks.get(t)
-        if (!subs) {
-          subwalks.set(t, [pattern])
-        } else {
-          subs.push(pattern)
-        }
+        subwalks.add(t, pattern)
         if (!rest) {
-          matches.set(t, [absolute, false])
+          matches.add(t, absolute, false)
         } else {
-          if (!hasWalked(t, rest)) processingSet.add([t, rest])
+          if (!hasWalkedCache.hasWalked(t, rest)) {
+            processingSet.push([t, rest])
+          }
         }
       } else if (p instanceof RegExp) {
-        const subs = subwalks.get(t)
-        if (!subs) {
-          subwalks.set(t, [pattern])
-        } else {
-          subs.push(pattern)
-        }
+        subwalks.add(t, pattern)
       }
     }
     return [subwalks, matches]
@@ -360,15 +391,20 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       this.onResume(() => this.walkCB(target, patterns, cb))
       return
     }
-    this.walkCB2(target, patterns, cb)
+    this.walkCB2(target, patterns, new Processor(), cb)
   }
 
-  walkCB2(target: Path, patterns: Pattern[], cb: () => any) {
+  walkCB2(
+    target: Path,
+    patterns: Pattern[],
+    processor: Processor,
+    cb: () => any
+  ) {
     if (this.paused) {
-      this.onResume(() => this.walkCB2(target, patterns, cb))
+      this.onResume(() => this.walkCB2(target, patterns, processor, cb))
       return
     }
-    const [subwalks, matches] = this.processPatterns(target, patterns)
+    processor.processPatterns(target, patterns)
 
     // done processing.  all of the above is sync, can be abstracted out.
     // subwalks is a map of paths to the entry filters they need
@@ -378,31 +414,19 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       if (--tasks === 0) cb()
     }
 
-    for (const [m, [absolute, ifDir]] of matches.entries()) {
+    for (const [m, absolute, ifDir] of processor.matches.entries()) {
       tasks++
       this.match(m, absolute, ifDir).then(() => next())
     }
 
-    for (const [t, patterns] of subwalks.entries()) {
-      // if we can't read it, no sense trying
-      if (!t.canReaddir()) {
-        continue
-      }
-
-      // if they're all globstar, and it's a symlink, skip it.
-      if (
-        t.isSymbolicLink() &&
-        !patterns.some(p => p.pattern() instanceof RegExp)
-      ) {
-        continue
-      }
-
+    for (const t of processor.subwalkTargets()) {
       tasks++
       const childrenCached = t.readdirCached()
-      if (t.calledReaddir()) this.walkCB3(childrenCached, patterns, next)
+      if (t.calledReaddir())
+        this.walkCB3(t, childrenCached, processor, next)
       else {
         t.readdirCB(
-          (_, entries) => this.walkCB3(entries, patterns, next),
+          (_, entries) => this.walkCB3(t, entries, processor, next),
           true
         )
       }
@@ -411,70 +435,26 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     next()
   }
 
-  filterEntries(
+  walkCB3(
+    target: Path,
     entries: Path[],
-    patterns: Pattern[]
-  ): [Map<Path, Pattern[]>, Map<Path, [boolean, boolean]>] {
-    const subwalks = new Map<Path, Pattern[]>()
-    const matches = new Map<Path, [boolean, boolean]>()
-    for (const e of entries) {
-      for (const pattern of patterns) {
-        const absolute = pattern.isAbsolute()
-        const p = pattern.pattern()
-        const rest = pattern.rest()
-        let doSub: Pattern | undefined = undefined
-        if (p === GLOBSTAR) {
-          if (e.name.startsWith('.')) continue
-          if (!rest) {
-            matches.set(e, [absolute, false])
-          }
-          if (e.isDirectory()) {
-            doSub = pattern
-          }
-        } else if (p instanceof RegExp) {
-          if (!p.test(e.name)) continue
-          if (!rest) {
-            matches.set(e, [absolute, false])
-          } else {
-            doSub = rest
-          }
-        } else {
-          // should never happen?
-          if (!e.isNamed(p)) continue
-          if (!rest) {
-            matches.set(e, [absolute, false])
-          } else {
-            doSub = rest
-          }
-        }
-        if (doSub /* && !this.hasWalked(e, doSub) */) {
-          const subs = subwalks.get(e)
-          if (!subs) {
-            subwalks.set(e, [doSub])
-          } else {
-            subs.push(doSub)
-          }
-        }
-      }
-    }
-    return [subwalks, matches]
-  }
-
-  walkCB3(entries: Path[], patterns: Pattern[], cb: () => any) {
-    const [subwalks, matches] = this.filterEntries(entries, patterns)
+    processor: Processor,
+    cb: () => any
+  ) {
+    processor = processor.filterEntries(target, entries)
 
     let tasks = 1
     const next = () => {
       if (--tasks === 0) cb()
     }
 
-    for (const [m, [absolute, ifDir]] of matches.entries()) {
+    for (const [m, absolute, ifDir] of processor.matches.entries()) {
       tasks++
       this.match(m, absolute, ifDir).then(() => next())
     }
-    for (const [target, patterns] of subwalks.entries()) {
+    for (const [target, patterns] of processor.subwalks.entries()) {
       tasks++
-      this.walkCB2(target, patterns, next)
+      this.walkCB2(target, patterns, processor.child(), next)
     }
 
     next()
@@ -485,22 +465,22 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       this.onResume(() => this.walkCBSync(target, patterns, cb))
       return
     }
-    if (target.isUnknown()) {
-      target.lstat().then(t => {
-        if (!t) cb()
-        else this.walkCB2Sync(t, patterns, cb)
-      })
-    } else {
-      this.walkCB2Sync(target, patterns, cb)
-    }
+    this.walkCB2Sync(target, patterns, new Processor(), cb)
   }
 
-  walkCB2Sync(target: Path, patterns: Pattern[], cb: () => any) {
+  walkCB2Sync(
+    target: Path,
+    patterns: Pattern[],
+    processor: Processor,
+    cb: () => any
+  ) {
     if (this.paused) {
-      this.onResume(() => this.walkCB2(target, patterns, cb))
+      this.onResume(() =>
+        this.walkCB2Sync(target, patterns, processor, cb)
+      )
       return
     }
-    const [subwalks, matches] = this.processPatterns(target, patterns)
+    processor.processPatterns(target, patterns)
 
     // done processing.  all of the above is sync, can be abstracted out.
     // subwalks is a map of paths to the entry filters they need
@@ -510,47 +490,38 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       if (--tasks === 0) cb()
     }
 
-    for (const [m, [absolute, ifDir]] of matches.entries()) {
-      tasks++
+    for (const [m, absolute, ifDir] of processor.matches.entries()) {
       this.matchSync(m, absolute, ifDir)
     }
 
-    for (const [t, patterns] of subwalks.entries()) {
-      // if we can't read it, no sense trying
-      if (!t.canReaddir()) continue
-      // if they're all globstar, and it's a symlink, skip it.
-      if (
-        t.isSymbolicLink() &&
-        !patterns.some(p => p.pattern() instanceof RegExp)
-      ) {
-        continue
-      }
-
+    for (const t of processor.subwalkTargets()) {
       tasks++
-      const childrenCached = t.readdirCached()
-      if (t.calledReaddir())
-        this.walkCB3Sync(childrenCached, patterns, next)
-      else this.walkCB3Sync(t.readdirSync(), patterns, next)
+      const children = t.readdirSync()
+      this.walkCB3Sync(t, children, processor, next)
     }
 
     next()
   }
 
-  walkCB3Sync(entries: Path[], patterns: Pattern[], cb: () => any) {
-    const [subwalks, matches] = this.filterEntries(entries, patterns)
+  walkCB3Sync(
+    target: Path,
+    entries: Path[],
+    processor: Processor,
+    cb: () => any
+  ) {
+    processor = processor.filterEntries(target, entries)
 
     let tasks = 1
     const next = () => {
       if (--tasks === 0) cb()
     }
 
-    for (const [m, [absolute, ifDir]] of matches.entries()) {
-      tasks++
+    for (const [m, absolute, ifDir] of processor.matches.entries()) {
       this.matchSync(m, absolute, ifDir)
     }
-    for (const [target, patterns] of subwalks.entries()) {
+    for (const [target, patterns] of processor.subwalks.entries()) {
       tasks++
-      this.walkCB2Sync(target, patterns, next)
+      this.walkCB2Sync(target, patterns, processor.child(), next)
     }
 
     next()

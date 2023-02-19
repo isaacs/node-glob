@@ -152,7 +152,7 @@ export class Pattern {
   isGlobstarDotDot(): boolean {
     return this.isGlobstar() && this.globList[this.#index + 1] === '..'
   }
-  isMagic(): boolean {
+  isRegExp(): boolean {
     return this.patternList[this.#index] instanceof RegExp
   }
 
