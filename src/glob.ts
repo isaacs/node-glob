@@ -1,4 +1,3 @@
-import { Minimatch, MinimatchOptions } from 'minimatch'
 import Minipass from 'minipass'
 import {
   Path,
@@ -8,23 +7,22 @@ import {
   PathScurryWin32,
 } from 'path-scurry'
 import { Ignore } from './ignore.js'
+import { Matcher, MatcherOpts } from './matcher.js'
 import { Pattern } from './pattern.js'
 import { GlobStream, GlobWalker, Matches } from './walker.js'
 
-type MatchSet = Minimatch['set']
-type GlobSet = Exclude<Minimatch['globSet'], undefined>
-type GlobParts = Exclude<Minimatch['globParts'], undefined>
-
 // if no process global, just call it linux.
 // so we default to case-sensitive, / separators
+/* c8 ignore start */
 const defaultPlatform =
   typeof process === 'object' &&
   process &&
   typeof process.platform === 'string'
     ? process.platform
     : 'linux'
+/* c8 ignore stop */
 
-export interface GlobOptions extends MinimatchOptions {
+export interface GlobOptions extends MatcherOpts {
   ignore?: string | string[] | Ignore
   follow?: boolean
   mark?: boolean
@@ -77,13 +75,8 @@ export class Glob<Opts extends GlobOptions> {
   nodir: boolean
   nounique: boolean
   cwd: string
-  matchSet: MatchSet
-  globSet: GlobSet
-  globParts: GlobParts
   realpath: boolean
-  nonull: boolean
   absolute: boolean
-  matchBase: boolean
   windowsPathsNoEscape: boolean
   noglobstar: boolean
   matches?: Matches<Opts>
@@ -94,6 +87,7 @@ export class Glob<Opts extends GlobOptions> {
   opts: Opts
   platform?: typeof process.platform
   patterns: Pattern[]
+  matcher: Matcher
 
   constructor(pattern: string | string[], opts: Opts) {
     this.withFileTypes = !!opts.withFileTypes as FileTypes<Opts>
@@ -113,49 +107,28 @@ export class Glob<Opts extends GlobOptions> {
     this.nounique = !!opts.nounique
     this.cwd = opts.cwd || ''
     this.realpath = !!opts.realpath
-    this.nonull = !!opts.nonull
     this.absolute = !!opts.absolute
 
     this.noglobstar = !!opts.noglobstar
-    this.matchBase = !!opts.matchBase
 
     // if we're returning Path objects, we can't do nonull, because
     // the pattern is a string, not a Path
-    if (this.withFileTypes) {
-      if (this.nonull) {
-        throw new TypeError(
-          'cannot set nonull:true and withFileTypes:true'
-        )
-      }
-      if (this.absolute) {
-        throw new Error('cannot set absolute:true and withFileTypes:true')
-      }
+    if (this.withFileTypes && this.absolute) {
+      throw new Error('cannot set absolute:true and withFileTypes:true')
     }
 
-    // if we want unique entries, we need a single set to hold them all
-    if (!this.nounique) {
-      this.matches = new Set() as Matches<Opts>
-      this.seen = new Set()
-      this.walked = new Map()
-    }
+    this.matches = new Set() as Matches<Opts>
+    this.seen = new Set()
+    this.walked = new Map()
 
     if (typeof pattern === 'string') {
       pattern = [pattern]
     }
 
-    this.windowsPathsNoEscape =
-      !!opts.windowsPathsNoEscape ||
-      (opts as GlobOptions).allowWindowsEscape === false
+    this.windowsPathsNoEscape = !!opts.windowsPathsNoEscape
 
     if (this.windowsPathsNoEscape) {
       pattern = pattern.map(p => p.replace(/\\/g, '/'))
-    }
-
-    if (this.matchBase) {
-      if (opts.noglobstar) {
-        throw new TypeError('base matching requires globstar')
-      }
-      pattern = pattern.map(p => (p.includes('/') ? p : `**/${p}`))
     }
 
     this.pattern = pattern
@@ -175,34 +148,16 @@ export class Glob<Opts extends GlobOptions> {
       this.scurry = new Scurry(this.cwd, { nocase: opts.nocase })
     }
 
-    const mmo: MinimatchOptions = {
+    const mmo: MatcherOpts = {
       // default nocase based on platform
       nocase: this.scurry.nocase,
+      platform: this.platform,
       ...opts,
-      nonegate: true,
-      nocomment: true,
-      nocaseMagicOnly: true,
     }
 
     // console.error('glob pattern arg', this.pattern)
-    const mms = this.pattern.map(p => new Minimatch(p, mmo))
-    const [matchSet, globSet, globParts] = mms.reduce(
-      (set: [MatchSet, GlobSet, GlobParts], m) => {
-        // console.error('globparts', m.globParts)
-        set[0].push(...m.set)
-        set[1].push(...m.globSet)
-        set[2].push(...m.globParts)
-        return set
-      },
-      [[], [], []]
-    )
-    this.patterns = matchSet.map((set, i) => {
-      // console.error('globParts', globParts[i])
-      return new Pattern(set, globParts[i], 0)
-    })
-    this.matchSet = matchSet
-    this.globSet = globSet
-    this.globParts = globParts
+    this.matcher = new Matcher(this.pattern, mmo)
+    this.patterns = this.matcher.patterns
   }
 
   async walk(): Promise<Results<Opts>> {

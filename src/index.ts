@@ -1,6 +1,5 @@
 import Minipass from 'minipass'
 import { Glob, GlobOptions } from './glob.js'
-import { hasMagic } from './has-magic.js'
 
 export const globStreamSync = (
   pattern: string | string[],
@@ -37,13 +36,11 @@ export const glob = Object.assign(
     globStream,
     globStreamSync,
     Glob,
-    hasMagic,
   }
 )
 
 /* c8 ignore start */
 export { Glob } from './glob.js'
 export type { GlobOptions } from './glob.js'
-export { hasMagic } from './has-magic.js'
 export default glob
 /* c8 ignore stop */

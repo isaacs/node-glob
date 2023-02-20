@@ -1,8 +1,8 @@
 // synchronous utility for filtering entries and calculating subwalks
 
-import { GLOBSTAR, MMRegExp } from 'minimatch'
 import { Path } from 'path-scurry'
-import { MMPattern, Pattern } from './pattern.js'
+import { GLOBSTAR, MMPattern } from './matcher.js'
+import { Pattern } from './pattern.js'
 
 class HasWalkedCache {
   store: Map<string, Set<string>>
@@ -77,7 +77,7 @@ export class Processor {
 
   constructor(hasWalkedCache?: HasWalkedCache) {
     this.hasWalkedCache = hasWalkedCache
-      ? hasWalkedCache// .copy()
+      ? hasWalkedCache.copy()
       : new HasWalkedCache()
   }
 
@@ -167,54 +167,67 @@ export class Processor {
     const patterns = this.subwalks.get(parent)
     // put matches and entry walks into the results processor
     const results = this.child()
-    for (const e of entries) {
-      for (const pattern of patterns) {
-        const absolute = pattern.isAbsolute()
-        const p = pattern.pattern()
-        const rest = pattern.rest()
-        if (p === GLOBSTAR) {
-          results.testGlobstar(e, pattern, absolute)
-        } else if (p instanceof RegExp) {
-          results.testRegExp(e, p, rest, absolute)
-        } else {
-          results.testString(e, p, rest, absolute)
-        }
+    for (const pattern of patterns) {
+      const p = pattern.pattern()
+      const rest = pattern.rest()
+      const absolute = pattern.isAbsolute()
+      if (p === GLOBSTAR) {
+        results.filterGlobstar(entries, pattern, absolute)
+      } else if (typeof p === 'string') {
+        results.filterString(entries, p, rest, absolute)
+      } else {
+        results.filterRegExp(entries, p, rest, absolute)
       }
     }
     return results
   }
 
-  testGlobstar(e: Path, pattern: Pattern, absolute: boolean) {
-    if (e.name.startsWith('.')) return
-    if (!pattern.hasMore()) {
-      this.matches.add(e, absolute, false)
-    }
-    if (e.isDirectory()) {
-      this.subwalks.add(e, pattern)
+  filterGlobstar(entries: Path[], pattern: Pattern, absolute: boolean) {
+    const hasMore = pattern.hasMore()
+    for (const e of entries) {
+      if (!e.name.startsWith('.')) {
+        if (!hasMore) {
+          this.matches.add(e, absolute, false)
+        }
+        if (e.isDirectory()) {
+          this.subwalks.add(e, pattern)
+        }
+      }
     }
   }
 
-  testRegExp(
-    e: Path,
-    p: MMRegExp,
+  filterRegExp(
+    entries: Path[],
+    p: RegExp,
     rest: Pattern | null,
     absolute: boolean
   ) {
-    if (!p.test(e.name)) return
-    if (!rest) {
-      this.matches.add(e, absolute, false)
-    } else {
-      this.subwalks.add(e, rest)
+    for (const e of entries) {
+      if (p.test(e.name)) {
+        if (!rest) {
+          this.matches.add(e, absolute, false)
+        } else {
+          this.subwalks.add(e, rest)
+        }
+      }
     }
   }
 
-  testString(e: Path, p: string, rest: Pattern | null, absolute: boolean) {
-    // should never happen?
-    if (!e.isNamed(p)) return
-    if (!rest) {
-      this.matches.add(e, absolute, false)
-    } else {
-      this.subwalks.add(e, rest)
+  filterString(
+    entries: Path[],
+    p: string,
+    rest: Pattern | null,
+    absolute: boolean
+  ) {
+    for (const e of entries) {
+      // should never happen?
+      if (e.isNamed(p)) {
+        if (!rest) {
+          this.matches.add(e, absolute, false)
+        } else {
+          this.subwalks.add(e, rest)
+        }
+      }
     }
   }
 }
