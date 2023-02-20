@@ -1,24 +1,25 @@
 // synchronous utility for filtering entries and calculating subwalks
 
-import { GLOBSTAR } from 'minimatch'
+import { GLOBSTAR, MMRegExp } from 'minimatch'
 import { Path } from 'path-scurry'
 import { MMPattern, Pattern } from './pattern.js'
 
 class HasWalkedCache {
-  store: Map<Path, Set<string>>
-  constructor(store: Map<Path, Set<string>> = new Map()) {
+  store: Map<string, Set<string>>
+  constructor(store: Map<string, Set<string>> = new Map()) {
     this.store = store
   }
   copy() {
     return new HasWalkedCache(new Map(this.store))
   }
   hasWalked(target: Path, pattern: Pattern) {
-    return this.store.get(target)?.has(pattern.globString())
+    return this.store.get(target.fullpath())?.has(pattern.globString())
   }
   storeWalked(target: Path, pattern: Pattern) {
-    const cached = this.store.get(target)
+    const fullpath = target.fullpath()
+    const cached = this.store.get(fullpath)
     if (cached) cached.add(pattern.globString())
-    else this.store.set(target, new Set([pattern.globString()]))
+    else this.store.set(fullpath, new Set([pattern.globString()]))
   }
 }
 
@@ -41,7 +42,6 @@ class MatchRecord {
 
 class SubWalks {
   store: Map<Path, Pattern[]> = new Map()
-  patterns: Map<string, Pattern> = new Map()
   add(target: Path, pattern: Pattern) {
     if (!target.canReaddir()) return
     if (target.isSymbolicLink() && pattern.isGlobstar()) return
@@ -70,13 +70,15 @@ class SubWalks {
 }
 
 export class Processor {
-  hasWalked: HasWalkedCache
+  hasWalkedCache: HasWalkedCache
   matches = new MatchRecord()
   subwalks = new SubWalks()
   patterns?: Pattern[]
 
-  constructor(hasWalked?: HasWalkedCache) {
-    this.hasWalked = hasWalked ? hasWalked.copy() : new HasWalkedCache()
+  constructor(hasWalkedCache?: HasWalkedCache) {
+    this.hasWalkedCache = hasWalkedCache
+      ? hasWalkedCache// .copy()
+      : new HasWalkedCache()
   }
 
   processPatterns(target: Path, patterns: Pattern[]) {
@@ -87,8 +89,8 @@ export class Processor {
     // first item in patterns is the filter
 
     for (let [t, pattern] of processingSet) {
-      if (this.hasWalked.hasWalked(t, pattern)) continue
-      this.hasWalked.storeWalked(t, pattern)
+      if (this.hasWalkedCache.hasWalked(t, pattern)) continue
+      this.hasWalkedCache.storeWalked(t, pattern)
 
       const root = pattern.root()
       const absolute = pattern.isAbsolute()
@@ -119,8 +121,8 @@ export class Processor {
       }
       rest = pattern.rest()
       if (changed) {
-        if (this.hasWalked.hasWalked(t, pattern)) continue
-        this.hasWalked.storeWalked(t, pattern)
+        if (this.hasWalkedCache.hasWalked(t, pattern)) continue
+        this.hasWalkedCache.storeWalked(t, pattern)
       }
 
       // now we have either a final string, or a pattern starting with magic,
@@ -137,7 +139,7 @@ export class Processor {
         if (!rest) {
           this.matches.add(t, absolute, false)
         } else {
-          if (!this.hasWalked.hasWalked(t, rest)) {
+          if (!this.hasWalkedCache.hasWalked(t, rest)) {
             processingSet.push([t, rest])
           }
         }
@@ -154,12 +156,12 @@ export class Processor {
   }
 
   child() {
-    return new Processor(this.hasWalked)
+    return new Processor(this.hasWalkedCache)
   }
 
   // return a new Processor containing the subwalks for each
   // child entry, and a set of matches, and
-  // a hasWalked cache that's a copy of this one
+  // a hasWalkedCache that's a copy of this one
   // then we're going to call
   filterEntries(parent: Path, entries: Path[]): Processor {
     const patterns = this.subwalks.get(parent)
@@ -170,36 +172,49 @@ export class Processor {
         const absolute = pattern.isAbsolute()
         const p = pattern.pattern()
         const rest = pattern.rest()
-        let doSub: Pattern | undefined = undefined
         if (p === GLOBSTAR) {
-          if (e.name.startsWith('.')) continue
-          if (!rest) {
-            results.matches.add(e, absolute, false)
-          }
-          if (e.isDirectory()) {
-            doSub = pattern
-          }
+          results.testGlobstar(e, pattern, absolute)
         } else if (p instanceof RegExp) {
-          if (!p.test(e.name)) continue
-          if (!rest) {
-            results.matches.add(e, absolute, false)
-          } else {
-            doSub = rest
-          }
+          results.testRegExp(e, p, rest, absolute)
         } else {
-          // should never happen?
-          if (!e.isNamed(p)) continue
-          if (!rest) {
-            results.matches.add(e, absolute, false)
-          } else {
-            doSub = rest
-          }
-        }
-        if (doSub) {
-          results.subwalks.add(e, doSub)
+          results.testString(e, p, rest, absolute)
         }
       }
     }
     return results
+  }
+
+  testGlobstar(e: Path, pattern: Pattern, absolute: boolean) {
+    if (e.name.startsWith('.')) return
+    if (!pattern.hasMore()) {
+      this.matches.add(e, absolute, false)
+    }
+    if (e.isDirectory()) {
+      this.subwalks.add(e, pattern)
+    }
+  }
+
+  testRegExp(
+    e: Path,
+    p: MMRegExp,
+    rest: Pattern | null,
+    absolute: boolean
+  ) {
+    if (!p.test(e.name)) return
+    if (!rest) {
+      this.matches.add(e, absolute, false)
+    } else {
+      this.subwalks.add(e, rest)
+    }
+  }
+
+  testString(e: Path, p: string, rest: Pattern | null, absolute: boolean) {
+    // should never happen?
+    if (!e.isNamed(p)) return
+    if (!rest) {
+      this.matches.add(e, absolute, false)
+    } else {
+      this.subwalks.add(e, rest)
+    }
   }
 }

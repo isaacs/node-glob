@@ -2,45 +2,7 @@
 export CDPATH=
 set -e
 
-patterns=(
-  # some of these aren't particularly "representative" of real-world
-  # glob patterns, but they're here to highlight pathological perf
-  # cases that I found while working on the rewrite of this library.
-  '**'
-  '**/*.txt'
-  '**/!(0|9).txt'
-  '{**/*.txt,**/?/**/*.txt,**/?/**/?/**/*.txt,**/?/**/?/**/?/**/*.txt,**/?/**/?/**/?/**/?/**/*.txt}'
-  './{**/?{/**/?{/**/?{/**/?,,,,},,,,},,,,},,,}/**/*.txt'
-
-  './{*/**/../{*/**/../{*/**/../{*/**/../{*/**,,,,},,,,},,,,},,,,},,,,}/*.txt'
-  './*/**/../*/**/../*/**/../*/**/../*/**/../*/**/../*/**/../*/**/*.txt'
-  './*/**/../*/**/../*/**/../*/**/../*/**/*.txt'
-  './0/**/../1/**/../2/**/../3/**/../4/**/../5/**/../6/**/../7/**/*.txt'
-  './**/?/**/?/**/?/**/?/**/*.txt'
-  './**/0/**/../[01]/**/0/../**/0/*.txt'
-  '**/????/????/????/????/*.txt'
-  './**/[01]/**/[12]/**/[23]/**/[45]/**/*.txt'
-  '**/*/**/*/**/*/**/*/**'
-  # '5555/0000/**/*.txt'
-  '**/5555/0000/*.txt'
-  # '*/*/9/**/**/**/**/*/**/**/*.txt'
-  './**/*/**/*/**/*/**/*/**/*.txt'
-  './**/0/**/0/**/0/**/0/**/*.txt'
-  './**/0/**/0/**/*.txt'
-  '**/*.txt'
-  # './**/*.txt'
-  './**/**/**/**/**/**/**/**/*.txt'
-  '**/*/*.txt'
-  '**/*/**/*.txt'
-  '**/[0-9]/**/*.txt'
-  # '0/@([5-9]/*.txt|8/**)'
-  # '[0-9]/[0-9]/[0-9]/[0-9]/[0-9].txt'
-  # /**/**/**/**//////**/**//*.txt'
-  # '**/[5-9]/*.txt'
-  # '[678]/**/2.txt'
-  # '0/!(1|2)@(4|5)/**/**/**/**/*.txt'
-  # '0/!(1|2|@(4|5))/**/**/**/**/*.txt'
-)
+. patterns.sh
 
 bash make-benchmark-fixture.sh
 wd=$PWD
@@ -50,6 +12,7 @@ cd "$wd/bench-working-dir"
 cat > "$wd/bench-working-dir/package.json" <<PJ
 {
   "dependencies": {
+    "fast-glob": "3",
     "glob7": "npm:glob@7",
     "glob8": "npm:glob@8",
     "globby": "13"
@@ -68,8 +31,16 @@ tt () {
 }
 
 t () {
-  tt "$@" 2>&1 | grep real | awk -F $'\t' '{ print $2 }' || true
+  rm -f stderr stdout
+  tt "$@" 2>stderr >stdout || true
+  echo $(cat stderr | grep real | awk -F $'\t' '{ print $2 }' || true)' '\
+    $(cat stdout)
+  rm -f stderr stdout
 }
+
+# warm up the fs cache so we don't get a spurious slow first result
+bash -c 'for i in **; do :; done'
+
 
 for p in "${patterns[@]}"; do
   echo
@@ -110,6 +81,20 @@ for p in "${patterns[@]}"; do
   #   glob(process.argv[2], (er, files) => {
   #     console.log(files.length)
   #   })' "$wd/bench-working-dir/node_modules/glob8" "$p"
+
+  echo -n $'node fast-glob sync           \t'
+  cat > "$wd"/bench-working-dir/fast-glob-sync.cjs <<CJS
+    const fg = require('fast-glob')
+    console.log(fg.sync([process.argv[2]]).length)
+CJS
+  t node "$wd/bench-working-dir/fast-glob-sync.cjs" "$p"
+
+  echo -n $'node fast-glob async          \t'
+  cat > "$wd"/bench-working-dir/fast-glob-async.cjs <<CJS
+    const fg = require('fast-glob')
+    fg([process.argv[2]]).then(r => console.log(r.length))
+CJS
+  t node "$wd/bench-working-dir/fast-glob-async.cjs" "$p"
 
   echo -n $'node globby sync              \t'
   cat > "$wd"/bench-working-dir/globby-sync.mjs <<MJS
@@ -158,14 +143,20 @@ MJS
   echo -n $'node current glob syncStream  \t'
   cat > "$wd/bench-working-dir/stream-sync.mjs" <<MJS
   import glob from '$wd/dist/mjs/index.js'
-  glob.streamSync(process.argv[2]).resume()
+  let c = 0
+  glob.streamSync(process.argv[2])
+    .on('data', () => c++)
+    .on('end', () => console.log(c))
 MJS
   t node "$wd/bench-working-dir/stream-sync.mjs" "$p"
 
   echo -n $'node current glob stream      \t'
   cat > "$wd/bench-working-dir/stream.mjs" <<MJS
   import glob from '$wd/dist/mjs/index.js'
-  glob.stream(process.argv[2]).resume()
+  let c = []
+  glob.stream(process.argv[2])
+    .on('data', f => c.push(f))
+    .on('end', () => console.log(new Set(c).size))
 MJS
   t node "$wd/bench-working-dir/stream.mjs" "$p"
 

@@ -7,9 +7,6 @@ type MMRegExp = RegExp & {
 }
 export type MMPattern = string | MMRegExp | typeof GLOBSTAR
 
-import LRUCache from 'lru-cache'
-const cache = new LRUCache<string, Pattern>({ max: 256 })
-
 // an array of length >= 1
 type PatternList = [p: MMPattern, ...rest: MMPattern[]]
 type UNCPatternList = [
@@ -28,15 +25,6 @@ const isWin = process.platform === 'win32'
 const isPatternList = (pl: MMPattern[]): pl is PatternList =>
   pl.length >= 1
 const isGlobList = (gl: string[]): gl is GlobList => gl.length >= 1
-
-const cacheKey = (index: number, patternList: PatternList): string =>
-  index +
-  '\n' +
-  patternList
-    .map(p =>
-      typeof p === 'string' ? p : p instanceof RegExp ? String(p) : '**'
-    )
-    .join('\n')
 
 export class Pattern {
   readonly patternList: PatternList
@@ -82,17 +70,6 @@ export class Pattern {
     ) {
       this.#index += 2
     }
-
-    // this is not so much to save on performance but more to ensure
-    // that if we get the same pattern, we'll have the same Pattern object,
-    // since these objects are used in cache entries to prevent rewalking.
-    // It won't cause any incorrect behavior on a cache miss, but it may
-    // adversely affect performance in really weird cases, like lots of
-    // **/.. patterns and such.
-    // const key = cacheKey(index, patternList)
-    // const cached = cache.get(key)
-    // if (cached) return cached
-    // cache.set(key, this)
 
     // normalize root entries of absolute patterns on initial creation.
     if (this.#index === 0) {
