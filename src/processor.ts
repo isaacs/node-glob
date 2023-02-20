@@ -77,7 +77,7 @@ export class Processor {
 
   constructor(hasWalkedCache?: HasWalkedCache) {
     this.hasWalkedCache = hasWalkedCache
-      ? hasWalkedCache.copy()
+      ? hasWalkedCache //.copy()
       : new HasWalkedCache()
   }
 
@@ -111,14 +111,15 @@ export class Processor {
       let p: MMPattern
       let rest: Pattern | null
       let changed = false
-      while (
-        typeof (p = pattern.pattern()) === 'string' &&
-        (rest = pattern.rest())
-      ) {
-        t = t.resolve(p)
-        pattern = rest
-        changed = true
-      }
+      //while (
+      //  typeof (p = pattern.pattern()) === 'string' &&
+      //  (rest = pattern.rest())
+      //) {
+      //  t = t.resolve(p)
+      //  pattern = rest
+      //  changed = true
+      //}
+      p = pattern.pattern()
       rest = pattern.rest()
       if (changed) {
         if (this.hasWalkedCache.hasWalked(t, pattern)) continue
@@ -129,8 +130,12 @@ export class Processor {
       // mounted on t.
       if (typeof p === 'string') {
         // must be final entry
-        const ifDir = p === '..' || p === '' || p === '.'
-        this.matches.add(t.resolve(p), absolute, ifDir)
+        if (!rest) {
+          const ifDir = p === '..' || p === '' || p === '.'
+          this.matches.add(t.resolve(p), absolute, ifDir)
+        } else {
+          this.subwalks.add(t, pattern)
+        }
         continue
       } else if (p === GLOBSTAR) {
         // if no rest, match and subwalk pattern

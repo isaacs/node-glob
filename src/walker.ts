@@ -1,8 +1,8 @@
 // TODO: provide all the same iteration patterns that PathScurry has
 // - [x] walk
 // - [x] walkSync
-// - [ ] stream
-// - [ ] streamSync
+// - [x] stream
+// - [x] streamSync
 // - [ ] iterator
 // - [ ] iteratorSync
 
@@ -25,7 +25,7 @@
 import Minipass from 'minipass'
 import { Path } from 'path-scurry'
 
-import { MMPattern, GLOBSTAR } from './matcher.js'
+import { GLOBSTAR, MMPattern } from './matcher.js'
 import { Pattern } from './pattern.js'
 import { Processor } from './processor.js'
 
@@ -144,10 +144,10 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
   resume() {
     this.paused = false
-    let fn: (() => any) | undefined = undefined
-    while (!this.paused && (fn = this.#onResume.shift())) {
+    const fns = this.#onResume.slice()
+    this.#onResume.length = 0
+    for (const fn of fns) {
       fn()
-      if (this.paused) break
     }
   }
   onResume(fn: () => any) {
@@ -281,6 +281,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   abstract matchEmit(p: string | Path): void
 
   matchFinish(e: Path, absolute: boolean) {
+    if (this.seen.has(e)) return
     this.seen.add(e)
     const mark = this.opts.mark && e.isDirectory() ? '/' : ''
     // ok, we have what we need!
@@ -414,6 +415,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
 
     for (const [m, absolute, ifDir] of processor.matches.entries()) {
+      if (this.seen.has(m)) continue
       tasks++
       this.match(m, absolute, ifDir).then(() => next())
     }
@@ -448,6 +450,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
 
     for (const [m, absolute, ifDir] of processor.matches.entries()) {
+      if (this.seen.has(m)) continue
       tasks++
       this.match(m, absolute, ifDir).then(() => next())
     }
@@ -490,6 +493,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
 
     for (const [m, absolute, ifDir] of processor.matches.entries()) {
+      if (this.seen.has(m)) continue
       this.matchSync(m, absolute, ifDir)
     }
 
@@ -516,6 +520,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
 
     for (const [m, absolute, ifDir] of processor.matches.entries()) {
+      if (this.seen.has(m)) continue
       this.matchSync(m, absolute, ifDir)
     }
     for (const [target, patterns] of processor.subwalks.entries()) {
@@ -586,6 +591,7 @@ export class GlobStream<
 
   matchEmit(e: Result<O>): void
   matchEmit(e: Path | string): void {
+    if (e === '') e = '.'
     if (!this.results.write(e)) this.pause()
   }
 
