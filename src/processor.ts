@@ -101,18 +101,19 @@ export class Processor {
         }
       }
 
-      // walk down strings
       let p: MMPattern
       let rest: Pattern | null
       let changed = false
-      //while (
-      //  typeof (p = pattern.pattern()) === 'string' &&
-      //  (rest = pattern.rest())
-      //) {
-      //  t = t.resolve(p)
-      //  pattern = rest
-      //  changed = true
-      //}
+      while (
+        typeof (p = pattern.pattern()) === 'string' &&
+        (rest = pattern.rest())
+      ) {
+        const c = t.resolve(p)
+        if (c.isUnknown()) break
+        t = c
+        pattern = rest
+        changed = true
+      }
       p = pattern.pattern()
       rest = pattern.rest()
       if (changed) {
