@@ -16,7 +16,7 @@ for (const mark of marks) {
 
     t.test('Emits absolute matches if option set', async t => {
       var g = new Glob(pattern, { absolute: true })
-      const results = await g.process()
+      const results = await g.walk()
 
       t.equal(
         results.length,
@@ -30,7 +30,7 @@ for (const mark of marks) {
 
     t.test('returns absolute results synchronously', async t => {
       var g = new Glob(pattern, { absolute: true })
-      const results = g.processSync()
+      const results = g.walkSync()
 
       t.equal(
         results.length,

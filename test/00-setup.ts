@@ -4,7 +4,7 @@
 import { spawn } from 'child_process'
 import { createWriteStream, promises } from 'fs'
 import mkdirp from 'mkdirp'
-import { dirname, resolve } from 'path'
+import { join, dirname, resolve } from 'path'
 import t from 'tap'
 
 const { writeFile, symlink } = promises
@@ -153,9 +153,7 @@ export const bashResults:{ [path: string]: string[] } = ${
     // normalize discrepancies in ordering, duplication,
     // and ending slashes.
     return m
-      .map(function (m) {
-        return m.replace(/\/$/, '')
-      })
+      .map(m => join(m.replace(/\/$/, '').replace(/\/+/g, '/')))
       .sort(alphasort)
       .reduce(function (set: string[], f) {
         if (f !== set[set.length - 1]) set.push(f)
