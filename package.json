@@ -39,7 +39,7 @@
     "typedoc": "typedoc --tsconfig tsconfig-esm.json ./src/*.ts",
     "prepublish": "npm run benchclean",
     "profclean": "rm -f v8.log profile.txt",
-    "test-regen": "npm run profclean && TEST_REGEN=1 node --no-warnings --loader ts-node/esm test/00-setup.js",
+    "test-regen": "npm run profclean && TEST_REGEN=1 node --no-warnings --loader ts-node/esm test/00-setup.ts",
     "prebench": "npm run prepare",
     "bench": "bash benchmark.sh",
     "preprof": "npm run prepare",
