@@ -250,4 +250,18 @@ export class Glob<Opts extends GlobOptions> {
       this.opts
     ).streamSync()
   }
+
+  iteratorSync(): Generator<Result<Opts>, void, void> {
+    return this.streamSync()[Symbol.iterator]()
+  }
+  [Symbol.iterator]() {
+    return this.iteratorSync()
+  }
+
+  iterator(): AsyncGenerator<Result<Opts>, void, void> {
+    return this.stream()[Symbol.asyncIterator]()
+  }
+  [Symbol.asyncIterator]() {
+    return this.iterator()
+  }
 }
