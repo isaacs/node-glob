@@ -43,8 +43,9 @@ class MatchRecord {
 class SubWalks {
   store: Map<Path, Pattern[]> = new Map()
   add(target: Path, pattern: Pattern) {
-    if (!target.canReaddir()) return
-    if (target.isSymbolicLink() && pattern.isGlobstar()) return
+    if (!target.canReaddir()) {
+      return
+    }
     const subs = this.store.get(target)
     if (subs) subs.push(pattern)
     else this.store.set(target, [pattern])
@@ -56,16 +57,7 @@ class SubWalks {
     return this.keys().map(k => [k, this.store.get(k) as Pattern[]])
   }
   keys(): Path[] {
-    return [...this.store.keys()].filter(t => {
-      if (!t.canReaddir()) return false
-      if (
-        t.isSymbolicLink() &&
-        !this.store.get(t)?.some(p => p.isRegExp())
-      ) {
-        return false
-      }
-      return true
-    })
+    return [...this.store.keys()].filter(t => t.canReaddir())
   }
 }
 
@@ -89,7 +81,9 @@ export class Processor {
     // first item in patterns is the filter
 
     for (let [t, pattern] of processingSet) {
-      if (this.hasWalkedCache.hasWalked(t, pattern)) continue
+      if (this.hasWalkedCache.hasWalked(t, pattern)) {
+        continue
+      }
       this.hasWalkedCache.storeWalked(t, pattern)
 
       const root = pattern.root()
@@ -140,9 +134,14 @@ export class Processor {
       } else if (p === GLOBSTAR) {
         // if no rest, match and subwalk pattern
         // if rest, process rest and subwalk pattern
-        this.subwalks.add(t, pattern)
+        // if it's a symlink, but we didn't get here by way of a
+        // globstar match (meaning it's the first time THIS globstar
+        // has traversed a symlink), then we follow it. Otherwise, stop.
+        if (!t.isSymbolicLink() || pattern.followGlobstar()) {
+          this.subwalks.add(t, pattern)
+        }
         if (!rest) {
-          this.matches.add(t, absolute, false)
+          this.matches.add(t, absolute, true)
         } else {
           if (!this.hasWalkedCache.hasWalked(t, rest)) {
             processingSet.push([t, rest])
@@ -194,9 +193,13 @@ export class Processor {
     if (!pattern.hasMore()) {
       this.matches.add(e, absolute, false)
     }
-    if (e.isDirectory()) {
-      this.subwalks.add(e, pattern)
+    // record that this globstar is following a symlink, so we
+    // can know to stop traversing when we encounter it again
+    // in processPatterns.
+    if (e.isSymbolicLink()) {
+      pattern.followGlobstar()
     }
+    this.subwalks.add(e, pattern)
   }
 
   testRegExp(

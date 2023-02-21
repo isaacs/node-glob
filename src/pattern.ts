@@ -36,11 +36,13 @@ export class Pattern {
   #isDrive?: boolean
   #isUNC?: boolean
   #isAbsolute?: boolean
+  #globstarFollowed: number[]
 
   constructor(
     patternList: MMPattern[],
     globList: string[],
-    index: number
+    index: number,
+    globstarFollowed: number[] = []
   ) {
     if (!isPatternList(patternList)) {
       throw new TypeError('empty pattern list')
@@ -58,6 +60,7 @@ export class Pattern {
     this.patternList = patternList
     this.globList = globList
     this.#index = index
+    this.#globstarFollowed = globstarFollowed
 
     // if the current item is not globstar, and the next item is .., skip ahead
     if (
@@ -157,12 +160,24 @@ export class Pattern {
     this.#rest = new Pattern(
       this.patternList,
       this.globList,
-      this.#index + 1
+      this.#index + 1,
+      this.#globstarFollowed
     )
     this.#rest.#isAbsolute = this.#isAbsolute
     this.#rest.#isUNC = this.#isUNC
     this.#rest.#isDrive = this.#isDrive
     return this.#rest
+  }
+
+  followGlobstar(): boolean {
+    if (!this.isGlobstar()) {
+      return false
+    }
+    if (this.#globstarFollowed.includes(this.#index)) {
+      return false
+    }
+    this.#globstarFollowed.push(this.#index)
+    return true
   }
 
   // pattern like: //host/share/...
