@@ -22,11 +22,12 @@
 //  rely on the Pattern objects being unique, I guess?
 
 // import LRUCache from 'lru-cache'
+import { GLOBSTAR } from 'minimatch'
 import Minipass from 'minipass'
 import { Path } from 'path-scurry'
 
-import { GLOBSTAR, MMPattern } from './matcher.js'
-import { Pattern } from './pattern.js'
+// a single minimatch set entry with 1 or more parts
+import { MMPattern, Pattern } from './pattern.js'
 import { Processor } from './processor.js'
 
 class HasWalkedCache {

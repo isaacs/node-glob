@@ -58,14 +58,12 @@
     "endOfLine": "lf"
   },
   "dependencies": {
-    "brace-expansion": "^2.0.1",
     "fs.realpath": "^1.0.0",
     "minimatch": "^7.0.0",
     "minipass": "^4.0.3",
     "path-scurry": "^1.4.0"
   },
   "devDependencies": {
-    "@types/brace-expansion": "^1.1.0",
     "@types/mkdirp": "^1.0.2",
     "@types/node": "^18.11.18",
     "@types/tap": "^15.0.7",
