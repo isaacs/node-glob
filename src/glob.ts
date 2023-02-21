@@ -36,6 +36,7 @@ export interface GlobOptions extends MinimatchOptions {
   withFileTypes?: boolean
   scurry?: PathScurry
   platform?: typeof process.platform
+  signal?: AbortSignal
 }
 
 export type GlobOptionsWithFileTypesTrue = GlobOptions & {

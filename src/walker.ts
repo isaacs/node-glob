@@ -85,6 +85,7 @@ export interface GlobWalkerOpts {
   nodir?: boolean
   mark?: boolean
   withFileTypes?: boolean
+  signal?: AbortSignal
 }
 export type GWOFileTypesTrue = GlobWalkerOpts & {
   withFileTypes: true
@@ -130,6 +131,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   opts: O
   seen: Set<Path> = new Set()
   paused: boolean = false
+  aborted: boolean = false
   #onResume: (() => any)[] = []
 
   constructor(patterns: Pattern[], path: Path, opts: O)
@@ -137,6 +139,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     this.patterns = patterns
     this.path = path
     this.opts = opts
+    if (opts.signal) {
+      opts.signal.addEventListener('abort', () => this.abort())
+    }
   }
 
   // backpressure mechanism
@@ -144,6 +149,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     this.paused = true
   }
   resume() {
+    if (this.aborted) return
     this.paused = false
     const fns = this.#onResume.slice()
     this.#onResume.length = 0
@@ -152,8 +158,13 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
   }
   onResume(fn: () => any) {
+    if (this.aborted) return
     if (!this.paused) fn()
     else this.#onResume.push(fn)
+  }
+  abort() {
+    this.paused = true
+    this.aborted = true
   }
 
   // do the requisite realpath/stat checking, and return true/false
