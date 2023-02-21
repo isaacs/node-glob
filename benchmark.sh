@@ -69,18 +69,7 @@ for p in "${patterns[@]}"; do
   #     console.log(files.length)
   #   })' "$wd/bench-working-dir/node_modules/glob7" "$p"
 
-  # echo -n $'node glob v8 sync             \t'
-  # t node -e '
-  #   var glob=require(process.argv[1])
-  #   console.log(glob.sync(process.argv[2]).length)
-  # ' "$wd/bench-working-dir/node_modules/glob8" "$p"
-
-  # echo -n $'node glob v8 async            \t'
-  # t node -e '
-  #   var glob=require(process.argv[1])
-  #   glob(process.argv[2], (er, files) => {
-  #     console.log(files.length)
-  #   })' "$wd/bench-working-dir/node_modules/glob8" "$p"
+  echo '~~ sync ~~'
 
   echo -n $'node fast-glob sync           \t'
   cat > "$wd"/bench-working-dir/fast-glob-sync.cjs <<CJS
@@ -89,28 +78,12 @@ for p in "${patterns[@]}"; do
 CJS
   t node "$wd/bench-working-dir/fast-glob-sync.cjs" "$p"
 
-  echo -n $'node fast-glob async          \t'
-  cat > "$wd"/bench-working-dir/fast-glob-async.cjs <<CJS
-    const fg = require('fast-glob')
-    fg([process.argv[2]]).then(r => console.log(r.length))
-CJS
-  t node "$wd/bench-working-dir/fast-glob-async.cjs" "$p"
-
   echo -n $'node globby sync              \t'
   cat > "$wd"/bench-working-dir/globby-sync.mjs <<MJS
     import { globbySync } from "globby"
     console.log(globbySync([process.argv[2]]).length)
 MJS
   t node "$wd/bench-working-dir/globby-sync.mjs" "$p"
-
-  echo -n $'node globby async             \t'
-  cat > "$wd"/bench-working-dir/globby-async.mjs <<MJS
-    import { globby } from "globby"
-    globby([process.argv[2]]).then((files) => {
-      console.log(files.length)
-    })
-MJS
-  t node "$wd/bench-working-dir/globby-async.mjs" "$p"
 
 #  echo -n $'node current glob.sync cjs    \t'
 #  cat > "$wd/bench-working-dir/sync.cjs" <<CJS
@@ -126,19 +99,19 @@ MJS
 #CJS
 #  t node "$wd/bench-working-dir/async.cjs" "$p"
 
+#   echo -n $'node glob v8 sync             \t'
+#   cat > "$wd/bench-working-dir/glob-8-sync.cjs" <<CJS
+#     var glob=require('glob8')
+#     console.log(glob.sync(process.argv[2]).length)
+# CJS
+#   t node "$wd/bench-working-dir/glob-8-sync.cjs" "$p"
+
   echo -n $'node current glob.sync mjs    \t'
   cat > "$wd/bench-working-dir/sync.mjs" <<MJS
   import glob from '$wd/dist/mjs/index.js'
   console.log(glob.sync(process.argv[2]).length)
 MJS
   t node "$wd/bench-working-dir/sync.mjs" "$p"
-
-  echo -n $'node current glob async mjs   \t'
-  cat > "$wd/bench-working-dir/async.mjs" <<MJS
-  import glob from '$wd/dist/mjs/index.js'
-  glob(process.argv[2]).then(files => console.log(files.length))
-MJS
-  t node "$wd/bench-working-dir/async.mjs" "$p"
 
   echo -n $'node current glob syncStream  \t'
   cat > "$wd/bench-working-dir/stream-sync.mjs" <<MJS
@@ -150,13 +123,47 @@ MJS
 MJS
   t node "$wd/bench-working-dir/stream-sync.mjs" "$p"
 
+  echo '~~ async ~~'
+
+  echo -n $'node fast-glob async          \t'
+  cat > "$wd"/bench-working-dir/fast-glob-async.cjs <<CJS
+    const fg = require('fast-glob')
+    fg([process.argv[2]]).then(r => console.log(r.length))
+CJS
+  t node "$wd/bench-working-dir/fast-glob-async.cjs" "$p"
+
+  echo -n $'node globby async             \t'
+  cat > "$wd"/bench-working-dir/globby-async.mjs <<MJS
+    import { globby } from "globby"
+    globby([process.argv[2]]).then((files) => {
+      console.log(files.length)
+    })
+MJS
+  t node "$wd/bench-working-dir/globby-async.mjs" "$p"
+
+#   echo -n $'node glob v8 async            \t'
+#   cat > "$wd/bench-working-dir/glob-8-async.cjs" <<CJS
+#     var glob=require('glob8')
+#     glob(process.argv[2], (er, results) =>
+#       console.log(results.length)
+#     )
+# CJS
+#   t node "$wd/bench-working-dir/glob-8-async.cjs" "$p"
+
+  echo -n $'node current glob async mjs   \t'
+  cat > "$wd/bench-working-dir/async.mjs" <<MJS
+  import glob from '$wd/dist/mjs/index.js'
+  glob(process.argv[2]).then(files => console.log(files.length))
+MJS
+  t node "$wd/bench-working-dir/async.mjs" "$p"
+
   echo -n $'node current glob stream      \t'
   cat > "$wd/bench-working-dir/stream.mjs" <<MJS
   import glob from '$wd/dist/mjs/index.js'
-  let c = []
+  let c = 0
   glob.stream(process.argv[2])
-    .on('data', f => c.push(f))
-    .on('end', () => console.log(new Set(c).size))
+    .on('data', () => c++)
+    .on('end', () => console.log(c))
 MJS
   t node "$wd/bench-working-dir/stream.mjs" "$p"
 
