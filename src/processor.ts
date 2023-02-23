@@ -141,11 +141,17 @@ export class Processor {
         if (!t.isSymbolicLink() || pattern.followGlobstar()) {
           this.subwalks.add(t, pattern)
         }
-        if (!rest) {
+        const rp = rest?.pattern()
+        const rrest = rest?.rest()
+        if (!rest || ((rp === '' || rp === '.') && !rrest)) {
           this.matches.add(t, absolute, true)
         } else {
-          if (!this.hasWalkedCache.hasWalked(t, rest)) {
-            processingSet.push([t, rest])
+          if (rp === '..') {
+            const tp = t.parent || t
+            if (!rrest) this.matches.add(tp, absolute, true)
+            else if (!this.hasWalkedCache.hasWalked(tp, rrest)) {
+              this.subwalks.add(tp, rrest)
+            }
           }
         }
       } else if (p instanceof RegExp) {
@@ -178,7 +184,7 @@ export class Processor {
         const p = pattern.pattern()
         const rest = pattern.rest()
         if (p === GLOBSTAR) {
-          results.testGlobstar(e, pattern, absolute)
+          results.testGlobstar(e, pattern, rest, absolute)
         } else if (p instanceof RegExp) {
           results.testRegExp(e, p, rest, absolute)
         } else {
@@ -189,7 +195,12 @@ export class Processor {
     return results
   }
 
-  testGlobstar(e: Path, pattern: Pattern, absolute: boolean) {
+  testGlobstar(
+    e: Path,
+    pattern: Pattern,
+    rest: Pattern | null,
+    absolute: boolean
+  ) {
     if (e.name.startsWith('.')) return
     if (!pattern.hasMore()) {
       this.matches.add(e, absolute, false)
@@ -200,7 +211,24 @@ export class Processor {
     if (e.isSymbolicLink()) {
       pattern.followGlobstar()
     }
-    this.subwalks.add(e, pattern)
+    if (e.canReaddir()) {
+      this.subwalks.add(e, pattern)
+    }
+    // if the NEXT thing matches this entry, then also add
+    // the rest.
+    if (rest) {
+      const rp = rest.pattern()
+      if (
+        typeof rp === 'string' &&
+        rp !== '..' &&
+        rp !== '' &&
+        rp !== '.'
+      ) {
+        this.testString(e, rp, rest.rest(), absolute)
+      } else if (rp instanceof RegExp) {
+        this.testRegExp(e, rp, rest.rest(), absolute)
+      }
+    }
   }
 
   testRegExp(

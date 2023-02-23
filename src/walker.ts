@@ -433,12 +433,12 @@ export class GlobStream<
   O extends GlobWalkerOpts = GlobWalkerOpts
 > extends GlobUtil<O> {
   results: O extends GWOFileTypesTrue
-    ? Minipass<Path>
+    ? Minipass<Path, Path>
     : O extends GWOFileTypesFalse
-    ? Minipass<string>
+    ? Minipass<string, string>
     : O extends GWOFileTypesUnset
-    ? Minipass<string>
-    : Minipass<Path | string>
+    ? Minipass<string, string>
+    : Minipass<Path | string, Path | string>
 
   constructor(patterns: Pattern[], path: Path, opts: O) {
     super(patterns, path, opts)
