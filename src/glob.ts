@@ -95,6 +95,7 @@ export class Glob<Opts extends GlobOptions> {
   opts: Opts
   platform?: typeof process.platform
   patterns: Pattern[]
+  signal?: AbortSignal
 
   constructor(pattern: string | string[], opts: Opts) {
     this.withFileTypes = !!opts.withFileTypes as FileTypes<Opts>
@@ -107,6 +108,7 @@ export class Glob<Opts extends GlobOptions> {
       this.ignore = ignore
     }
     this.opts = opts
+    this.signal = opts.signal
     this.follow = !!opts.follow
     this.dot = !!opts.dot
     this.nodir = !!opts.nodir
@@ -183,6 +185,7 @@ export class Glob<Opts extends GlobOptions> {
       nonegate: true,
       nocomment: true,
       nocaseMagicOnly: true,
+      optimizationLevel: 2,
     }
 
     // console.error('glob pattern arg', this.pattern)

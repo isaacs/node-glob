@@ -442,14 +442,16 @@ export class GlobStream<
 
   constructor(patterns: Pattern[], path: Path, opts: O) {
     super(patterns, path, opts)
-    this.results = new Minipass({ objectMode: true }) as MatchStream<O>
+    this.results = new Minipass({
+      signal: this.opts.signal,
+      objectMode: true,
+    }) as MatchStream<O>
     this.results.on('drain', () => this.resume())
     this.results.on('resume', () => this.resume())
   }
 
   matchEmit(e: Result<O>): void
   matchEmit(e: Path | string): void {
-    if (e === '') e = '.'
     if (!this.results.write(e)) this.pause()
   }
 
