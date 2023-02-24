@@ -173,6 +173,10 @@ export class Pattern {
     if (!this.isGlobstar()) {
       return false
     }
+    // never follow a globstar if it's the first pattern in the list
+    if (this.#index === 0) {
+      return false
+    }
     if (this.#globstarFollowed.includes(this.#index)) {
       return false
     }

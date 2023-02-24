@@ -1,4 +1,7 @@
 patterns=(
+  '**'
+  '**/..'
+
   # some of these aren't particularly "representative" of real-world
   # glob patterns, but they're here to highlight pathological perf
   # cases that I found while working on the rewrite of this library.
@@ -6,7 +9,6 @@ patterns=(
   './**/[01]/**/[12]/**/[23]/**/[45]/**/*.txt'
   './**/0/**/0/**/*.txt'
 
-  '**'
   '**/*.txt'
   '{**/*.txt,**/?/**/*.txt,**/?/**/?/**/*.txt,**/?/**/?/**/?/**/*.txt,**/?/**/?/**/?/**/?/**/*.txt}'
   '**/5555/0000/*.txt'

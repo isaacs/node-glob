@@ -1,6 +1,10 @@
 import Minipass from 'minipass'
 import { Path } from 'path-scurry'
 
+// XXX can we somehow make it so that it NEVER processes a given path more than
+// once, enough that the match set tracking is no longer needed?  that'd speed
+// things up a lot.  Or maybe bring back nounique, and skip it in that case?
+
 // a single minimatch set entry with 1 or more parts
 import { Pattern } from './pattern.js'
 import { Processor } from './processor.js'
@@ -55,7 +59,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   path: Path
   patterns: Pattern[]
   opts: O
-  seen: Set<Path> = new Set()
+  seen: Set<Path> = new Set<Path>()
   paused: boolean = false
   aborted: boolean = false
   #onResume: (() => any)[] = []
@@ -76,10 +80,10 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
   resume() {
     if (this.aborted) return
+    //console.error(new Error('resume').stack, this.#onResume.length)
     this.paused = false
-    const fns = this.#onResume.slice()
-    this.#onResume.length = 0
-    for (const fn of fns) {
+    let fn: (() => any) | undefined = undefined
+    while (!this.paused && (fn = this.#onResume.shift())) {
       fn()
     }
   }
@@ -235,11 +239,14 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   async match(e: Path, absolute: boolean, ifDir: boolean): Promise<void> {
+    if (this.seen.has(e)) return
     const p = await this.matchCheck(e, ifDir)
     if (p) this.matchFinish(p, absolute)
   }
 
   matchSync(e: Path, absolute: boolean, ifDir: boolean): void {
+    if (this.seen.has(e)) return
+    //console.error(e.fullpath(), absolute, ifDir, new Error('matchtrace').stack)
     const p = this.matchCheckSync(e, ifDir)
     if (p) this.matchFinish(p, absolute)
   }
@@ -334,6 +341,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     processor: Processor,
     cb: () => any
   ) {
+    //console.error('walkcb2sync', this.paused, target.fullpath(), patterns.map(p => p.globString()))
     if (this.paused) {
       this.onResume(() =>
         this.walkCB2Sync(target, patterns, processor, cb)
@@ -452,7 +460,9 @@ export class GlobStream<
 
   matchEmit(e: Result<O>): void
   matchEmit(e: Path | string): void {
-    if (!this.results.write(e)) this.pause()
+    // console.error('MATCH EMIT', [e])
+    this.results.write(e)
+    if (!this.results.flowing) this.pause()
   }
 
   stream(): MatchStream<O> {

@@ -47,8 +47,11 @@ class SubWalks {
       return
     }
     const subs = this.store.get(target)
-    if (subs) subs.push(pattern)
-    else this.store.set(target, [pattern])
+    if (subs) {
+      if (!subs.find(p => p.globString() === pattern.globString())) {
+        subs.push(pattern)
+      }
+    } else this.store.set(target, [pattern])
   }
   get(target: Path): Pattern[] {
     return this.store.get(target) || []
@@ -144,7 +147,9 @@ export class Processor {
         const rp = rest?.pattern()
         const rrest = rest?.rest()
         if (!rest || ((rp === '' || rp === '.') && !rrest)) {
-          this.matches.add(t, absolute, true)
+          // only HAS to be a dir if it ends in **/ or **/.
+          // but ending in ** will match files as well.
+          this.matches.add(t, absolute, rp === '' || rp === '.')
         } else {
           if (rp === '..') {
             const tp = t.parent || t
@@ -220,6 +225,7 @@ export class Processor {
       const rp = rest.pattern()
       if (
         typeof rp === 'string' &&
+        // dots and empty were handled already
         rp !== '..' &&
         rp !== '' &&
         rp !== '.'
