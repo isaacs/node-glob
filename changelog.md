@@ -25,6 +25,8 @@ changes.
   which case glob patterns cannot be escaped with `\`.
 - Paths are returned in the canonical formatting for the platform
   in question.
+- The `hasMagic` method will return false for patterns that only
+  contain brace expansion, but no other "magic" glob characters.
 
 ## Options Changes
 
