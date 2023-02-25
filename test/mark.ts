@@ -2,6 +2,8 @@ import t from 'tap'
 import glob from '../'
 process.chdir(__dirname + '/fixtures')
 
+const alphasort = (a:string, b:string) => a.localeCompare(b, 'en')
+
 t.test('mark with cwd', async t => {
   const pattern = '*/*'
   const opt = { mark: true, cwd: 'a' }
@@ -12,15 +14,15 @@ t.test('mark with cwd', async t => {
     'bc/e/',
     'c/d/',
     'cb/e/',
-  ].sort()
+  ].sort(alphasort)
 
   const res = await glob(pattern, opt)
   if (process.platform !== 'win32') {
     expect.push('symlink/a/')
   }
 
-  t.same(res.sort(), expect)
-  t.same(glob.sync(pattern, opt).sort(), expect)
+  t.same(res.sort(alphasort), expect)
+  t.same(glob.sync(pattern, opt).sort(alphasort), expect)
 })
 
 t.test('mark, with **', async t => {
@@ -42,10 +44,10 @@ t.test('mark, with **', async t => {
     'a/cb/',
     'a/cb/e/',
     'a/cb/e/f',
-  ]
+  ].sort(alphasort)
 
-  t.same(await glob(pattern, opt), expect, 'async')
-  t.same(glob.sync(pattern, opt), expect, 'sync')
+  t.same((await glob(pattern, opt)).sort(alphasort), expect, 'async')
+  t.same(glob.sync(pattern, opt).sort(alphasort), expect, 'sync')
 })
 
 t.test('mark, no / on pattern', async t => {
@@ -64,10 +66,10 @@ t.test('mark, no / on pattern', async t => {
   if (process.platform !== 'win32') {
     expect.push('a/symlink/')
   }
-  expect.sort()
-  const results = await glob(pattern, opt)
+  expect.sort(alphasort)
+  const results = (await glob(pattern, opt)).sort(alphasort)
   t.same(results, expect)
-  t.same(glob.sync(pattern, opt), expect)
+  t.same(glob.sync(pattern, opt).sort(alphasort), expect)
 })
 
 t.test('mark=false, no / on pattern', async t => {
@@ -85,11 +87,11 @@ t.test('mark=false, no / on pattern', async t => {
   if (process.platform !== 'win32') {
     expect.push('a/symlink')
   }
-  expect.sort()
-  const results = await glob(pattern)
+  expect.sort(alphasort)
+  const results = (await glob(pattern)).sort(alphasort)
 
   t.same(results, expect)
-  t.same(glob.sync(pattern), expect)
+  t.same(glob.sync(pattern).sort(alphasort), expect)
 })
 
 t.test('mark=true, / on pattern', async t => {
@@ -109,32 +111,32 @@ t.test('mark=true, / on pattern', async t => {
   if (process.platform !== 'win32') {
     expect.push('a/symlink/')
   }
-  expect.sort()
-  const results = await glob(pattern, opt)
+  expect.sort(alphasort)
+  const results = (await glob(pattern, opt)).sort(alphasort)
   t.same(results, expect)
-  t.same(glob.sync(pattern, opt), expect)
+  t.same(glob.sync(pattern, opt).sort(alphasort), expect)
 })
 
 t.test('mark=false, / on pattern', async t => {
   const pattern = 'a/*/'
   const expect = [
-    'a/abcdef/',
-    'a/abcfed/',
-    'a/b/',
-    'a/bc/',
-    'a/c/',
-    'a/cb/',
-    'a/x/',
-    'a/z/',
+    'a/abcdef',
+    'a/abcfed',
+    'a/b',
+    'a/bc',
+    'a/c',
+    'a/cb',
+    'a/x',
+    'a/z',
   ]
   if (process.platform !== 'win32') {
-    expect.push('a/symlink/')
+    expect.push('a/symlink')
   }
-  expect.sort()
+  expect.sort(alphasort)
 
-  const results = await glob(pattern)
+  const results = (await glob(pattern)).sort(alphasort)
   t.same(results, expect)
-  t.same(glob.sync(pattern), expect)
+  t.same(glob.sync(pattern).sort(alphasort), expect)
 })
 
 const cwd = process
@@ -150,7 +152,7 @@ for (const mark of [true, false]) {
       const res = results[0].replace(/\\/g, '/')
       const syncResults = glob.sync(pattern, { mark: mark })
       const syncRes = syncResults[0].replace(/\\/g, '/')
-      if (slash || mark) {
+      if (mark) {
         t.equal(res, cwd + '/')
       } else {
         t.equal(res.indexOf(cwd), 0)

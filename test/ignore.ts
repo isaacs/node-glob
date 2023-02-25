@@ -45,6 +45,7 @@ const cases: Case[] = [
     '**',
     ['c/**', 'bc/**', 'symlink/**', 'abcdef/**'],
     [
+      '',
       'abcfed',
       'abcfed/g',
       'abcfed/g/h',
@@ -66,6 +67,7 @@ const cases: Case[] = [
     '**',
     ['b'],
     [
+      '',
       'abcdef',
       'abcdef/g',
       'abcdef/g/h',
@@ -97,6 +99,7 @@ const cases: Case[] = [
     '**',
     ['b', 'c'],
     [
+      '',
       'abcdef',
       'abcdef/g',
       'abcdef/g/h',
@@ -127,6 +130,7 @@ const cases: Case[] = [
     '**',
     ['b**'],
     [
+      '',
       'abcdef',
       'abcdef/g',
       'abcdef/g/h',
@@ -157,6 +161,7 @@ const cases: Case[] = [
     '**',
     ['b/**'],
     [
+      '',
       'abcdef',
       'abcdef/g',
       'abcdef/g/h',
@@ -186,6 +191,7 @@ const cases: Case[] = [
     '**',
     ['b**/**'],
     [
+      '',
       'abcdef',
       'abcdef/g',
       'abcdef/g/h',
@@ -212,6 +218,7 @@ const cases: Case[] = [
     '**',
     ['ab**ef/**'],
     [
+      '',
       'abcfed',
       'abcfed/g',
       'abcfed/g/h',
@@ -241,6 +248,7 @@ const cases: Case[] = [
     '**',
     ['abc{def,fed}/**'],
     [
+      '',
       'b',
       'b/c',
       'b/c/d',
@@ -267,6 +275,7 @@ const cases: Case[] = [
     '**',
     ['abc{def,fed}/*'],
     [
+      '',
       'abcdef',
       'abcdef/g/h',
       'abcfed',
@@ -343,25 +352,18 @@ t.test('race condition', async t => {
   t.jobs = 64
   for (const dot of [true, false]) {
     for (const ignore of ['fixtures/**', undefined]) {
-      for (const nonull of [true, false]) {
-        for (const cwd of [undefined, process.cwd(), '.']) {
-          const opt: GlobOptions = {
-            dot,
-            ignore,
-            nonull,
-          }
-          if (cwd) opt.cwd = cwd
-          const expect = ignore
-            ? nonull
-              ? ['fixtures/*']
-              : []
-            : ['fixtures/a']
-          t.test(JSON.stringify(opt), async t => {
-            t.plan(2)
-            t.same(glob.sync(pattern, opt).sort(), expect)
-            t.same((await glob(pattern, opt)).sort(), expect)
-          })
+      for (const cwd of [undefined, process.cwd(), '.']) {
+        const opt: GlobOptions = {
+          dot,
+          ignore,
         }
+        if (cwd) opt.cwd = cwd
+        const expect = ignore ? [] : ['fixtures/a']
+        t.test(JSON.stringify(opt), async t => {
+          t.plan(2)
+          t.same(glob.sync(pattern, opt).sort(), expect)
+          t.same((await glob(pattern, opt)).sort(), expect)
+        })
       }
     }
   }

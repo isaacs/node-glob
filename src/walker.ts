@@ -21,6 +21,7 @@ export interface GlobWalkerOpts {
   platform?: NodeJS.Platform
   nocase?: boolean
   follow?: boolean
+  dot?: boolean
 }
 
 export type GWOFileTypesTrue = GlobWalkerOpts & {
@@ -80,12 +81,14 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   aborted: boolean = false
   #onResume: (() => any)[] = []
   #ignore?: Ignore
+  #sep: '\\' | '/'
 
   constructor(patterns: Pattern[], path: Path, opts: O)
   constructor(patterns: Pattern[], path: Path, opts: O) {
     this.patterns = patterns
     this.path = path
     this.opts = opts
+    this.#sep = opts.platform === 'win32' ? '\\' : '/'
     if (opts.ignore) {
       this.#ignore = makeIgnore(opts.ignore, opts)
     }
@@ -107,7 +110,6 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
   resume() {
     if (this.aborted) return
-    //console.error(new Error('resume').stack, this.#onResume.length)
     this.paused = false
     let fn: (() => any) | undefined = undefined
     while (!this.paused && (fn = this.#onResume.shift())) {
@@ -252,7 +254,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   matchFinish(e: Path, absolute: boolean) {
     if (this.#ignored(e)) return
     this.seen.add(e)
-    const mark = this.opts.mark && e.isDirectory() ? '/' : ''
+    const mark = this.opts.mark && e.isDirectory() ? this.#sep : ''
     // ok, we have what we need!
     if (this.opts.withFileTypes) {
       this.matchEmit(e)
@@ -261,7 +263,8 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     } else if (this.opts.absolute || absolute) {
       this.matchEmit(e.fullpath() + mark)
     } else {
-      this.matchEmit(e.relative() + mark)
+      const rel = e.relative()
+      this.matchEmit(!rel && mark ? './' : rel + mark)
     }
   }
 
@@ -273,7 +276,6 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
 
   matchSync(e: Path, absolute: boolean, ifDir: boolean): void {
     if (this.#ignored(e)) return
-    //console.error(e.fullpath(), absolute, ifDir, new Error('matchtrace').stack)
     const p = this.matchCheckSync(e, ifDir)
     if (p) this.matchFinish(p, absolute)
   }
@@ -370,7 +372,6 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     cb: () => any
   ) {
     if (this.#childrenIgnored(target)) return cb()
-    //console.error('walkcb2sync', this.paused, target.fullpath(), patterns.map(p => p.globString()))
     if (this.paused) {
       this.onResume(() =>
         this.walkCB2Sync(target, patterns, processor, cb)
@@ -489,7 +490,6 @@ export class GlobStream<
 
   matchEmit(e: Result<O>): void
   matchEmit(e: Path | string): void {
-    // console.error('MATCH EMIT', [e])
     this.results.write(e)
     if (!this.results.flowing) this.pause()
   }

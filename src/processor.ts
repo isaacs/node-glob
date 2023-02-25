@@ -28,8 +28,8 @@ class MatchRecord {
   store: Map<Path, number> = new Map()
   add(target: Path, absolute: boolean, ifDir: boolean) {
     const n = (absolute ? 2 : 0) | (ifDir ? 1 : 0)
-    const current = this.store.get(target) || 0
-    this.store.set(target, n & current)
+    const current = this.store.get(target)
+    this.store.set(target, current === undefined ? n : n & current)
   }
   // match, absolute, ifdir
   entries(): [Path, boolean, boolean][] {
@@ -71,11 +71,13 @@ export class Processor {
   subwalks = new SubWalks()
   patterns?: Pattern[]
   follow: boolean
+  dot: boolean
   opts: GlobWalkerOpts
 
   constructor(opts: GlobWalkerOpts, hasWalkedCache?: HasWalkedCache) {
     this.opts = opts
     this.follow = !!opts.follow
+    this.dot = !!opts.dot
     this.hasWalkedCache = hasWalkedCache
       ? hasWalkedCache.copy()
       : new HasWalkedCache()
@@ -117,7 +119,8 @@ export class Processor {
         (rest = pattern.rest())
       ) {
         const c = t.resolve(p)
-        if (c.isUnknown()) break
+        // we can be reasonably sure that .. is a readable dir
+        if (c.isUnknown() && p !== '..') break
         t = c
         pattern = rest
         changed = true
@@ -129,8 +132,9 @@ export class Processor {
         this.hasWalkedCache.storeWalked(t, pattern)
       }
 
-      // now we have either a final string, or a pattern starting with magic,
-      // mounted on t.
+      // now we have either a final string for a known entry,
+      // more strings for an unknown entry,
+      // or a pattern starting with magic, mounted on t.
       if (typeof p === 'string') {
         // must be final entry
         if (!rest) {
@@ -146,14 +150,12 @@ export class Processor {
         // if it's a symlink, but we didn't get here by way of a
         // globstar match (meaning it's the first time THIS globstar
         // has traversed a symlink), then we follow it. Otherwise, stop.
-        if (this.follow || !t.isSymbolicLink()) {
-          this.subwalks.add(t, pattern)
-        } else if (
-          t.isSymbolicLink() &&
-          pattern.followGlobstar() &&
-          rest
+        if (
+          !t.isSymbolicLink() ||
+          this.follow ||
+          pattern.checkFollowGlobstar()
         ) {
-          this.subwalks.add(t, rest)
+          this.subwalks.add(t, pattern)
         }
         const rp = rest?.pattern()
         const rrest = rest?.rest()
@@ -217,12 +219,26 @@ export class Processor {
     rest: Pattern | null,
     absolute: boolean
   ) {
-    if (e.name.startsWith('.')) return
-    if (!pattern.hasMore()) {
-      this.matches.add(e, absolute, false)
-    }
-    if (e.canReaddir()) {
-      this.subwalks.add(e, pattern)
+    if (this.dot || !e.name.startsWith('.')) {
+      if (!pattern.hasMore()) {
+        this.matches.add(e, absolute, false)
+      }
+      if (e.canReaddir()) {
+        // if we're in follow mode or it's not a symlink, just keep
+        // testing the same pattern. If there's more after the globstar,
+        // then this symlink consumes the globstar. If not, then we can
+        // follow at most ONE symlink along the way, so we mark it, which
+        // also checks to ensure that it wasn't already marked.
+        if (this.follow || !e.isSymbolicLink()) {
+          this.subwalks.add(e, pattern)
+        } else if (e.isSymbolicLink()) {
+          if (rest && pattern.checkFollowGlobstar()) {
+            this.subwalks.add(e, rest)
+          } else if (pattern.markFollowGlobstar()) {
+            this.subwalks.add(e, pattern)
+          }
+        }
+      }
     }
     // if the NEXT thing matches this entry, then also add
     // the rest.

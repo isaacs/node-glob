@@ -36,7 +36,6 @@ export class Ignore {
     const mmopts = {
       platform: this.platform,
       optimizationLevel: 2,
-      nocaseMagicOnly: true,
       dot: true,
       nocase,
     }
@@ -74,24 +73,26 @@ export class Ignore {
 
   ignored(p: Path): boolean {
     const fullpath = p.fullpath()
-    const relative = p.relative()
-    for (const m of this.absolute) {
-      if (m.match(fullpath)) return true
-    }
+    const fullpaths = `${fullpath}/`
+    const relative = p.relative() || '.'
+    const relatives = `${relative}/`
     for (const m of this.relative) {
-      if (m.match(relative)) return true
+      if (m.match(relative) || m.match(relatives)) return true
+    }
+    for (const m of this.absolute) {
+      if (m.match(fullpath) || m.match(fullpaths)) return true
     }
     return false
   }
 
   childrenIgnored(p: Path): boolean {
-    const fullpath = p.fullpath()
-    const relative = p.relative()
-    for (const m of this.absoluteChildren) {
-      if (m.match(fullpath)) return true
-    }
+    const fullpath = p.fullpath() + '/'
+    const relative = (p.relative() || '.') + '/'
     for (const m of this.relativeChildren) {
       if (m.match(relative)) return true
+    }
+    for (const m of this.absoluteChildren) {
+      if (m.match(fullpath)) true
     }
     return false
   }

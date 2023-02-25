@@ -27,6 +27,15 @@ changes.
   in question.
 - The `hasMagic` method will return false for patterns that only
   contain brace expansion, but no other "magic" glob characters.
+- Patterns ending in `/` will still be restricted to matching
+  directories, but will not have a `/` appended in the results.
+  In general, results will be in their default relative or
+  absolute forms, without any extraneous `/` and `.` characters,
+  unlike shell matches. (The `mark` option may still be used to
+  _always_ mark directory matches with a trailing `/` or `\`.)
+- An options argument is required for the `Glob` class
+  constructor. `{}` may be provided to accept all default
+  options.
 
 ## Options Changes
 
@@ -54,6 +63,15 @@ changes.
   unique.
 - `nosort:true` is no longer supported. Result sets are never
   sorted.
+- When the `nocase` option is used, the assumption is that it
+  reflects the case sensitivity of the _filesystem itself_.
+  Using case-insensitive matching on a case-sensitive filesystem,
+  or vice versa, may thus result in more or fewer matches than
+  expected. In general, it should only be used when the
+  filesystem is known to differ from the platform default.
+- `realpath:true` no longer implies `absolute:true`.  The
+  relative path to the realpath will be emitted when `absolute`
+  is not set.
 
 ## Performance and Algorithm Changes
 

@@ -35,14 +35,13 @@ export class Pattern {
   #isDrive?: boolean
   #isUNC?: boolean
   #isAbsolute?: boolean
-  #globstarFollowed: number[]
+  #followGlobstar: boolean = true
 
   constructor(
     patternList: MMPattern[],
     globList: string[],
     index: number,
-    platform: NodeJS.Platform,
-    globstarFollowed: number[] = []
+    platform: NodeJS.Platform
   ) {
     if (!isPatternList(patternList)) {
       throw new TypeError('empty pattern list')
@@ -60,7 +59,6 @@ export class Pattern {
     this.#patternList = patternList
     this.#globList = globList
     this.#index = index
-    this.#globstarFollowed = globstarFollowed
     this.#platform = platform
 
     // if the current item is not globstar, and the next item is .., skip ahead
@@ -162,28 +160,12 @@ export class Pattern {
       this.#patternList,
       this.#globList,
       this.#index + 1,
-      this.#platform,
-      this.#globstarFollowed
+      this.#platform
     )
     this.#rest.#isAbsolute = this.#isAbsolute
     this.#rest.#isUNC = this.#isUNC
     this.#rest.#isDrive = this.#isDrive
     return this.#rest
-  }
-
-  followGlobstar(): boolean {
-    if (!this.isGlobstar()) {
-      return false
-    }
-    // never follow a globstar if it's the first pattern in the list
-    if (this.#index === 0) {
-      return false
-    }
-    if (this.#globstarFollowed.includes(this.#index)) {
-      return false
-    }
-    this.#globstarFollowed.push(this.#index)
-    return true
   }
 
   // pattern like: //host/share/...
@@ -245,5 +227,20 @@ export class Pattern {
       }
     }
     return false
+  }
+
+  checkFollowGlobstar(): boolean {
+    return !(
+      this.#index === 0 ||
+      !this.isGlobstar() ||
+      !this.#followGlobstar
+    )
+  }
+
+  markFollowGlobstar(): boolean {
+    if (this.#index === 0 || !this.isGlobstar() || !this.#followGlobstar)
+      return false
+    this.#followGlobstar = false
+    return true
   }
 }

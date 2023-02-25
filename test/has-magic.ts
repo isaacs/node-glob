@@ -22,9 +22,9 @@ t.test('detect magic in glob patterns', async t => {
     glob.hasMagic('a/b/+(x|y)', { noext: true }),
     'no magic in a/b/+(x|y) noext'
   )
-  t.ok(glob.hasMagic('{a,b}'), 'magic in {a,b}')
+  t.notOk(glob.hasMagic('{a,b}'), 'no magic in {a,b}')
   t.notOk(
     glob.hasMagic('{a,b}', { nobrace: true }),
-    'magic in {a,b} nobrace:true'
+    'no magic in {a,b} nobrace:true'
   )
 })

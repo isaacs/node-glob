@@ -20,7 +20,7 @@ for (const p of platforms) {
     })
     t.equal(process.platform, p, 'gut check: actually set platform')
     const pattern = '/a/b/c/x\\[a-b\\]y\\*'
-    const def = new Glob(pattern)
+    const def = new Glob(pattern, {})
     const winpath = new Glob(pattern, {
       windowsPathsNoEscape: true,
     })
