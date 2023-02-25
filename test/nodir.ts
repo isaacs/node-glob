@@ -1,8 +1,12 @@
-import { resolve } from 'path'
+import { resolve, sep } from 'path'
 import t from 'tap'
 import glob from '../'
 import type { GlobOptions } from '../src/index.js'
 process.chdir(__dirname + '/fixtures')
+
+const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
+const j = (a: string[]) =>
+  a.map(s => s.split('/').join(sep)).sort(alphasort)
 
 // [pattern, options, expect]
 const root = resolve('a')
@@ -10,7 +14,7 @@ const cases: [string, GlobOptions, string[]][] = [
   [
     '*/**',
     { cwd: 'a' },
-    [
+    j([
       'abcdef/g/h',
       'abcfed/g/h',
       'b/c/d',
@@ -18,12 +22,12 @@ const cases: [string, GlobOptions, string[]][] = [
       'c/d/c/b',
       'cb/e/f',
       'symlink/a/b/c',
-    ],
+    ]),
   ],
   [
     'a/*b*/**',
     {},
-    ['a/abcdef/g/h', 'a/abcfed/g/h', 'a/b/c/d', 'a/bc/e/f', 'a/cb/e/f'],
+    j(['a/abcdef/g/h', 'a/abcfed/g/h', 'a/b/c/d', 'a/bc/e/f', 'a/cb/e/f']),
   ],
   ['a/*b*/**/', {}, []],
   ['*/*', { cwd: 'a' }, []],
