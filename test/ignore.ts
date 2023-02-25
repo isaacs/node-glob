@@ -362,7 +362,7 @@ t.test('race condition', async t => {
           ignore,
         }
         if (cwd) opt.cwd = cwd
-        const expect = ignore ? [] : ['fixtures/a']
+        const expect = ignore ? [] : j(['fixtures/a'])
         t.test(JSON.stringify(opt), async t => {
           t.plan(2)
           t.same(glob.sync(pattern, opt).sort(), expect)
