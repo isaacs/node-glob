@@ -3,6 +3,7 @@
 import { GLOBSTAR, MMRegExp } from 'minimatch'
 import { Path } from 'path-scurry'
 import { MMPattern, Pattern } from './pattern.js'
+import { GlobWalkerOpts } from './walker.js'
 
 class HasWalkedCache {
   store: Map<string, Set<string>>
@@ -69,8 +70,12 @@ export class Processor {
   matches = new MatchRecord()
   subwalks = new SubWalks()
   patterns?: Pattern[]
+  follow: boolean
+  opts: GlobWalkerOpts
 
-  constructor(hasWalkedCache?: HasWalkedCache) {
+  constructor(opts: GlobWalkerOpts, hasWalkedCache?: HasWalkedCache) {
+    this.opts = opts
+    this.follow = !!opts.follow
     this.hasWalkedCache = hasWalkedCache
       ? hasWalkedCache.copy()
       : new HasWalkedCache()
@@ -141,7 +146,11 @@ export class Processor {
         // if it's a symlink, but we didn't get here by way of a
         // globstar match (meaning it's the first time THIS globstar
         // has traversed a symlink), then we follow it. Otherwise, stop.
-        if (!t.isSymbolicLink() || pattern.followGlobstar()) {
+        if (
+          !t.isSymbolicLink() ||
+          this.follow ||
+          pattern.followGlobstar()
+        ) {
           this.subwalks.add(t, pattern)
         }
         const rp = rest?.pattern()
@@ -172,7 +181,7 @@ export class Processor {
   }
 
   child() {
-    return new Processor(this.hasWalkedCache)
+    return new Processor(this.opts, this.hasWalkedCache)
   }
 
   // return a new Processor containing the subwalks for each

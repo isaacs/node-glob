@@ -20,6 +20,7 @@ export interface GlobWalkerOpts {
   ignore?: string | string[] | Ignore
   platform?: NodeJS.Platform
   nocase?: boolean
+  follow?: boolean
 }
 
 export type GWOFileTypesTrue = GlobWalkerOpts & {
@@ -282,7 +283,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       this.onResume(() => this.walkCB(target, patterns, cb))
       return
     }
-    this.walkCB2(target, patterns, new Processor(), cb)
+    this.walkCB2(target, patterns, new Processor(this.opts), cb)
   }
 
   walkCB2(
@@ -359,7 +360,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       this.onResume(() => this.walkCBSync(target, patterns, cb))
       return
     }
-    this.walkCB2Sync(target, patterns, new Processor(), cb)
+    this.walkCB2Sync(target, patterns, new Processor(this.opts), cb)
   }
 
   walkCB2Sync(

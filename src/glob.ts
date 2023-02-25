@@ -205,20 +205,20 @@ export class Glob<Opts extends GlobOptions> {
     // coerce them into the right shape.  It will have already called
     // realpath() if the option was set to do so, so we know that's cached.
     // start out knowing the cwd, at least
-    const walker = new GlobWalker(
-      this.patterns,
-      this.scurry.cwd,
-      { ...this.opts, platform: this.platform, nocase: this.nocase }
-    )
+    const walker = new GlobWalker(this.patterns, this.scurry.cwd, {
+      ...this.opts,
+      platform: this.platform,
+      nocase: this.nocase,
+    })
     return this.finish(await walker.walk())
   }
 
   walkSync(): Results<Opts> {
-    const walker = new GlobWalker(
-      this.patterns,
-      this.scurry.cwd,
-      { ...this.opts, platform: this.platform, nocase: this.nocase }
-    )
+    const walker = new GlobWalker(this.patterns, this.scurry.cwd, {
+      ...this.opts,
+      platform: this.platform,
+      nocase: this.nocase,
+    })
     return this.finish(walker.walkSync())
   }
 
@@ -229,20 +229,20 @@ export class Glob<Opts extends GlobOptions> {
 
   stream(): Minipass<Result<Opts>>
   stream(): Minipass<string | Path> {
-    return new GlobStream(
-      this.patterns,
-      this.scurry.cwd,
-      { ...this.opts, platform: this.platform, nocase: this.nocase }
-    ).stream()
+    return new GlobStream(this.patterns, this.scurry.cwd, {
+      ...this.opts,
+      platform: this.platform,
+      nocase: this.nocase,
+    }).stream()
   }
 
   streamSync(): Minipass<Result<Opts>>
   streamSync(): Minipass<string | Path> {
-    return new GlobStream(
-      this.patterns,
-      this.scurry.cwd,
-      { ...this.opts, platform: this.platform, nocase: this.nocase }
-    ).streamSync()
+    return new GlobStream(this.patterns, this.scurry.cwd, {
+      ...this.opts,
+      platform: this.platform,
+      nocase: this.nocase,
+    }).streamSync()
   }
 
   iteratorSync(): Generator<Result<Opts>, void, void> {
