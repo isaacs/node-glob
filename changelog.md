@@ -20,7 +20,7 @@ changes.
   `streamSync()`, `iterate()`, `iterateSync()` methods, and is
   both an async and sync Generator.
 - First class support for UNC paths and drive letters on Windows.
-  Note that *glob patterns* must still use `/` as a path
+  Note that _glob patterns_ must still use `/` as a path
   separator, unless the `windowsPathsNoEscape` option is set, in
   which case glob patterns cannot be escaped with `\`.
 - Paths are returned in the canonical formatting for the platform
