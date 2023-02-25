@@ -1,5 +1,6 @@
 import Minipass from 'minipass'
 import { Path } from 'path-scurry'
+import { Ignore } from './ignore.js'
 
 // XXX can we somehow make it so that it NEVER processes a given path more than
 // once, enough that the match set tracking is no longer needed?  that'd speed
@@ -16,7 +17,11 @@ export interface GlobWalkerOpts {
   mark?: boolean
   withFileTypes?: boolean
   signal?: AbortSignal
+  ignore?: string | string[] | Ignore
+  platform?: NodeJS.Platform
+  nocase?: boolean
 }
+
 export type GWOFileTypesTrue = GlobWalkerOpts & {
   withFileTypes: true
 }
@@ -52,6 +57,16 @@ export type MatchStream<O extends GlobWalkerOpts> =
     ? Minipass<string>
     : Minipass<Path | string>
 
+const makeIgnore = (
+  ignore: string | string[] | Ignore,
+  opts: GlobWalkerOpts
+): Ignore =>
+  typeof ignore === 'string'
+    ? new Ignore([ignore], opts)
+    : Array.isArray(ignore)
+    ? new Ignore(ignore, opts)
+    : ignore
+
 /**
  * basic walking utilities that all the glob walker types use
  */
@@ -63,15 +78,26 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   paused: boolean = false
   aborted: boolean = false
   #onResume: (() => any)[] = []
+  #ignore?: Ignore
 
   constructor(patterns: Pattern[], path: Path, opts: O)
   constructor(patterns: Pattern[], path: Path, opts: O) {
     this.patterns = patterns
     this.path = path
     this.opts = opts
+    if (opts.ignore) {
+      this.#ignore = makeIgnore(opts.ignore, opts)
+    }
     if (opts.signal) {
       opts.signal.addEventListener('abort', () => this.abort())
     }
+  }
+
+  #ignored(path: Path): boolean {
+    return this.seen.has(path) || !!this.#ignore?.ignored(path)
+  }
+  #childrenIgnored(path: Path): boolean {
+    return !!this.#ignore?.childrenIgnored(path)
   }
 
   // backpressure mechanism
@@ -104,7 +130,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     if (this.opts.realpath) {
       rpc = e.realpathCached()
       if (rpc) {
-        if (this.seen.has(rpc) || (e.isDirectory() && this.opts.nodir)) {
+        if (this.#ignored(rpc) || (e.isDirectory() && this.opts.nodir)) {
           return undefined
         }
         e = rpc
@@ -119,7 +145,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       const r = await e.realpath().then(e => e?.lstat())
       if (
         !r ||
-        this.seen.has(r) ||
+        this.#ignored(r) ||
         (!e.canReaddir() && ifDir) ||
         (e.isDirectory() && this.opts.nodir)
       ) {
@@ -130,7 +156,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       const r = await e.realpath()
       if (
         !r ||
-        this.seen.has(r) ||
+        this.#ignored(r) ||
         (!e.canReaddir() && ifDir) ||
         (e.isDirectory() && this.opts.nodir)
       ) {
@@ -141,7 +167,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       const r = await e.lstat()
       if (
         !r ||
-        this.seen.has(r) ||
+        this.#ignored(r) ||
         (!r.canReaddir() && ifDir) ||
         (r.isDirectory() && this.opts.nodir)
       ) {
@@ -149,7 +175,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       }
       return r
     } else if (
-      this.seen.has(e) ||
+      this.#ignored(e) ||
       (!e.canReaddir() && ifDir) ||
       (e.isDirectory() && this.opts.nodir)
     ) {
@@ -164,7 +190,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     if (this.opts.realpath) {
       rpc = e.realpathCached()
       if (rpc) {
-        if (this.seen.has(rpc) || (e.isDirectory() && this.opts.nodir)) {
+        if (this.#ignored(rpc) || (e.isDirectory() && this.opts.nodir)) {
           return undefined
         }
         e = rpc
@@ -179,7 +205,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       const r = e.realpathSync()?.lstatSync()
       if (
         !r ||
-        this.seen.has(r) ||
+        this.#ignored(r) ||
         (!r.canReaddir() && ifDir) ||
         (e.isDirectory() && this.opts.nodir)
       ) {
@@ -190,7 +216,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       const r = e.realpathSync()
       if (
         !r ||
-        this.seen.has(r) ||
+        this.#ignored(r) ||
         (!r.canReaddir() && ifDir) ||
         (e.isDirectory() && this.opts.nodir)
       ) {
@@ -201,7 +227,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       const r = e.lstatSync()
       if (
         !r ||
-        this.seen.has(r) ||
+        this.#ignored(r) ||
         (!r.canReaddir() && ifDir) ||
         (r.isDirectory() && this.opts.nodir)
       ) {
@@ -209,7 +235,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       }
       return r
     } else if (
-      this.seen.has(e) ||
+      this.#ignored(e) ||
       (!e.canReaddir() && ifDir) ||
       (e.isDirectory() && this.opts.nodir)
     ) {
@@ -223,7 +249,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   abstract matchEmit(p: string | Path): void
 
   matchFinish(e: Path, absolute: boolean) {
-    if (this.seen.has(e)) return
+    if (this.#ignored(e)) return
     this.seen.add(e)
     const mark = this.opts.mark && e.isDirectory() ? '/' : ''
     // ok, we have what we need!
@@ -239,13 +265,13 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   async match(e: Path, absolute: boolean, ifDir: boolean): Promise<void> {
-    if (this.seen.has(e)) return
+    if (this.#ignored(e)) return
     const p = await this.matchCheck(e, ifDir)
     if (p) this.matchFinish(p, absolute)
   }
 
   matchSync(e: Path, absolute: boolean, ifDir: boolean): void {
-    if (this.seen.has(e)) return
+    if (this.#ignored(e)) return
     //console.error(e.fullpath(), absolute, ifDir, new Error('matchtrace').stack)
     const p = this.matchCheckSync(e, ifDir)
     if (p) this.matchFinish(p, absolute)
@@ -265,6 +291,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     processor: Processor,
     cb: () => any
   ) {
+    if (this.#childrenIgnored(target)) return cb()
     if (this.paused) {
       this.onResume(() => this.walkCB2(target, patterns, processor, cb))
       return
@@ -280,7 +307,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
 
     for (const [m, absolute, ifDir] of processor.matches.entries()) {
-      if (this.seen.has(m)) continue
+      if (this.#ignored(m)) continue
       tasks++
       this.match(m, absolute, ifDir).then(() => next())
     }
@@ -315,7 +342,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
 
     for (const [m, absolute, ifDir] of processor.matches.entries()) {
-      if (this.seen.has(m)) continue
+      if (this.#ignored(m)) continue
       tasks++
       this.match(m, absolute, ifDir).then(() => next())
     }
@@ -341,6 +368,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     processor: Processor,
     cb: () => any
   ) {
+    if (this.#childrenIgnored(target)) return cb()
     //console.error('walkcb2sync', this.paused, target.fullpath(), patterns.map(p => p.globString()))
     if (this.paused) {
       this.onResume(() =>
@@ -359,7 +387,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
 
     for (const [m, absolute, ifDir] of processor.matches.entries()) {
-      if (this.seen.has(m)) continue
+      if (this.#ignored(m)) continue
       this.matchSync(m, absolute, ifDir)
     }
 
@@ -386,7 +414,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
 
     for (const [m, absolute, ifDir] of processor.matches.entries()) {
-      if (this.seen.has(m)) continue
+      if (this.#ignored(m)) continue
       this.matchSync(m, absolute, ifDir)
     }
     for (const [target, patterns] of processor.subwalks.entries()) {

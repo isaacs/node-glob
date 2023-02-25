@@ -17,7 +17,7 @@ type GlobParts = Exclude<Minimatch['globParts'], undefined>
 
 // if no process global, just call it linux.
 // so we default to case-sensitive, / separators
-const defaultPlatform =
+const defaultPlatform: NodeJS.Platform =
   typeof process === 'object' &&
   process &&
   typeof process.platform === 'string'
@@ -29,13 +29,12 @@ export interface GlobOptions extends MinimatchOptions {
   follow?: boolean
   mark?: boolean
   nodir?: boolean
-  nounique?: boolean
   cwd?: string
   realpath?: boolean
   absolute?: boolean
   withFileTypes?: boolean
   scurry?: PathScurry
-  platform?: typeof process.platform
+  platform?: NodeJS.Platform
   signal?: AbortSignal
 }
 
@@ -76,7 +75,6 @@ export class Glob<Opts extends GlobOptions> {
   dot: boolean
   mark: boolean
   nodir: boolean
-  nounique: boolean
   cwd: string
   matchSet: MatchSet
   globSet: GlobSet
@@ -93,27 +91,18 @@ export class Glob<Opts extends GlobOptions> {
   nocase?: boolean
   scurry: PathScurry
   opts: Opts
-  platform?: typeof process.platform
+  globUtilOpts: Opts
+  platform: NodeJS.Platform
   patterns: Pattern[]
   signal?: AbortSignal
 
   constructor(pattern: string | string[], opts: Opts) {
     this.withFileTypes = !!opts.withFileTypes as FileTypes<Opts>
-    const { ignore } = opts
-    if (typeof ignore === 'string') {
-      this.ignore = new Ignore([ignore])
-    } else if (Array.isArray(ignore)) {
-      this.ignore = new Ignore(ignore)
-    } else if (ignore && ignore instanceof Ignore) {
-      this.ignore = ignore
-    }
-    this.opts = opts
     this.signal = opts.signal
     this.follow = !!opts.follow
     this.dot = !!opts.dot
     this.nodir = !!opts.nodir
     this.mark = !!opts.mark
-    this.nounique = !!opts.nounique
     this.cwd = opts.cwd || ''
     this.realpath = !!opts.realpath
     this.nonull = !!opts.nonull
@@ -133,13 +122,6 @@ export class Glob<Opts extends GlobOptions> {
       if (this.absolute) {
         throw new Error('cannot set absolute:true and withFileTypes:true')
       }
-    }
-
-    // if we want unique entries, we need a single set to hold them all
-    if (!this.nounique) {
-      this.matches = new Set() as Matches<Opts>
-      this.seen = new Set()
-      this.walked = new Map()
     }
 
     if (typeof pattern === 'string') {
@@ -164,6 +146,7 @@ export class Glob<Opts extends GlobOptions> {
     this.pattern = pattern
 
     this.platform = opts.platform || defaultPlatform
+    this.opts = { ...opts, platform: this.platform }
     if (opts.scurry) {
       this.scurry = opts.scurry
     } else {
@@ -177,15 +160,23 @@ export class Glob<Opts extends GlobOptions> {
           : PathScurry
       this.scurry = new Scurry(this.cwd, { nocase: opts.nocase })
     }
+    this.nocase = this.scurry.nocase
+
+    this.globUtilOpts = {
+      ...opts,
+      platform: this.platform,
+      nocase: this.nocase,
+    }
 
     const mmo: MinimatchOptions = {
       // default nocase based on platform
-      nocase: this.scurry.nocase,
+      nocase: this.nocase,
       ...opts,
       nonegate: true,
       nocomment: true,
       nocaseMagicOnly: true,
       optimizationLevel: 2,
+      platform: this.platform,
     }
 
     // console.error('glob pattern arg', this.pattern)
@@ -202,7 +193,7 @@ export class Glob<Opts extends GlobOptions> {
     )
     this.patterns = matchSet.map((set, i) => {
       // console.error('globParts', globParts[i])
-      return new Pattern(set, globParts[i], 0)
+      return new Pattern(set, globParts[i], 0, this.platform)
     })
     this.matchSet = matchSet
     this.globSet = globSet
@@ -217,7 +208,7 @@ export class Glob<Opts extends GlobOptions> {
     const walker = new GlobWalker(
       this.patterns,
       this.scurry.cwd,
-      this.opts
+      { ...this.opts, platform: this.platform, nocase: this.nocase }
     )
     return this.finish(await walker.walk())
   }
@@ -226,7 +217,7 @@ export class Glob<Opts extends GlobOptions> {
     const walker = new GlobWalker(
       this.patterns,
       this.scurry.cwd,
-      this.opts
+      { ...this.opts, platform: this.platform, nocase: this.nocase }
     )
     return this.finish(walker.walkSync())
   }
@@ -241,7 +232,7 @@ export class Glob<Opts extends GlobOptions> {
     return new GlobStream(
       this.patterns,
       this.scurry.cwd,
-      this.opts
+      { ...this.opts, platform: this.platform, nocase: this.nocase }
     ).stream()
   }
 
@@ -250,7 +241,7 @@ export class Glob<Opts extends GlobOptions> {
     return new GlobStream(
       this.patterns,
       this.scurry.cwd,
-      this.opts
+      { ...this.opts, platform: this.platform, nocase: this.nocase }
     ).streamSync()
   }
 

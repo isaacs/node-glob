@@ -1,48 +1,68 @@
 ## 9.0
 
-This is a full rewrite.
+This is a full rewrite, with significant API and algorithm
+changes.
 
+## High-Level Feature and API Surface Changes
+
+- Only support node 16 and higher.
 - Promise API instead of callbacks.
 - Accept pattern as string or array of strings.
 - Hybrid module distribution.
-- `module.exports` in CommonJS mode is an object, not a function.
-  Use the exported `default` or `glob` members to access the
-  default function export in CommonJS modes.
+
+  **Note:** `module.exports` in CommonJS mode is an object, not a
+  function. Use the exported `default` or `glob` members to
+  access the default function export in CommonJS modes.
+
 - Full TypeScript support.
+- Exported `Glob` class is no longer an event emitter.
+- Exported `Glob` class has `walk()`, `walkSync()`, `stream()`,
+  `streamSync()`, `iterate()`, `iterateSync()` methods, and is
+  both an async and sync Generator.
+- First class support for UNC paths and drive letters on Windows.
+  Note that *glob patterns* must still use `/` as a path
+  separator, unless the `windowsPathsNoEscape` option is set, in
+  which case glob patterns cannot be escaped with `\`.
+- Paths are returned in the canonical formatting for the platform
+  in question.
+
+## Options Changes
+
 - Removed `root` option and mounting behavior.
 - Removed `stat` option. It's slow and pointless. (Could bring
-  back easily if there's demand.)
+  back easily if there's demand, but items are already statted in
+  cases where it's relevant, such as `nodir:true` or
+  `mark:true`.)
 - Simplified `cwd` behavior so it is far less magical, and relies
   less on platform-specific absolute path representations.
 - More efficient handling for absolute patterns. (That is,
   patterns that start with `/` on any platform, or start with a
-  drive letter on Windows.)
-- Removed nearly all stat calls, in favor of using `withFileTypes:true`
-  with `fs.readdir()`.
-- Replaced almost all caching with a
-  [PathScurry](http://npm.im/path-scurry) base implementation.
-- Removed EventEmitter behavior from exported `Glob` class.
-- Consolidated sync and async `Glob` class behavior into a single
-  class with `walk()`, `walkSync()`, `stream()`, and
-  `streamSync()` methods.
+  drive letter or UNC path on Windows.)
 - Removed `silent` and `strict` options. Any readdir errors are
   simply treated as "the directory could not be read", and it is
   treated as a normal file entry instead, like shells do.
 - Removed `fs` option. This module only operates on the real
   filesystem. (Could bring back if there's demand for it, but
   it'd be an update to PathScurry, not Glob.)
-- Only support node 16 and higher.
 - `nonull:true` is no longer supported.
-- `withFileTypes:true` option added, to get `Path` objects (like
-  a `Dirent`, but can also do a lot more).
-- Patterns starting with drive letters on Windows are now
-  properly treated as absolute paths, and the drive letter in an
-  absolute `{cwd}` option will be used as the root of patterns
-  that start with `/`.
-- `nounique:true` is no longer supported.  Result sets are always
+- `withFileTypes:true` option added, to get `Path` objects.
+  These are a bit like a Dirent, but can do a lot more. See
+  <http://npm.im/path-scurry>
+- `nounique:true` is no longer supported. Result sets are always
   unique.
-- `nosort:true` is no longer supported.  Result sets are never
+- `nosort:true` is no longer supported. Result sets are never
   sorted.
+
+## Performance and Algorithm Changes
+
+- Massive performance improvements.
+- Removed nearly all stat calls, in favor of using
+  `withFileTypes:true` with `fs.readdir()`.
+- Replaced most of the caching with a
+  [PathScurry](http://npm.im/path-scurry) based implementation.
+- More correct handling of `**` vs `./**`, following Bash
+  semantics, where a `**` is followed one time only if it is not
+  the first item in the pattern.
 
 ## 8.1
 

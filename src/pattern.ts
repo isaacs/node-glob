@@ -1,6 +1,7 @@
 // this is just a very light wrapper around 2 arrays with an offset index
 
 import { GLOBSTAR } from 'minimatch'
+import { Path } from 'path-scurry'
 type MMRegExp = RegExp & {
   _glob?: string
   _src?: string
@@ -20,8 +21,6 @@ type DrivePatternList = [p0: string, ...rest: MMPattern[]]
 type AbsolutePatternList = [p0: '', ...rest: MMPattern[]]
 type GlobList = [p: string, ...rest: string[]]
 
-// TODO: this should be a parameter
-const isWin = process.platform === 'win32'
 const isPatternList = (pl: MMPattern[]): pl is PatternList =>
   pl.length >= 1
 const isGlobList = (gl: string[]): gl is GlobList => gl.length >= 1
@@ -31,6 +30,7 @@ export class Pattern {
   readonly globList: GlobList
   readonly #index: number
   readonly length: number
+  #platform: NodeJS.Platform
   #rest?: Pattern | null
   #globString?: string
   #isDrive?: boolean
@@ -42,6 +42,7 @@ export class Pattern {
     patternList: MMPattern[],
     globList: string[],
     index: number,
+    platform: NodeJS.Platform,
     globstarFollowed: number[] = []
   ) {
     if (!isPatternList(patternList)) {
@@ -61,6 +62,7 @@ export class Pattern {
     this.globList = globList
     this.#index = index
     this.#globstarFollowed = globstarFollowed
+    this.#platform = platform
 
     // if the current item is not globstar, and the next item is .., skip ahead
     if (
@@ -161,6 +163,7 @@ export class Pattern {
       this.patternList,
       this.globList,
       this.#index + 1,
+      this.#platform,
       this.#globstarFollowed
     )
     this.#rest.#isAbsolute = this.#isAbsolute
@@ -190,7 +193,7 @@ export class Pattern {
     return this.#isUNC !== undefined
       ? this.#isUNC
       : (this.#isUNC =
-          isWin &&
+          this.#platform === 'win32' &&
           this.#index === 0 &&
           pl[0] === '' &&
           pl[1] === '' &&
@@ -209,7 +212,7 @@ export class Pattern {
     return this.#isDrive !== undefined
       ? this.#isDrive
       : (this.#isDrive =
-          isWin &&
+          this.#platform === 'win32' &&
           this.#index === 0 &&
           this.length > 1 &&
           typeof pl[0] === 'string' &&
