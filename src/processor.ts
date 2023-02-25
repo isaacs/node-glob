@@ -146,12 +146,14 @@ export class Processor {
         // if it's a symlink, but we didn't get here by way of a
         // globstar match (meaning it's the first time THIS globstar
         // has traversed a symlink), then we follow it. Otherwise, stop.
-        if (
-          !t.isSymbolicLink() ||
-          this.follow ||
-          pattern.followGlobstar()
-        ) {
+        if (this.follow || !t.isSymbolicLink()) {
           this.subwalks.add(t, pattern)
+        } else if (
+          t.isSymbolicLink() &&
+          pattern.followGlobstar() &&
+          rest
+        ) {
+          this.subwalks.add(t, rest)
         }
         const rp = rest?.pattern()
         const rrest = rest?.rest()
@@ -218,12 +220,6 @@ export class Processor {
     if (e.name.startsWith('.')) return
     if (!pattern.hasMore()) {
       this.matches.add(e, absolute, false)
-    }
-    // record that this globstar is following a symlink, so we
-    // can know to stop traversing when we encounter it again
-    // in processPatterns.
-    if (e.isSymbolicLink()) {
-      pattern.followGlobstar()
     }
     if (e.canReaddir()) {
       this.subwalks.add(e, pattern)
