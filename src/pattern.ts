@@ -1,7 +1,6 @@
 // this is just a very light wrapper around 2 arrays with an offset index
 
 import { GLOBSTAR } from 'minimatch'
-import { Path } from 'path-scurry'
 type MMRegExp = RegExp & {
   _glob?: string
   _src?: string
@@ -26,11 +25,11 @@ const isPatternList = (pl: MMPattern[]): pl is PatternList =>
 const isGlobList = (gl: string[]): gl is GlobList => gl.length >= 1
 
 export class Pattern {
-  readonly patternList: PatternList
-  readonly globList: GlobList
+  readonly #patternList: PatternList
+  readonly #globList: GlobList
   readonly #index: number
   readonly length: number
-  #platform: NodeJS.Platform
+  readonly #platform: NodeJS.Platform
   #rest?: Pattern | null
   #globString?: string
   #isDrive?: boolean
@@ -58,19 +57,19 @@ export class Pattern {
     if (index >= this.length) {
       throw new TypeError('index out of range')
     }
-    this.patternList = patternList
-    this.globList = globList
+    this.#patternList = patternList
+    this.#globList = globList
     this.#index = index
     this.#globstarFollowed = globstarFollowed
     this.#platform = platform
 
     // if the current item is not globstar, and the next item is .., skip ahead
     if (
-      this.patternList[this.#index] !== GLOBSTAR &&
-      this.patternList[this.#index] !== '..' &&
-      this.patternList[this.#index] !== '.' &&
-      this.patternList[this.#index] !== '' &&
-      this.patternList[this.#index + 1] === '..' &&
+      this.#patternList[this.#index] !== GLOBSTAR &&
+      this.#patternList[this.#index] !== '..' &&
+      this.#patternList[this.#index] !== '.' &&
+      this.#patternList[this.#index] !== '' &&
+      this.#patternList[this.#index + 1] === '..' &&
       this.length > this.#index + 2
     ) {
       this.#index += 2
@@ -87,8 +86,8 @@ export class Pattern {
       // /etc => ['/', 'etc']
       // / => ['/']
       if (this.isUNC()) {
-        const [p1, p2, p3, ...prest] = this.patternList
-        const [g1, g2, g3, ...grest] = this.globList
+        const [p1, p2, p3, ...prest] = this.#patternList
+        const [g1, g2, g3, ...grest] = this.#globList
         if (prest[0] === '') {
           // ends in /
           prest.shift()
@@ -96,12 +95,12 @@ export class Pattern {
         }
         const p = [p1, p2, p3, ''].join('/')
         const g = [g1, g2, g3, ''].join('/')
-        this.patternList = [p, ...prest]
-        this.globList = [g, ...grest]
-        this.length = this.patternList.length
+        this.#patternList = [p, ...prest]
+        this.#globList = [g, ...grest]
+        this.length = this.#patternList.length
       } else if (this.isDrive() || this.isAbsolute()) {
-        const [p1, ...prest] = this.patternList
-        const [g1, ...grest] = this.globList
+        const [p1, ...prest] = this.#patternList
+        const [g1, ...grest] = this.#globList
         if (prest[0] === '') {
           // ends in /
           prest.shift()
@@ -109,9 +108,9 @@ export class Pattern {
         }
         const p = (p1 as string) + '/'
         const g = g1 + '/'
-        this.patternList = [p, ...prest]
-        this.globList = [g, ...grest]
-        this.length = this.patternList.length
+        this.#patternList = [p, ...prest]
+        this.#globList = [g, ...grest]
+        this.length = this.#patternList.length
       }
     } else {
       // discard any empty path portions, except the last one.
@@ -122,24 +121,24 @@ export class Pattern {
   }
 
   pattern(): MMPattern {
-    return this.patternList[this.#index]
+    return this.#patternList[this.#index]
   }
 
   isString(): boolean {
-    return typeof this.patternList[this.#index] === 'string'
+    return typeof this.#patternList[this.#index] === 'string'
   }
   isGlobstar(): boolean {
-    return this.patternList[this.#index] === GLOBSTAR
+    return this.#patternList[this.#index] === GLOBSTAR
   }
   isGlobstarDotDot(): boolean {
-    return this.isGlobstar() && this.globList[this.#index + 1] === '..'
+    return this.isGlobstar() && this.#globList[this.#index + 1] === '..'
   }
   isRegExp(): boolean {
-    return this.patternList[this.#index] instanceof RegExp
+    return this.#patternList[this.#index] instanceof RegExp
   }
 
   glob(): string {
-    return this.globList[this.#index]
+    return this.#globList[this.#index]
   }
 
   globString(): string {
@@ -147,9 +146,9 @@ export class Pattern {
       this.#globString ||
       (this.#index === 0
         ? this.isAbsolute()
-          ? this.globList[0] + this.globList.slice(1).join('/')
-          : this.globList.join('/')
-        : this.globList.slice(this.#index).join('/')))
+          ? this.#globList[0] + this.#globList.slice(1).join('/')
+          : this.#globList.join('/')
+        : this.#globList.slice(this.#index).join('/')))
   }
 
   hasMore(): boolean {
@@ -160,8 +159,8 @@ export class Pattern {
     if (this.#rest !== undefined) return this.#rest
     if (!this.hasMore()) return (this.#rest = null)
     this.#rest = new Pattern(
-      this.patternList,
-      this.globList,
+      this.#patternList,
+      this.#globList,
       this.#index + 1,
       this.#platform,
       this.#globstarFollowed
@@ -189,7 +188,7 @@ export class Pattern {
 
   // pattern like: //host/share/...
   // split = [ '', '', 'host', 'share', ... ]
-  isUNC(pl = this.patternList): pl is UNCPatternList {
+  isUNC(pl = this.#patternList): pl is UNCPatternList {
     return this.#isUNC !== undefined
       ? this.#isUNC
       : (this.#isUNC =
@@ -208,7 +207,7 @@ export class Pattern {
   // XXX: would be nice to handle patterns like `c:*` to test the cwd
   // in c: for *, but I don't know of a way to even figure out what that
   // cwd is without actually chdir'ing into it?
-  isDrive(pl = this.patternList): pl is DrivePatternList {
+  isDrive(pl = this.#patternList): pl is DrivePatternList {
     return this.#isDrive !== undefined
       ? this.#isDrive
       : (this.#isDrive =
@@ -222,7 +221,7 @@ export class Pattern {
   // pattern = '/' or '/...' or '/x/...'
   // split = ['', ''] or ['', ...] or ['', 'x', ...]
   // Drive and UNC both considered absolute on windows
-  isAbsolute(pl = this.patternList): pl is AbsolutePatternList {
+  isAbsolute(pl = this.#patternList): pl is AbsolutePatternList {
     return this.#isAbsolute !== undefined
       ? this.#isAbsolute
       : (this.#isAbsolute =
@@ -233,9 +232,18 @@ export class Pattern {
 
   // consume the root of the pattern, and return it
   root(): string {
-    const p = this.patternList[0]
+    const p = this.#patternList[0]
     return typeof p === 'string' && this.isAbsolute() && this.#index === 0
       ? p
       : ''
+  }
+
+  hasMagic(): boolean {
+    for (let i = 0; i < this.length; i++) {
+      if (typeof this.#patternList[i] !== 'string') {
+        return true
+      }
+    }
+    return false
   }
 }
