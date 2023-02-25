@@ -1,6 +1,8 @@
 import { resolve } from 'path'
 import t from 'tap'
 import { glob } from '../'
+import { sep } from 'path'
+const j = (a: string[]) => a.map(s => s.split('/').join(sep))
 
 const origCwd = process.cwd()
 process.chdir(__dirname + '/fixtures')
@@ -8,9 +10,9 @@ t.teardown(() => process.chdir(origCwd))
 
 t.test('changing cwd and searching for **/d', t => {
   const expect = Object.entries({
-    a: new Set(['c/d', 'b/c/d']),
-    'a/b': new Set(['c/d']),
-    '': new Set(['a/b/c/d', 'a/c/d']),
+    a: new Set(j(['c/d', 'b/c/d'])),
+    'a/b': new Set(j(['c/d'])),
+    '': new Set(j(['a/b/c/d', 'a/c/d'])),
   })
   t.plan(expect.length)
   for (const [cwd, matches] of expect) {

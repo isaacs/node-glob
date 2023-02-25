@@ -5,6 +5,10 @@ import t from 'tap'
 import glob from '../'
 import type { GlobOptions } from '../src/index.js'
 
+import { sep } from 'path'
+const alphasort = (a:string, b:string) => a.localeCompare(b, 'en')
+const j = (a: string[]) => a.map(s => s.split('/').join(sep)).sort(alphasort)
+
 // [pattern, ignore, expect, opt (object) or cwd (string)]
 type Case = [
   pattern: string,
@@ -16,24 +20,24 @@ const cases: Case[] = [
   [
     '*',
     null,
-    ['abcdef', 'abcfed', 'b', 'bc', 'c', 'cb', 'symlink', 'x', 'z'],
+    j(['abcdef', 'abcfed', 'b', 'bc', 'c', 'cb', 'symlink', 'x', 'z']),
     'a',
   ],
   [
     '*',
     'b',
-    ['abcdef', 'abcfed', 'bc', 'c', 'cb', 'symlink', 'x', 'z'],
+    j(['abcdef', 'abcfed', 'bc', 'c', 'cb', 'symlink', 'x', 'z']),
     'a',
   ],
-  ['*', 'b*', ['abcdef', 'abcfed', 'c', 'cb', 'symlink', 'x', 'z'], 'a'],
-  ['b/**', 'b/c/d', ['b', 'b/c'], 'a'],
-  ['b/**', 'd', ['b', 'b/c', 'b/c/d'], 'a'],
+  ['*', 'b*', j(['abcdef', 'abcfed', 'c', 'cb', 'symlink', 'x', 'z']), 'a'],
+  ['b/**', 'b/c/d', j(['b', 'b/c']), 'a'],
+  ['b/**', 'd', j(['b', 'b/c', 'b/c/d']), 'a'],
   ['b/**', 'b/c/**', ['b'], 'a'],
-  ['**/d', 'b/c/d', ['c/d'], 'a'],
+  ['**/d', 'b/c/d', j(['c/d']), 'a'],
   [
     'a/**/[gh]',
     ['a/abcfed/g/h'],
-    ['a/abcdef/g', 'a/abcdef/g/h', 'a/abcfed/g'],
+    j(['a/abcdef/g', 'a/abcdef/g/h', 'a/abcfed/g']),
   ],
   [
     '*',
@@ -44,7 +48,7 @@ const cases: Case[] = [
   [
     '**',
     ['c/**', 'bc/**', 'symlink/**', 'abcdef/**'],
-    [
+    j([
       '',
       'abcfed',
       'abcfed/g',
@@ -57,16 +61,16 @@ const cases: Case[] = [
       'cb/e/f',
       'x',
       'z',
-    ],
+    ]),
     'a',
   ],
   ['a/**', ['a/**'], []],
   ['a/**', ['a/**/**'], []],
-  ['a/b/**', ['a/b'], ['a/b/c', 'a/b/c/d']],
+  ['a/b/**', ['a/b'], j(['a/b/c', 'a/b/c/d'])],
   [
     '**',
     ['b'],
-    [
+    j([
       '',
       'abcdef',
       'abcdef/g',
@@ -92,13 +96,13 @@ const cases: Case[] = [
       'symlink/a/b/c',
       'x',
       'z',
-    ],
+    ]),
     'a',
   ],
   [
     '**',
     ['b', 'c'],
-    [
+    j([
       '',
       'abcdef',
       'abcdef/g',
@@ -123,13 +127,13 @@ const cases: Case[] = [
       'symlink/a/b/c',
       'x',
       'z',
-    ],
+    ]),
     'a',
   ],
   [
     '**',
     ['b**'],
-    [
+    j([
       '',
       'abcdef',
       'abcdef/g',
@@ -154,13 +158,13 @@ const cases: Case[] = [
       'symlink/a/b/c',
       'x',
       'z',
-    ],
+    ]),
     'a',
   ],
   [
     '**',
     ['b/**'],
-    [
+    j([
       '',
       'abcdef',
       'abcdef/g',
@@ -184,13 +188,13 @@ const cases: Case[] = [
       'symlink/a/b/c',
       'x',
       'z',
-    ],
+    ]),
     'a',
   ],
   [
     '**',
     ['b**/**'],
-    [
+    j([
       '',
       'abcdef',
       'abcdef/g',
@@ -211,13 +215,13 @@ const cases: Case[] = [
       'symlink/a/b/c',
       'x',
       'z',
-    ],
+    ]),
     'a',
   ],
   [
     '**',
     ['ab**ef/**'],
-    [
+    j([
       '',
       'abcfed',
       'abcfed/g',
@@ -241,13 +245,13 @@ const cases: Case[] = [
       'symlink/a/b/c',
       'x',
       'z',
-    ],
+    ]),
     'a',
   ],
   [
     '**',
     ['abc{def,fed}/**'],
-    [
+    j([
       '',
       'b',
       'b/c',
@@ -268,13 +272,13 @@ const cases: Case[] = [
       'symlink/a/b/c',
       'x',
       'z',
-    ],
+    ]),
     'a',
   ],
   [
     '**',
     ['abc{def,fed}/*'],
-    [
+    j([
       '',
       'abcdef',
       'abcdef/g/h',
@@ -299,23 +303,23 @@ const cases: Case[] = [
       'symlink/a/b/c',
       'x',
       'z',
-    ],
+    ]),
     'a',
   ],
-  ['c/**', ['c/*'], ['c', 'c/d/c', 'c/d/c/b'], 'a'],
-  ['a/c/**', ['a/c/*'], ['a/c', 'a/c/d/c', 'a/c/d/c/b']],
+  ['c/**', ['c/*'], j(['c', 'c/d/c', 'c/d/c/b']), 'a'],
+  ['a/c/**', ['a/c/*'], j(['a/c', 'a/c/d/c', 'a/c/d/c/b'])],
   ['a/c/**', ['a/c/**', 'a/c/*', 'a/c/*/c'], []],
-  ['a/**/.y', ['a/x/**'], ['a/z/.y']],
-  ['a/**/.y', ['a/x/**'], ['a/z/.y'], { dot: true }],
-  ['a/**/b', ['a/x/**'], ['a/b', 'a/c/d/c/b', 'a/symlink/a/b']],
+  ['a/**/.y', ['a/x/**'], j(['a/z/.y'])],
+  ['a/**/.y', ['a/x/**'], j(['a/z/.y']), { dot: true }],
+  ['a/**/b', ['a/x/**'], j(['a/b', 'a/c/d/c/b', 'a/symlink/a/b'])],
   [
     'a/**/b',
     ['a/x/**'],
-    ['a/b', 'a/c/d/c/b', 'a/symlink/a/b', 'a/z/.y/b'],
+    j(['a/b', 'a/c/d/c/b', 'a/symlink/a/b', 'a/z/.y/b']),
     { dot: true },
   ],
   ['*/.abcdef', 'a/**', []],
-  ['a/*/.y/b', 'a/x/**', ['a/z/.y/b']],
+  ['a/*/.y/b', 'a/x/**', j(['a/z/.y/b'])],
 ]
 
 process.chdir(__dirname + '/fixtures')
