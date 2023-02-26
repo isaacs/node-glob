@@ -25,7 +25,7 @@ t.test('mark with cwd', async t => {
   }
 
   t.same(res.sort(alphasort), j(expect))
-  t.same(glob.sync(pattern, opt).sort(alphasort), j(expect))
+  t.same(glob.globSync(pattern, opt).sort(alphasort), j(expect))
 })
 
 t.test('mark, with **', async t => {
@@ -50,7 +50,7 @@ t.test('mark, with **', async t => {
   ].sort(alphasort)
 
   t.same((await glob(pattern, opt)).sort(alphasort), j(expect), 'async')
-  t.same(glob.sync(pattern, opt).sort(alphasort), j(expect), 'sync')
+  t.same(glob.globSync(pattern, opt).sort(alphasort), j(expect), 'sync')
 })
 
 t.test('mark, no / on pattern', async t => {
@@ -71,7 +71,7 @@ t.test('mark, no / on pattern', async t => {
   }
   const results = (await glob(pattern, opt)).sort(alphasort)
   t.same(results, j(expect))
-  t.same(glob.sync(pattern, opt).sort(alphasort), j(expect))
+  t.same(glob.globSync(pattern, opt).sort(alphasort), j(expect))
 })
 
 t.test('mark=false, no / on pattern', async t => {
@@ -92,7 +92,7 @@ t.test('mark=false, no / on pattern', async t => {
   const results = (await glob(pattern)).sort(alphasort)
 
   t.same(results, j(expect))
-  t.same(glob.sync(pattern).sort(alphasort), j(expect))
+  t.same(glob.globSync(pattern).sort(alphasort), j(expect))
 })
 
 t.test('mark=true, / on pattern', async t => {
@@ -114,7 +114,7 @@ t.test('mark=true, / on pattern', async t => {
   }
   const results = (await glob(pattern, opt)).sort(alphasort)
   t.same(results, j(expect))
-  t.same(glob.sync(pattern, opt).sort(alphasort), j(expect))
+  t.same(glob.globSync(pattern, opt).sort(alphasort), j(expect))
 })
 
 t.test('mark=false, / on pattern', async t => {
@@ -135,7 +135,7 @@ t.test('mark=false, / on pattern', async t => {
 
   const results = (await glob(pattern)).sort(alphasort)
   t.same(results, j(expect))
-  t.same(glob.sync(pattern).sort(alphasort), j(expect))
+  t.same(glob.globSync(pattern).sort(alphasort), j(expect))
 })
 
 const cwd = process
@@ -149,12 +149,31 @@ for (const mark of [true, false]) {
       const results = await glob(pattern, { mark })
       t.equal(results.length, 1)
       const res = results[0].replace(/\\/g, '/')
-      const syncResults = glob.sync(pattern, { mark: mark })
+      const syncResults = glob.globSync(pattern, { mark: mark })
       const syncRes = syncResults[0].replace(/\\/g, '/')
       if (mark) {
         t.equal(res, cwd + '/')
       } else {
         t.equal(res.indexOf(cwd), 0)
+      }
+      t.equal(syncRes, res, 'sync should match async')
+    })
+  }
+}
+
+for (const mark of [true, false]) {
+  for (const slash of [true, false]) {
+    t.test('. mark:' + mark + ' slash:' + slash, async t => {
+      const pattern = '.' + (slash ? '/' : '')
+      const results = await glob(pattern, { mark })
+      t.equal(results.length, 1)
+      const res = results[0].replace(/\\/g, '/')
+      const syncResults = glob.globSync(pattern, { mark: mark })
+      const syncRes = syncResults[0].replace(/\\/g, '/')
+      if (mark) {
+        t.equal(res, './')
+      } else {
+        t.equal(res, '')
       }
       t.equal(syncRes, res, 'sync should match async')
     })

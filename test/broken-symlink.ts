@@ -58,7 +58,7 @@ t.test('sync test', t => {
     t.test(pattern, t => {
       t.plan(opts.length)
       for (const opt of opts) {
-        const res = glob.sync(pattern, opt)
+        const res = glob.globSync(pattern, opt)
         t.not(res.indexOf(link), -1, 'opt=' + JSON.stringify(opt))
       }
     })

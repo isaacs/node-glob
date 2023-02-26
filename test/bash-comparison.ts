@@ -50,7 +50,7 @@ globs.forEach(function (pattern) {
   })
 
   t.test(pattern + ' sync', async t => {
-    const matches = cleanResults(glob.sync(pattern))
+    const matches = cleanResults(glob.globSync(pattern))
     t.same(matches, expect, 'should match shell (sync)')
   })
 })

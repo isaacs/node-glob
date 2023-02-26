@@ -31,7 +31,7 @@ t.test('treat backslash as escape', t => {
   for (const [pattern, expect] of cases) {
     t.test(pattern, async t => {
       t.strictSame(
-        glob.sync(pattern, { cwd: dir }).map(s => s.replace(/\\/g, '/')),
+        glob.globSync(pattern, { cwd: dir }).map(s => s.replace(/\\/g, '/')),
         expect,
         'sync'
       )
@@ -60,7 +60,7 @@ t.test('treat backslash as separator', t => {
     t.test(pattern, async t => {
       t.strictSame(
         glob
-          .sync(pattern, { cwd: dir, windowsPathsNoEscape: true })
+          .globSync(pattern, { cwd: dir, windowsPathsNoEscape: true })
           .map(s => s.replace(/\\/g, '/')),
         expect,
         'sync'

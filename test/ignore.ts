@@ -357,7 +357,7 @@ for (const c of cases) {
   t.test(name, async t => {
     const res = await glob(pattern, opt)
     t.same(res.sort(), expect, 'async')
-    const resSync = glob.sync(pattern, opt)
+    const resSync = glob.globSync(pattern, opt)
     t.same(resSync.sort(), expect, 'sync')
   })
 }
@@ -377,7 +377,7 @@ t.test('race condition', async t => {
         const expect = ignore ? [] : j(['fixtures/a'])
         t.test(JSON.stringify(opt), async t => {
           t.plan(2)
-          t.same(glob.sync(pattern, opt).sort(), expect)
+          t.same(glob.globSync(pattern, opt).sort(), expect)
           t.same((await glob(pattern, opt)).sort(), expect)
         })
       }

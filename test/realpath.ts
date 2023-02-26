@@ -55,7 +55,7 @@ if (process.platform === 'win32') {
     expect.sort(alphasort)
     t.test(p + ' ' + JSON.stringify(opt), async t => {
       opt.realpath = true
-      t.same(glob.sync(p, opt).sort(alphasort), expect, 'sync')
+      t.same(glob.globSync(p, opt).sort(alphasort), expect, 'sync')
       const a = await glob(p, opt)
       t.same(a.sort(alphasort), expect, 'async')
     })
@@ -83,13 +83,13 @@ if (process.platform === 'win32') {
     const expect = ['a/symlink', 'a/symlink/a/b'].sort(alphasort)
     t.test('setting cwd explicitly', async t => {
       const opt = { realpath: true, cwd: fixtureDir }
-      t.same(glob.sync(pattern, opt).sort(alphasort), expect)
+      t.same(glob.globSync(pattern, opt).sort(alphasort), expect)
       t.same((await glob(pattern, opt)).sort(alphasort), expect)
     })
     t.test('looking in cwd', async t => {
       process.chdir(fixtureDir)
       const opt = { realpath: true }
-      t.same(glob.sync(pattern, opt).sort(alphasort), expect)
+      t.same(glob.globSync(pattern, opt).sort(alphasort), expect)
       t.same((await glob(pattern, opt)).sort(alphasort), expect)
     })
   })

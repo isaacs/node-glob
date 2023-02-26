@@ -12,6 +12,7 @@ import {
   GWOFileTypesTrue,
   GWOFileTypesUnset,
   MatchStream,
+  Result,
 } from './walker.js'
 
 export function globStreamSync(
@@ -106,19 +107,64 @@ export async function glob(
   return new Glob(pattern, options).walk()
 }
 
+export function globIterate(
+  pattern: string | string[],
+  options?: GlobOptionsWithFileTypesUnset | undefined
+): AsyncGenerator<Result<GWOFileTypesUnset>, void, void>
+export function globIterate(
+  pattern: string | string[],
+  options: GlobOptionsWithFileTypesTrue
+): AsyncGenerator<Result<GWOFileTypesTrue>, void, void>
+export function globIterate(
+  pattern: string | string[],
+  options: GlobOptionsWithFileTypesFalse
+): AsyncGenerator<Result<GWOFileTypesFalse>, void, void>
+export function globIterate(
+  pattern: string | string[],
+  options: GlobOptions
+): AsyncGenerator<Result<GlobOptions>, void, void>
+export function globIterate(
+  pattern: string | string[],
+  options: GlobOptions = {}
+) {
+  return new Glob(pattern, options).iterate()
+}
+
+export function globIterateSync(
+  pattern: string | string[],
+  options?: GlobOptionsWithFileTypesUnset | undefined
+): Generator<Result<GWOFileTypesUnset>, void, void>
+export function globIterateSync(
+  pattern: string | string[],
+  options: GlobOptionsWithFileTypesTrue
+): Generator<Result<GWOFileTypesTrue>, void, void>
+export function globIterateSync(
+  pattern: string | string[],
+  options: GlobOptionsWithFileTypesFalse
+): Generator<Result<GWOFileTypesFalse>, void, void>
+export function globIterateSync(
+  pattern: string | string[],
+  options: GlobOptions
+): Generator<Result<GlobOptions>, void, void>
+export function globIterateSync(
+  pattern: string | string[],
+  options: GlobOptions = {}
+) {
+  return new Glob(pattern, options).iterateSync()
+}
+
 /* c8 ignore start */
 export { Glob } from './glob.js'
 export type { GlobOptions } from './glob.js'
 export { hasMagic } from './has-magic.js'
 /* c8 ignore stop */
 export default Object.assign(glob, {
-  glob: glob,
-  sync: globSync,
+  glob,
   globSync,
-  stream: globStream,
-  streamSync: globStreamSync,
   globStream,
   globStreamSync,
+  globIterate,
+  globIterateSync,
   Glob,
   hasMagic,
 })

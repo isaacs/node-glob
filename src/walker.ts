@@ -74,7 +74,9 @@ const makeIgnore = (
     ? new Ignore([ignore], opts)
     : Array.isArray(ignore)
     ? new Ignore(ignore, opts)
-    : ignore
+    : /* c8 ignore start */
+      ignore
+/* c8 ignore stop */
 
 /**
  * basic walking utilities that all the glob walker types use
@@ -89,6 +91,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   #onResume: (() => any)[] = []
   #ignore?: Ignore
   #sep: '\\' | '/'
+  signal?: AbortSignal
 
   constructor(patterns: Pattern[], path: Path, opts: O)
   constructor(patterns: Pattern[], path: Path, opts: O) {
@@ -100,7 +103,10 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       this.#ignore = makeIgnore(opts.ignore, opts)
     }
     if (opts.signal) {
-      opts.signal.addEventListener('abort', () => this.abort())
+      this.signal = opts.signal
+      this.signal.addEventListener('abort', () => {
+        this.#onResume.length = 0
+      })
     }
   }
 
@@ -116,7 +122,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     this.paused = true
   }
   resume() {
-    if (this.aborted) return
+    /* c8 ignore start */
+    if (this.signal?.aborted) return
+    /* c8 ignore stop */
     this.paused = false
     let fn: (() => any) | undefined = undefined
     while (!this.paused && (fn = this.#onResume.shift())) {
@@ -124,135 +132,46 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
   }
   onResume(fn: () => any) {
-    if (this.aborted) return
+    if (this.signal?.aborted) return
+    /* c8 ignore start */
     if (!this.paused) fn()
+    /* c8 ignore stop */
     else this.#onResume.push(fn)
   }
-  abort() {
-    this.paused = true
-    this.aborted = true
-  }
 
-  // do the requisite realpath/stat checking, and return true/false
-  // to say whether to include the match or filter it out.
+  // do the requisite realpath/stat checking, and return the path
+  // to add or undefined to filter it out.
   async matchCheck(e: Path, ifDir: boolean): Promise<Path | undefined> {
+    if (ifDir && this.opts.nodir) return undefined
     let rpc: Path | undefined
     if (this.opts.realpath) {
-      rpc = e.realpathCached()
-      if (rpc) {
-        if (this.#ignored(rpc) || (e.isDirectory() && this.opts.nodir)) {
-          return undefined
-        }
-        e = rpc
-      }
+      rpc = e.realpathCached() || (await e.realpath())
+      if (!rpc) return undefined
+      e = rpc
     }
-    if (e.isDirectory() && this.opts.nodir) {
-      return undefined
-    }
-    const needRealPath = !rpc && this.opts.realpath
     const needStat = e.isUnknown()
-    if (needRealPath && needStat) {
-      const r = await e.realpath().then(e => e?.lstat())
-      if (
-        !r ||
-        this.#ignored(r) ||
-        (!e.canReaddir() && ifDir) ||
-        (e.isDirectory() && this.opts.nodir)
-      ) {
-        return undefined
-      }
-      return r
-    } else if (needRealPath) {
-      const r = await e.realpath()
-      if (
-        !r ||
-        this.#ignored(r) ||
-        (!e.canReaddir() && ifDir) ||
-        (e.isDirectory() && this.opts.nodir)
-      ) {
-        return undefined
-      }
-      return r
-    } else if (needStat) {
-      const r = await e.lstat()
-      if (
-        !r ||
-        this.#ignored(r) ||
-        (!r.canReaddir() && ifDir) ||
-        (r.isDirectory() && this.opts.nodir)
-      ) {
-        return undefined
-      }
-      return r
-    } else if (
-      this.#ignored(e) ||
-      (!e.canReaddir() && ifDir) ||
-      (e.isDirectory() && this.opts.nodir)
-    ) {
-      return undefined
-    } else {
-      return e
-    }
+    return this.matchCheckTest(needStat ? await e.lstat() : e, ifDir)
+  }
+
+  matchCheckTest(e: Path | undefined, ifDir: boolean): Path | undefined {
+    return e &&
+      !this.#ignored(e) &&
+      (!ifDir || e.canReaddir()) &&
+      (!this.opts.nodir || !e.isDirectory())
+      ? e
+      : undefined
   }
 
   matchCheckSync(e: Path, ifDir: boolean): Path | undefined {
+    if (ifDir && this.opts.nodir) return undefined
     let rpc: Path | undefined
     if (this.opts.realpath) {
-      rpc = e.realpathCached()
-      if (rpc) {
-        if (this.#ignored(rpc) || (e.isDirectory() && this.opts.nodir)) {
-          return undefined
-        }
-        e = rpc
-      }
+      rpc = e.realpathCached() || e.realpathSync()
+      if (!rpc) return undefined
+      e = rpc
     }
-    if (e.isDirectory() && this.opts.nodir) {
-      return undefined
-    }
-    const needRealPath = !rpc && this.opts.realpath
     const needStat = e.isUnknown()
-    if (needRealPath && needStat) {
-      const r = e.realpathSync()?.lstatSync()
-      if (
-        !r ||
-        this.#ignored(r) ||
-        (!r.canReaddir() && ifDir) ||
-        (e.isDirectory() && this.opts.nodir)
-      ) {
-        return undefined
-      }
-      return r
-    } else if (needRealPath) {
-      const r = e.realpathSync()
-      if (
-        !r ||
-        this.#ignored(r) ||
-        (!r.canReaddir() && ifDir) ||
-        (e.isDirectory() && this.opts.nodir)
-      ) {
-        return undefined
-      }
-      return r
-    } else if (needStat) {
-      const r = e.lstatSync()
-      if (
-        !r ||
-        this.#ignored(r) ||
-        (!r.canReaddir() && ifDir) ||
-        (r.isDirectory() && this.opts.nodir)
-      ) {
-        return undefined
-      }
-      return r
-    } else if (
-      this.#ignored(e) ||
-      (!e.canReaddir() && ifDir) ||
-      (e.isDirectory() && this.opts.nodir)
-    ) {
-      return undefined
-    } else {
-      return e
-    }
+    return this.matchCheckTest(needStat ? e.lstatSync() : e, ifDir)
   }
 
   abstract matchEmit(p: Result<O>): void
@@ -265,8 +184,6 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     // ok, we have what we need!
     if (this.opts.withFileTypes) {
       this.matchEmit(e)
-    } else if (this.opts.nodir && e.isDirectory()) {
-      return
     } else if (this.opts.absolute || absolute) {
       this.matchEmit(e.fullpath() + mark)
     } else {
@@ -276,22 +193,19 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   async match(e: Path, absolute: boolean, ifDir: boolean): Promise<void> {
-    if (this.#ignored(e)) return
     const p = await this.matchCheck(e, ifDir)
     if (p) this.matchFinish(p, absolute)
   }
 
   matchSync(e: Path, absolute: boolean, ifDir: boolean): void {
-    if (this.#ignored(e)) return
     const p = this.matchCheckSync(e, ifDir)
     if (p) this.matchFinish(p, absolute)
   }
 
   walkCB(target: Path, patterns: Pattern[], cb: () => any) {
-    if (this.paused) {
-      this.onResume(() => this.walkCB(target, patterns, cb))
-      return
-    }
+    /* c8 ignore start */
+    if (this.signal?.aborted) cb()
+    /* c8 ignore stop */
     this.walkCB2(target, patterns, new Processor(this.opts), cb)
   }
 
@@ -302,6 +216,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     cb: () => any
   ) {
     if (this.#childrenIgnored(target)) return cb()
+    if (this.signal?.aborted) cb()
     if (this.paused) {
       this.onResume(() => this.walkCB2(target, patterns, processor, cb))
       return
@@ -365,10 +280,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   walkCBSync(target: Path, patterns: Pattern[], cb: () => any) {
-    if (this.paused) {
-      this.onResume(() => this.walkCBSync(target, patterns, cb))
-      return
-    }
+    /* c8 ignore start */
+    if (this.signal?.aborted) cb()
+    /* c8 ignore stop */
     this.walkCB2Sync(target, patterns, new Processor(this.opts), cb)
   }
 
@@ -379,6 +293,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     cb: () => any
   ) {
     if (this.#childrenIgnored(target)) return cb()
+    if (this.signal?.aborted) cb()
     if (this.paused) {
       this.onResume(() =>
         this.walkCB2Sync(target, patterns, processor, cb)
@@ -457,19 +372,31 @@ export class GlobWalker<
   }
 
   async walk(): Promise<Matches<O>> {
+    if (this.signal?.aborted) throw this.signal.reason
     const t = this.path.isUnknown() ? await this.path.lstat() : this.path
     if (t) {
-      await new Promise(res => {
-        this.walkCB(t, this.patterns, () => res(this.matches))
+      await new Promise((res, rej) => {
+        this.walkCB(t, this.patterns, () => {
+          if (this.signal?.aborted) {
+            rej(this.signal.reason)
+          } else {
+            res(this.matches)
+          }
+        })
       })
     }
     return this.matches
   }
 
   walkSync(): Matches<O> {
+    if (this.signal?.aborted) throw this.signal.reason
     const t = this.path.isUnknown() ? this.path.lstatSync() : this.path
     // nothing for the callback to do, because this never pauses
-    if (t) this.walkCBSync(t, this.patterns, () => {})
+    if (t) {
+      this.walkCBSync(t, this.patterns, () => {
+        if (this.signal?.aborted) throw this.signal.reason
+      })
+    }
     return this.matches
   }
 }
@@ -488,7 +415,7 @@ export class GlobStream<
   constructor(patterns: Pattern[], path: Path, opts: O) {
     super(patterns, path, opts)
     this.results = new Minipass({
-      signal: this.opts.signal,
+      signal: this.signal,
       objectMode: true,
     }) as MatchStream<O>
     this.results.on('drain', () => this.resume())

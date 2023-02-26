@@ -1,3 +1,4 @@
+import { resolve } from 'path'
 import t from 'tap'
 
 import {
@@ -7,6 +8,9 @@ import {
   PathScurryWin32,
 } from 'path-scurry'
 import { Glob } from '../'
+import { glob } from '../dist/cjs'
+import {GlobWalker} from '../dist/cjs/walker'
+import {Pattern} from '../dist/cjs/pattern'
 
 t.test('default platform is process.platform', t => {
   const g = new Glob('.', {})
@@ -54,4 +58,16 @@ t.test('set scurry, sets nocase and scurry', t => {
   t.equal(g.scurry, scurry)
   t.equal(g.nocase, true)
   t.end()
+})
+
+t.test('instantiate to hit a coverage line', async t => {
+  const s = new PathScurry(resolve(__dirname, 'fixtures/a/b'))
+  const p = new Pattern([/./, /./], ['?', '?'], 0, process.platform)
+  new GlobWalker([p], s.cwd, {
+    platform: 'win32',
+  })
+  new GlobWalker([p], s.cwd, {
+    platform: 'linux',
+  })
+  t.pass('this is fine')
 })

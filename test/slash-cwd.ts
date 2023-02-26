@@ -11,6 +11,6 @@ const opt: GlobOptions = { cwd }
 process.chdir(__dirname + '/..')
 
 t.test('slashes only match directories', async t => {
-  t.same(glob.sync(pattern, opt), expect, 'sync test')
+  t.same(glob.globSync(pattern, opt), expect, 'sync test')
   t.same(await glob(pattern, opt), expect, 'async test')
 })
