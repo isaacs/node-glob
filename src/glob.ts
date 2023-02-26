@@ -24,18 +24,26 @@ const defaultPlatform: NodeJS.Platform =
     ? process.platform
     : 'linux'
 
-export interface GlobOptions extends MinimatchOptions {
-  ignore?: string | string[] | Ignore
-  follow?: boolean
-  mark?: boolean
-  nodir?: boolean
-  cwd?: string
-  realpath?: boolean
+export interface GlobOptions {
   absolute?: boolean
-  withFileTypes?: boolean
-  scurry?: PathScurry
+  allowWindowsEscape?: boolean
+  cwd?: string
+  dot?: boolean
+  follow?: boolean
+  ignore?: string | string[] | Ignore
+  mark?: boolean
+  matchBase?: boolean
+  nobrace?: boolean
+  nocase?: boolean
+  nodir?: boolean
+  noext?: boolean
+  noglobstar?: boolean
   platform?: NodeJS.Platform
+  realpath?: boolean
+  scurry?: PathScurry
   signal?: AbortSignal
+  windowsPathsNoEscape?: boolean
+  withFileTypes?: boolean
 }
 
 export type GlobOptionsWithFileTypesTrue = GlobOptions & {
@@ -57,7 +65,7 @@ type Result<Opts> = Opts extends GlobOptionsWithFileTypesTrue
   : Opts extends GlobOptionsWithFileTypesUnset
   ? string
   : string | Path
-type Results<Opts> = Result<Opts>[]
+export type Results<Opts> = Result<Opts>[]
 
 type FileTypes<Opts> = Opts extends GlobOptionsWithFileTypesTrue
   ? true
@@ -80,7 +88,6 @@ export class Glob<Opts extends GlobOptions> {
   globSet: GlobSet
   globParts: GlobParts
   realpath: boolean
-  nonull: boolean
   absolute: boolean
   matchBase: boolean
   windowsPathsNoEscape: boolean
@@ -95,6 +102,8 @@ export class Glob<Opts extends GlobOptions> {
   platform: NodeJS.Platform
   patterns: Pattern[]
   signal?: AbortSignal
+  nobrace: boolean
+  noext: boolean
 
   constructor(pattern: string | string[], opts: Opts) {
     this.withFileTypes = !!opts.withFileTypes as FileTypes<Opts>
@@ -104,24 +113,16 @@ export class Glob<Opts extends GlobOptions> {
     this.nodir = !!opts.nodir
     this.mark = !!opts.mark
     this.cwd = opts.cwd || ''
+    this.nobrace = !!opts.nobrace
+    this.noext = !!opts.noext
     this.realpath = !!opts.realpath
-    this.nonull = !!opts.nonull
     this.absolute = !!opts.absolute
 
     this.noglobstar = !!opts.noglobstar
     this.matchBase = !!opts.matchBase
 
-    // if we're returning Path objects, we can't do nonull, because
-    // the pattern is a string, not a Path
-    if (this.withFileTypes) {
-      if (this.nonull) {
-        throw new TypeError(
-          'cannot set nonull:true and withFileTypes:true'
-        )
-      }
-      if (this.absolute) {
-        throw new Error('cannot set absolute:true and withFileTypes:true')
-      }
+    if (this.withFileTypes && this.absolute) {
+      throw new Error('cannot set absolute:true and withFileTypes:true')
     }
 
     if (typeof pattern === 'string') {
@@ -149,6 +150,12 @@ export class Glob<Opts extends GlobOptions> {
     this.opts = { ...opts, platform: this.platform }
     if (opts.scurry) {
       this.scurry = opts.scurry
+      if (
+        opts.nocase !== undefined &&
+        opts.nocase !== opts.scurry.nocase
+      ) {
+        throw new Error('nocase option contradicts provided scurry option')
+      }
     } else {
       const Scurry =
         opts.platform === 'win32'
@@ -170,13 +177,18 @@ export class Glob<Opts extends GlobOptions> {
 
     const mmo: MinimatchOptions = {
       // default nocase based on platform
-      nocase: this.nocase,
       ...opts,
-      nonegate: true,
-      nocomment: true,
+      dot: this.dot,
+      matchBase: this.matchBase,
+      nobrace: this.nobrace,
+      nocase: this.nocase,
       nocaseMagicOnly: true,
+      nocomment: true,
+      noext: this.noext,
+      nonegate: true,
       optimizationLevel: 2,
       platform: this.platform,
+      windowsPathsNoEscape: this.windowsPathsNoEscape,
     }
 
     const mms = this.pattern.map(p => new Minimatch(p, mmo))
@@ -224,8 +236,8 @@ export class Glob<Opts extends GlobOptions> {
     return [...matches]
   }
 
-  stream(): Minipass<Result<Opts>>
-  stream(): Minipass<string | Path> {
+  stream(): Minipass<Result<Opts>, Result<Opts>>
+  stream(): Minipass<string | Path, string | Path> {
     return new GlobStream(this.patterns, this.scurry.cwd, {
       ...this.opts,
       platform: this.platform,
@@ -233,8 +245,8 @@ export class Glob<Opts extends GlobOptions> {
     }).stream()
   }
 
-  streamSync(): Minipass<Result<Opts>>
-  streamSync(): Minipass<string | Path> {
+  streamSync(): Minipass<Result<Opts>, Result<Opts>>
+  streamSync(): Minipass<string | Path, string | Path> {
     return new GlobStream(this.patterns, this.scurry.cwd, {
       ...this.opts,
       platform: this.platform,
@@ -242,17 +254,17 @@ export class Glob<Opts extends GlobOptions> {
     }).streamSync()
   }
 
-  iteratorSync(): Generator<Result<Opts>, void, void> {
+  iterateSync(): Generator<Result<Opts>, void, void> {
     return this.streamSync()[Symbol.iterator]()
   }
   [Symbol.iterator]() {
-    return this.iteratorSync()
+    return this.iterateSync()
   }
 
-  iterator(): AsyncGenerator<Result<Opts>, void, void> {
+  iterate(): AsyncGenerator<Result<Opts>, void, void> {
     return this.stream()[Symbol.asyncIterator]()
   }
   [Symbol.asyncIterator]() {
-    return this.iterator()
+    return this.iterate()
   }
 }

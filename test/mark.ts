@@ -2,9 +2,10 @@ import t from 'tap'
 import glob from '../'
 process.chdir(__dirname + '/fixtures')
 
-const alphasort = (a:string, b:string) => a.localeCompare(b, 'en')
+const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
 import { sep } from 'path'
-const j = (a: string[]) => a.map(s=>s.split('/').join(sep)).sort(alphasort)
+const j = (a: string[]) =>
+  a.map(s => s.split('/').join(sep)).sort(alphasort)
 
 t.test('mark with cwd', async t => {
   const pattern = '*/*'

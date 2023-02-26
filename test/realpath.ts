@@ -3,7 +3,7 @@ import * as fsp from 'fs/promises'
 import { resolve } from 'path'
 import t from 'tap'
 import glob from '../'
-import type { GlobOptions } from '../src/index.js'
+import { GlobOptionsWithFileTypesUnset } from '../src/glob'
 
 const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
 
@@ -19,7 +19,11 @@ if (process.platform === 'win32') {
   // options, results
   // realpath:true set on each option
 
-  type Case = [options: GlobOptions, results: string[], pattern?: string]
+  type Case = [
+    options: GlobOptionsWithFileTypesUnset,
+    results: string[],
+    pattern?: string
+  ]
   const cases: Case[] = [
     [{}, ['a/symlink', 'a/symlink/a', 'a/symlink/a/b']],
 

@@ -55,7 +55,13 @@ class SubWalks {
     } else this.store.set(target, [pattern])
   }
   get(target: Path): Pattern[] {
-    return this.store.get(target) || []
+    const subs = this.store.get(target)
+    /* c8 ignore start */
+    if (!subs) {
+      throw new Error('attempting to walk unknown path')
+    }
+    /* c8 ignore stop */
+    return subs
   }
   entries(): [Path, Pattern[]][] {
     return this.keys().map(k => [k, this.store.get(k) as Pattern[]])
@@ -91,9 +97,6 @@ export class Processor {
     // first item in patterns is the filter
 
     for (let [t, pattern] of processingSet) {
-      if (this.hasWalkedCache.hasWalked(t, pattern)) {
-        continue
-      }
       this.hasWalkedCache.storeWalked(t, pattern)
 
       const root = pattern.root()
@@ -165,7 +168,11 @@ export class Processor {
           this.matches.add(t, absolute, rp === '' || rp === '.')
         } else {
           if (rp === '..') {
+            // this would mean you're matching **/.. at the fs root,
+            // and no thanks, I'm not gonna test that specific case.
+            /* c8 ignore start */
             const tp = t.parent || t
+            /* c8 ignore stop */
             if (!rrest) this.matches.add(tp, absolute, true)
             else if (!this.hasWalkedCache.hasWalked(tp, rrest)) {
               this.subwalks.add(tp, rrest)
@@ -252,6 +259,11 @@ export class Processor {
         rp !== '.'
       ) {
         this.testString(e, rp, rest.rest(), absolute)
+      } else if (rp === '..') {
+        /* c8 ignore start */
+        const ep = e.parent || e
+        /* c8 ignore stop */
+        this.subwalks.add(ep, rest)
       } else if (rp instanceof RegExp) {
         this.testRegExp(e, rp, rest.rest(), absolute)
       }

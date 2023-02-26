@@ -3,8 +3,9 @@ import glob from '../'
 
 import { resolve } from 'path'
 import { sep } from 'path'
-const alphasort = (a:string, b:string) => a.localeCompare(b, 'en')
-const j = (a: string[]) => a.map(s => s.split('/').join(sep)).sort(alphasort)
+const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
+const j = (a: string[]) =>
+  a.map(s => s.split('/').join(sep)).sort(alphasort)
 
 const fixtureDir = resolve(__dirname, 'fixtures')
 
@@ -19,7 +20,10 @@ t.test('chdir', async t => {
   const origCwd = process.cwd()
   process.chdir(fixtureDir)
   t.teardown(() => process.chdir(origCwd))
-  t.same(glob.sync(pattern, { matchBase: true }).sort(alphasort), j(expect))
+  t.same(
+    glob.sync(pattern, { matchBase: true }).sort(alphasort),
+    j(expect)
+  )
   t.same(
     (await glob(pattern, { matchBase: true })).sort(alphasort),
     j(expect)

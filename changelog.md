@@ -9,11 +9,6 @@ changes.
 - Promise API instead of callbacks.
 - Accept pattern as string or array of strings.
 - Hybrid module distribution.
-
-  **Note:** `module.exports` in CommonJS mode is an object, not a
-  function. Use the exported `default` or `glob` members to
-  access the default function export in CommonJS modes.
-
 - Full TypeScript support.
 - Exported `Glob` class is no longer an event emitter.
 - Exported `Glob` class has `walk()`, `walkSync()`, `stream()`,
@@ -69,7 +64,7 @@ changes.
   or vice versa, may thus result in more or fewer matches than
   expected. In general, it should only be used when the
   filesystem is known to differ from the platform default.
-- `realpath:true` no longer implies `absolute:true`.  The
+- `realpath:true` no longer implies `absolute:true`. The
   relative path to the realpath will be emitted when `absolute`
   is not set.
 

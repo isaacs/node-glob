@@ -6,8 +6,11 @@ import glob from '../'
 import type { GlobOptions } from '../src/index.js'
 
 import { sep } from 'path'
-const alphasort = (a:string, b:string) => a.localeCompare(b, 'en')
-const j = (a: string[]) => a.map(s => s.split('/').join(sep)).sort(alphasort)
+const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
+const j = (a: string[]) =>
+  a.map(s => s.split('/').join(sep)).sort(alphasort)
+
+process.chdir(__dirname + '/fixtures')
 
 // [pattern, ignore, expect, opt (object) or cwd (string)]
 type Case = [
@@ -29,10 +32,16 @@ const cases: Case[] = [
     j(['abcdef', 'abcfed', 'bc', 'c', 'cb', 'symlink', 'x', 'z']),
     'a',
   ],
-  ['*', 'b*', j(['abcdef', 'abcfed', 'c', 'cb', 'symlink', 'x', 'z']), 'a'],
+  [
+    '*',
+    'b*',
+    j(['abcdef', 'abcfed', 'c', 'cb', 'symlink', 'x', 'z']),
+    'a',
+  ],
   ['b/**', 'b/c/d', j(['b', 'b/c']), 'a'],
   ['b/**', 'd', j(['b', 'b/c', 'b/c/d']), 'a'],
   ['b/**', 'b/c/**', ['b'], 'a'],
+  ['b/**', (process.cwd() + '/a/b/c/**').split(sep).join('/'), ['b'], 'a'],
   ['**/d', 'b/c/d', j(['c/d']), 'a'],
   [
     'a/**/[gh]',
@@ -320,9 +329,12 @@ const cases: Case[] = [
   ],
   ['*/.abcdef', 'a/**', []],
   ['a/*/.y/b', 'a/x/**', j(['a/z/.y/b'])],
+  [
+    'a/*/.y/b',
+    (process.cwd() + '/a/x/**').split(sep).join('/'),
+    j(['a/z/.y/b']),
+  ],
 ]
-
-process.chdir(__dirname + '/fixtures')
 
 for (const c of cases) {
   const [pattern, ignore, ex, optCwd] = c

@@ -1,7 +1,7 @@
 import { relative } from 'path'
 import t from 'tap'
 import { glob } from '../'
-import type { GlobOptions } from '../src/index.js'
+import { GlobOptionsWithFileTypesUnset } from '../src/glob.js'
 
 if (process.platform === 'win32') {
   t.plan(0, 'skip on windows')
@@ -32,9 +32,8 @@ const patterns = [
   `${dir}/a/broken-link/!(asdf)`,
 ]
 
-const opts: (GlobOptions | undefined)[] = [
+const opts: (GlobOptionsWithFileTypesUnset | undefined)[] = [
   undefined,
-  { nonull: true },
   { mark: true },
   { follow: true },
 ]

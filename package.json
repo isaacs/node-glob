@@ -1,7 +1,7 @@
 {
   "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
   "name": "glob",
-  "description": "a little globber",
+  "description": "the most correct and second fastest glob implementation in JavaScript",
   "version": "9.0.0-0",
   "repository": {
     "type": "git",
@@ -17,7 +17,7 @@
       },
       "require": {
         "types": "./dist/cjs/index-cjs.d.ts",
-        "default": "./dist/cjs/index-cjs.js"
+        "default": "./dist/cjs/index.js"
       }
     }
   },
@@ -59,7 +59,7 @@
   },
   "dependencies": {
     "fs.realpath": "^1.0.0",
-    "minimatch": "^7.1.3",
+    "minimatch": "^7.1.4",
     "minipass": "^4.2.1",
     "path-scurry": "^1.4.0"
   },

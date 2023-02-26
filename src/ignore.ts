@@ -16,8 +16,6 @@ const defaultPlatform: NodeJS.Platform =
     : 'linux'
 
 export class Ignore {
-  platform: NodeJS.Platform
-  nocase: boolean
   relative: Minimatch[]
   relativeChildren: Minimatch[]
   absolute: Minimatch[]
@@ -25,19 +23,26 @@ export class Ignore {
 
   constructor(
     ignored: string[],
-    { platform = defaultPlatform, nocase }: GlobWalkerOpts
+    {
+      nobrace,
+      nocase,
+      noext,
+      noglobstar,
+      platform = defaultPlatform,
+    }: GlobWalkerOpts
   ) {
-    this.platform = platform
-    this.nocase = !!nocase
     this.relative = []
     this.absolute = []
     this.relativeChildren = []
     this.absoluteChildren = []
     const mmopts = {
-      platform: this.platform,
-      optimizationLevel: 2,
       dot: true,
+      nobrace,
       nocase,
+      noext,
+      noglobstar,
+      optimizationLevel: 2,
+      platform,
     }
 
     // this is a little weird, but it gives us a clean set of optimized
@@ -57,7 +62,7 @@ export class Ignore {
       for (let i = 0; i < mm.set.length; i++) {
         const parsed = mm.set[i]
         const globParts = mm.globParts[i]
-        const p = new Pattern(parsed, globParts, 0, this.platform)
+        const p = new Pattern(parsed, globParts, 0, platform)
         const m = new Minimatch(p.globString(), mmopts)
         const children = globParts[globParts.length - 1] === '**'
         const absolute = p.isAbsolute()

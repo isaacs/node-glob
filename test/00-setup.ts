@@ -93,6 +93,16 @@ if (process.platform === 'win32' || !process.env.TEST_REGEN) {
       '{/tmp/glob-test/*,*}', // evil owl face!  how you taunt me!
       'a/!(symlink)/**',
       'a/symlink/a/**/*',
+      // this one we don't quite match bash, because when bash
+      // applies the .. to the symlink walked by **, it effectively
+      // resets the symlink walk limit, and that is just a step too
+      // far for an edge case no one knows or cares about, even for
+      // an obsessive perfectionist like me.
+      // './a/**/../*/**',
+      'a/!(symlink)/**/..',
+      'a/!(symlink)/**/../',
+      'a/!(symlink)/**/../*',
+      'a/!(symlink)/**/../*/*',
     ]
 
   const bashOutput: { [k: string]: string[] } = {}

@@ -53,25 +53,13 @@ export class Pattern {
       throw new TypeError('mismatched pattern list and glob list lengths')
     }
     this.length = patternList.length
-    if (index >= this.length) {
+    if (index < 0 || index >= this.length) {
       throw new TypeError('index out of range')
     }
     this.#patternList = patternList
     this.#globList = globList
     this.#index = index
     this.#platform = platform
-
-    // if the current item is not globstar, and the next item is .., skip ahead
-    if (
-      this.#patternList[this.#index] !== GLOBSTAR &&
-      this.#patternList[this.#index] !== '..' &&
-      this.#patternList[this.#index] !== '.' &&
-      this.#patternList[this.#index] !== '' &&
-      this.#patternList[this.#index + 1] === '..' &&
-      this.length > this.#index + 2
-    ) {
-      this.#index += 2
-    }
 
     // normalize root entries of absolute patterns on initial creation.
     if (this.#index === 0) {
@@ -84,15 +72,16 @@ export class Pattern {
       // /etc => ['/', 'etc']
       // / => ['/']
       if (this.isUNC()) {
-        const [p1, p2, p3, ...prest] = this.#patternList
-        const [g1, g2, g3, ...grest] = this.#globList
+        // '' / '' / 'host' / 'share'
+        const [p0, p1, p2, p3, ...prest] = this.#patternList
+        const [g0, g1, g2, g3, ...grest] = this.#globList
         if (prest[0] === '') {
           // ends in /
           prest.shift()
           grest.shift()
         }
-        const p = [p1, p2, p3, ''].join('/')
-        const g = [g1, g2, g3, ''].join('/')
+        const p = [p0, p1, p2, p3, ''].join('/')
+        const g = [g0, g1, g2, g3, ''].join('/')
         this.#patternList = [p, ...prest]
         this.#globList = [g, ...grest]
         this.length = this.#patternList.length
@@ -110,11 +99,6 @@ export class Pattern {
         this.#globList = [g, ...grest]
         this.length = this.#patternList.length
       }
-    } else {
-      // discard any empty path portions, except the last one.
-      while (this.#index < this.length - 1 && this.pattern() === '') {
-        this.#index++
-      }
     }
   }
 
@@ -128,15 +112,8 @@ export class Pattern {
   isGlobstar(): boolean {
     return this.#patternList[this.#index] === GLOBSTAR
   }
-  isGlobstarDotDot(): boolean {
-    return this.isGlobstar() && this.#globList[this.#index + 1] === '..'
-  }
   isRegExp(): boolean {
     return this.#patternList[this.#index] instanceof RegExp
-  }
-
-  glob(): string {
-    return this.#globList[this.#index]
   }
 
   globString(): string {

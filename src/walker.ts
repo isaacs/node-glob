@@ -12,16 +12,23 @@ import { Processor } from './processor.js'
 
 export interface GlobWalkerOpts {
   absolute?: boolean
-  realpath?: boolean
-  nodir?: boolean
-  mark?: boolean
-  withFileTypes?: boolean
-  signal?: AbortSignal
-  ignore?: string | string[] | Ignore
-  platform?: NodeJS.Platform
-  nocase?: boolean
-  follow?: boolean
+  allowWindowsEscape?: boolean
+  cwd?: string
   dot?: boolean
+  follow?: boolean
+  ignore?: string | string[] | Ignore
+  mark?: boolean
+  matchBase?: boolean
+  nobrace?: boolean
+  nocase?: boolean
+  nodir?: boolean
+  noext?: boolean
+  noglobstar?: boolean
+  platform?: NodeJS.Platform
+  realpath?: boolean
+  signal?: AbortSignal
+  windowsPathsNoEscape?: boolean
+  withFileTypes?: boolean
 }
 
 export type GWOFileTypesTrue = GlobWalkerOpts & {
@@ -52,12 +59,12 @@ export type Matches<O extends GlobWalkerOpts> = O extends GWOFileTypesTrue
 
 export type MatchStream<O extends GlobWalkerOpts> =
   O extends GWOFileTypesTrue
-    ? Minipass<Path>
+    ? Minipass<Path, Path>
     : O extends GWOFileTypesFalse
-    ? Minipass<string>
+    ? Minipass<string, string>
     : O extends GWOFileTypesUnset
-    ? Minipass<string>
-    : Minipass<Path | string>
+    ? Minipass<string, string>
+    : Minipass<Path | string, Path | string>
 
 const makeIgnore = (
   ignore: string | string[] | Ignore,
@@ -516,6 +523,8 @@ export class GlobStream<
       : this.path
     if (target) {
       this.walkCBSync(target, this.patterns, () => this.results.end())
+    } else {
+      this.results.end()
     }
     return this.results
   }
