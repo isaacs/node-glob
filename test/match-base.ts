@@ -47,7 +47,9 @@ t.test('cwd', async t => {
 
 t.test('noglobstar', async t => {
   t.rejects(glob(pattern, { matchBase: true, noglobstar: true }))
-  t.throws(() => glob.globSync(pattern, { matchBase: true, noglobstar: true }))
+  t.throws(() =>
+    glob.globSync(pattern, { matchBase: true, noglobstar: true })
+  )
   t.end()
 })
 

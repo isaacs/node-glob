@@ -134,9 +134,12 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   onResume(fn: () => any) {
     if (this.signal?.aborted) return
     /* c8 ignore start */
-    if (!this.paused) fn()
-    /* c8 ignore stop */
-    else this.#onResume.push(fn)
+    if (!this.paused) {
+      fn()
+    } else {
+      /* c8 ignore stop */
+      this.#onResume.push(fn)
+    }
   }
 
   // do the requisite realpath/stat checking, and return the path

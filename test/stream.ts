@@ -7,23 +7,19 @@ import {
   globStream,
   globStreamSync,
 } from '../'
-import {glob, globSync} from '../dist/cjs'
+import { glob, globSync } from '../dist/cjs'
 const cwd = resolve(__dirname, 'fixtures/a')
 const j = (a: string[]) => a.map(a => a.split('/').join(sep))
 const expect = j([
   '',
   'z',
   'x',
-  'symlink',
   'cb',
   'c',
   'bc',
   'b',
   'abcfed',
   'abcdef',
-  'symlink/a',
-  'symlink/a/b',
-  'symlink/a/b/c',
   'cb/e',
   'cb/e/f',
   'c/d',
@@ -37,6 +33,9 @@ const expect = j([
   'abcfed/g/h',
   'abcdef/g',
   'abcdef/g/h',
+  ...(process.platform !== 'win32'
+    ? ['symlink', 'symlink/a', 'symlink/a/b', 'symlink/a/b/c']
+    : []),
 ])
 
 t.test('stream', t => {
@@ -136,7 +135,7 @@ t.test('walk', async t => {
   const actual = new Set(await s.walk())
   t.same(actual, e)
   const d = new Glob('./**', s)
-  const dactual= new Set(await d.walk())
+  const dactual = new Set(await d.walk())
   t.same(dactual, e)
 })
 
@@ -146,7 +145,7 @@ t.test('walkSync', t => {
   const actual = new Set(s.walkSync())
   t.same(actual, e)
   const d = new Glob('./**', s)
-  const dactual= new Set(d.walkSync())
+  const dactual = new Set(d.walkSync())
   t.same(dactual, e)
   t.end()
 })
