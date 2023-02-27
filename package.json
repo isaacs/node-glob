@@ -91,6 +91,6 @@
     "url": "https://github.com/sponsors/isaacs"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=16 || 14 >=14.17"
   }
 }
