@@ -67,6 +67,8 @@ changes.
 - `realpath:true` no longer implies `absolute:true`. The
   relative path to the realpath will be emitted when `absolute`
   is not set.
+- `realpath:true` will cause invalid symbolic links to be
+  omitted, rather than matching the link itself.
 
 ## Performance and Algorithm Changes
 

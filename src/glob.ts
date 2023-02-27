@@ -9,11 +9,10 @@ import {
 } from 'path-scurry'
 import { Ignore } from './ignore.js'
 import { Pattern } from './pattern.js'
-import { GlobStream, GlobWalker, Matches } from './walker.js'
+import { GlobStream, GlobWalker } from './walker.js'
 
-type MatchSet = Minimatch['set']
-type GlobSet = Exclude<Minimatch['globSet'], undefined>
-type GlobParts = Exclude<Minimatch['globParts'], undefined>
+export type MatchSet = Minimatch['set']
+export type GlobParts = Exclude<Minimatch['globParts'], undefined>
 
 // if no process global, just call it linux.
 // so we default to case-sensitive, / separators
@@ -58,7 +57,7 @@ export type GlobOptionsWithFileTypesUnset = GlobOptions & {
   withFileTypes?: undefined
 }
 
-type Result<Opts> = Opts extends GlobOptionsWithFileTypesTrue
+export type Result<Opts> = Opts extends GlobOptionsWithFileTypesTrue
   ? Path
   : Opts extends GlobOptionsWithFileTypesFalse
   ? string
@@ -67,7 +66,7 @@ type Result<Opts> = Opts extends GlobOptionsWithFileTypesTrue
   : string | Path
 export type Results<Opts> = Result<Opts>[]
 
-type FileTypes<Opts> = Opts extends GlobOptionsWithFileTypesTrue
+export type FileTypes<Opts> = Opts extends GlobOptionsWithFileTypesTrue
   ? true
   : Opts extends GlobOptionsWithFileTypesFalse
   ? false
@@ -76,34 +75,28 @@ type FileTypes<Opts> = Opts extends GlobOptionsWithFileTypesTrue
   : boolean
 
 export class Glob<Opts extends GlobOptions> {
-  withFileTypes: FileTypes<Opts>
-  pattern: string[]
-  ignore?: Ignore
-  follow: boolean
-  dot: boolean
-  mark: boolean
-  nodir: boolean
-  cwd: string
-  matchSet: MatchSet
-  globSet: GlobSet
-  globParts: GlobParts
-  realpath: boolean
   absolute: boolean
+  cwd: string
+  dot: boolean
+  follow: boolean
+  ignore?: Ignore
+  mark: boolean
   matchBase: boolean
-  windowsPathsNoEscape: boolean
-  noglobstar: boolean
-  matches?: Matches<Opts>
-  seen?: Set<Path>
-  walked?: Map<Path, Pattern[]>
-  nocase?: boolean
-  scurry: PathScurry
-  opts: Opts
-  globUtilOpts: Opts
-  platform: NodeJS.Platform
-  patterns: Pattern[]
-  signal?: AbortSignal
   nobrace: boolean
+  nocase: boolean
+  nodir: boolean
   noext: boolean
+  noglobstar: boolean
+  pattern: string[]
+  platform: NodeJS.Platform
+  realpath: boolean
+  scurry: PathScurry
+  signal?: AbortSignal
+  windowsPathsNoEscape: boolean
+  withFileTypes: FileTypes<Opts>
+
+  opts: Opts
+  patterns: Pattern[]
 
   constructor(pattern: string | string[], opts: Opts) {
     this.withFileTypes = !!opts.withFileTypes as FileTypes<Opts>
@@ -169,12 +162,6 @@ export class Glob<Opts extends GlobOptions> {
     }
     this.nocase = this.scurry.nocase
 
-    this.globUtilOpts = {
-      ...opts,
-      platform: this.platform,
-      nocase: this.nocase,
-    }
-
     const mmo: MinimatchOptions = {
       // default nocase based on platform
       ...opts,
@@ -192,48 +179,43 @@ export class Glob<Opts extends GlobOptions> {
     }
 
     const mms = this.pattern.map(p => new Minimatch(p, mmo))
-    const [matchSet, globSet, globParts] = mms.reduce(
-      (set: [MatchSet, GlobSet, GlobParts], m) => {
+    const [matchSet, globParts] = mms.reduce(
+      (set: [MatchSet, GlobParts], m) => {
         set[0].push(...m.set)
-        set[1].push(...m.globSet)
-        set[2].push(...m.globParts)
+        set[1].push(...m.globParts)
         return set
       },
-      [[], [], []]
+      [[], []]
     )
     this.patterns = matchSet.map((set, i) => {
       return new Pattern(set, globParts[i], 0, this.platform)
     })
-    this.matchSet = matchSet
-    this.globSet = globSet
-    this.globParts = globParts
   }
 
-  async walk(): Promise<Results<Opts>> {
+  async walk(): Promise<Results<Opts>>
+  async walk(): Promise<(string | Path)[]> {
     // Walkers always return array of Path objects, so we just have to
     // coerce them into the right shape.  It will have already called
     // realpath() if the option was set to do so, so we know that's cached.
     // start out knowing the cwd, at least
-    const walker = new GlobWalker(this.patterns, this.scurry.cwd, {
-      ...this.opts,
-      platform: this.platform,
-      nocase: this.nocase,
-    })
-    return this.finish(await walker.walk())
+    return [
+      ...(await new GlobWalker(this.patterns, this.scurry.cwd, {
+        ...this.opts,
+        platform: this.platform,
+        nocase: this.nocase,
+      }).walk()),
+    ]
   }
 
-  walkSync(): Results<Opts> {
-    const walker = new GlobWalker(this.patterns, this.scurry.cwd, {
-      ...this.opts,
-      platform: this.platform,
-      nocase: this.nocase,
-    })
-    return this.finish(walker.walkSync())
-  }
-
-  finish(matches: Matches<Opts>): Results<Opts>
-  finish(matches: Set<Path | string>): (string | Path)[] {
-    return [...matches]
+  walkSync(): Results<Opts>
+  walkSync(): (string | Path)[] {
+    return [
+      ...new GlobWalker(this.patterns, this.scurry.cwd, {
+        ...this.opts,
+        platform: this.platform,
+        nocase: this.nocase,
+      }).walkSync(),
+    ]
   }
 
   stream(): Minipass<Result<Opts>, Result<Opts>>

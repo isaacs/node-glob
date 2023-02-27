@@ -32,10 +32,10 @@ tt () {
 
 t () {
   rm -f stderr stdout
-  tt "$@" 2>stderr >stdout || true
+  tt "$@" 2>stderr >stdout || (cat stderr >&2 ; exit 1 )
   echo $(cat stderr | grep real | awk -F $'\t' '{ print $2 }' || true)' '\
     $(cat stdout)
-  rm -f stderr stdout
+  # rm -f stderr stdout
 }
 
 # warm up the fs cache so we don't get a spurious slow first result
@@ -85,10 +85,10 @@ CJS
 MJS
   t node "$wd/bench-working-dir/globby-sync.mjs" "$p"
 
-#  echo -n $'node current glob.sync cjs    \t'
+#  echo -n $'node current globSync cjs    \t'
 #  cat > "$wd/bench-working-dir/sync.cjs" <<CJS
-#  const glob = require("$wd/dist/cjs/index-cjs.js")
-#  console.log(glob.sync(process.argv[2]).length)
+#  const {globSync} = require("$wd/dist/cjs/index-cjs.js")
+#  console.log(globSync(process.argv[2]).length)
 #CJS
 #  t node "$wd/bench-working-dir/sync.cjs" "$p"
 #
@@ -106,18 +106,18 @@ MJS
 # CJS
 #   t node "$wd/bench-working-dir/glob-8-sync.cjs" "$p"
 
-  echo -n $'node current glob.sync mjs    \t'
+  echo -n $'node current globSync mjs    \t'
   cat > "$wd/bench-working-dir/sync.mjs" <<MJS
-  import glob from '$wd/dist/mjs/index.js'
-  console.log(glob.sync(process.argv[2]).length)
+  import {globSync} from '$wd/dist/mjs/index.js'
+  console.log(globSync(process.argv[2]).length)
 MJS
   t node "$wd/bench-working-dir/sync.mjs" "$p"
 
   echo -n $'node current glob syncStream  \t'
   cat > "$wd/bench-working-dir/stream-sync.mjs" <<MJS
-  import glob from '$wd/dist/mjs/index.js'
+  import {globStreamSync} from '$wd/dist/mjs/index.js'
   let c = 0
-  glob.streamSync(process.argv[2])
+  globStreamSync(process.argv[2])
     .on('data', () => c++)
     .on('end', () => console.log(c))
 MJS
@@ -159,9 +159,9 @@ MJS
 
   echo -n $'node current glob stream      \t'
   cat > "$wd/bench-working-dir/stream.mjs" <<MJS
-  import glob from '$wd/dist/mjs/index.js'
+  import {globStream} from '$wd/dist/mjs/index.js'
   let c = 0
-  glob.stream(process.argv[2])
+  globStream(process.argv[2])
     .on('data', () => c++)
     .on('end', () => console.log(c))
 MJS

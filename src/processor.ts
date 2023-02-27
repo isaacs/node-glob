@@ -5,7 +5,7 @@ import { Path } from 'path-scurry'
 import { MMPattern, Pattern } from './pattern.js'
 import { GlobWalkerOpts } from './walker.js'
 
-class HasWalkedCache {
+export class HasWalkedCache {
   store: Map<string, Set<string>>
   constructor(store: Map<string, Set<string>> = new Map()) {
     this.store = store
@@ -24,7 +24,7 @@ class HasWalkedCache {
   }
 }
 
-class MatchRecord {
+export class MatchRecord {
   store: Map<Path, number> = new Map()
   add(target: Path, absolute: boolean, ifDir: boolean) {
     const n = (absolute ? 2 : 0) | (ifDir ? 1 : 0)
@@ -41,7 +41,7 @@ class MatchRecord {
   }
 }
 
-class SubWalks {
+export class SubWalks {
   store: Map<Path, Pattern[]> = new Map()
   add(target: Path, pattern: Pattern) {
     if (!target.canReaddir()) {

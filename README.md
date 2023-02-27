@@ -2,9 +2,9 @@
 
 Match files using the patterns the shell uses.
 
-This is a glob implementation in JavaScript. It uses the
-[`minimatch`](http://npm.im/minimatch) library to do its
-matching.
+The most correct and second fastest glob implementation in
+JavaScript.  (See **Comparison to Other JavaScript Glob
+Implementations** at the bottom of this readme.)
 
 ![a fun cartoon logo made of glob characters](logo/glob.png)
 
@@ -18,160 +18,286 @@ npm i glob
 
 ```js
 // load using import
-import { glob } from 'glob'
-// or using commonjs
-const { glob } = require('glob')
+import { glob, globSync, globStream, globStreamSync, Glob } from 'glob'
+// or using commonjs, that's fine, too
+const {
+  glob,
+  globSync,
+  globStream,
+  globStreamSync,
+  Glob,
+} = require('glob')
 
-// or default export is fine too
+// or default export is fine too, just returns the glob function
 import glob from 'glob'
 // or using commonjs
 const glob = require('glob')
 
-// these all return arrays of filenames
+// the main glob() and globSync() resolve/return array of filenames
 
 // all js files, but don't look in node_modules
 const jsfiles = await glob('**/*.js', { ignore: 'node_modules/**' })
+
+// pass in a signal to cancel the glob walk
+const stopAfter100ms = await glob('**/*.css', {
+  signal: AbortSignal.timeout(100),
+})
 
 // multiple patterns supported as well
 const images = await glob(['css/*.{png,jpeg}', 'public/*.{png,jpeg}'])
 
 // but of course you can do that with the glob pattern also
-const imagesAlt = await glob('{css,public}/*.{png,jpeg}')
+// the sync function is the same, just returns a string[] instead
+// of Promise<string[]>
+const imagesAlt = globSync('{css,public}/*.{png,jpeg}')
+
+// you can also stream them, this is a Minipass stream
+const filesStream = globStream(['**/*.dat', 'logs/**/*.log'])
+
+// construct a Glob object if you wanna do it that way, which
+// allows for much faster walks if you have to look in the same
+// folder multiple times.
+const g = new Glob('**/foo')
+// glob objects are async iterators, can also do globIterate() or
+// g.iterate(), same deal
+for await (const file of g) {
+  console.log('found a foo file:', file)
+}
+// pass a glob as the glob options to reuse its settings and caches
+const g2 = new Glob('**/bar', g)
+// sync iteration works as well
+for (const file of g2) {
+  console.log('found a bar file:', file)
+}
+
+// you can also pass withFileTypes: true to get Path objects
+// these are like a Dirent, but with some more added powers
+// check out http://npm.im/path-scurry for more info on their API
+const g3 = new Glob('**/baz/**', { withFileTypes: true })
+g3.stream().on('data', path => {
+  console.log(
+    'got a path object',
+    path.fullpath(),
+    path.isDirectory(),
+    path.readdirSync().map(e => e.name)
+  )
+})
 ```
 
-## `glob(pattern: string | string[], options?: GlobOptions) => Promise<string[]>`
+**Note** Glob patterns should always use `/` as a path separator,
+even on Windows systems, as `\` is used to escape glob
+characters. If you wish to use `\` as a path separator _instead
+of_ using it as an escape character on Windows platforms, you may
+set `windowsPathsNoEscape:true` in the options. In this mode,
+special glob characters cannot be escaped, making it impossible
+to match a literal `*` `?` and so on in filenames.
+
+## `glob(pattern: string | string[], options?: GlobOptions) => Promise<string[] | Path[]>`
 
 Perform an asynchronous glob search for the pattern(s) specified.
-See below for options field desciptions.
+Returns
+[Path](https://isaacs.github.io/path-scurry/classes/PathBase)
+objects if the `withFileTypes` option is set to `true`. See below
+for full options field desciptions.
 
-## `globSync(pattern: string, options?: GlobOptions) => string[]`
+## `globSync(pattern: string, options?: GlobOptions) => string[] | Path[]`
 
 Synchronous form of `glob()`.
 
+## `globIterate(pattern: string | string[], options?: GlobOptions) => AsyncGenerator<string>`
+
+Return an async iterator for walking glob pattern matches.
+
+## `globIterateSync(pattern: string | string[], options?: GlobOptions) => Generator<string>`
+
+Return a sync iterator for walking glob pattern matches.
+
+## `globStream(pattern: string | string[], options?: GlobOptions) => Minipass<string | Path>`
+
+Return a stream that emits all the strings or `Path` objects and
+then emits `end` when completed.
+
+## `globStreamSync(pattern: string | string[], options?: GlobOptions) => Minipass<string | Path>`
+
+Syncronous form of `globStream()`. Will read all the matches as
+fast as you consume them, even all in a single tick if you
+consume them immediately, but will still respond to backpressure
+if they're not consumed immediately.
+
+## `hasMagic(pattern: string | string[], options?: GlobOptions) => boolean`
+
+Returns `true` if the provided pattern contains any "magic" glob
+characters, given the options provided.
+
+Note that brace expansion is not considered "magic", as that just
+turns one string into an array of strings. So a pattern like
+`'x{a,b}y'` would return `false`, because `'xay'` and `'xby'`
+both do not contain any magic glob characters, and it's treated
+the same as if you had called it on `['xay', 'xby']`.
+
+## Class `Glob`
+
+An object that can perform glob pattern traversals.
+
+### `const g = new Glob(pattern: string | string[], options: GlobOptions)`
+
+See full options descriptions below.
+
+Note that a previous `Glob` object can be passed as the
+`GlobOptions` to another `Glob` instantiation to re-use settings
+and caches with a new pattern.
+
+Traversal functions can be called multiple times to run the walk
+again.
+
+### `g.stream()`
+
+Stream results asynchronously,
+
+### `g.streamSync()`
+
+Stream results synchronously.
+
+### `g.iterate()`
+
+Default async iteration function. Returns an AsyncGenerator that
+iterates over the results.
+
+### `g.iterateSync()`
+
+Default sync iteration function. Returns a Generator that
+iterates over the results.
+
+### `g.walk()`
+
+Returns a Promise that resolves to the results array.
+
+### `g.walkSync()`
+
+Returns a results array.
+
+### Properties
+
+All options are stored as properties on the `Glob` object.
+
+- `opts` The options provided to the constructor.
+- `patterns` An array of parsed immutable `Pattern` objects.
+
 ## Options
 
-Exported as `GlobOptions` TypeScript interface.
+Exported as `GlobOptions` TypeScript interface. A `GlobOptions`
+object may be provided to any of the exported methods, and must
+be provided to the `Glob` constructor.
 
-All options that can be passed to
-[`minimatch`](http://npm.im/minimatch) can also be passed to Glob
-to affect pattern matching behavior.
+All options are optional, boolean, and false by default, unless
+otherwise noted.
 
-All options are optional, and false by default, unless otherwise
-noted.
-
-All options are added to the Glob object, as well.
+All resolved options are added to the Glob object as properties.
 
 If you are running many `glob` operations, you can pass a Glob
 object as the `options` argument to a subsequent operation to
-shortcut some `readdir` calls. At the very least, you may pass in
-a shared `cache` option, so that parallel glob operations will be
-sped up by sharing information about the filesystem.
+share the previously loaded cache.
 
-- `cwd` The current working directory in which to search.
-  Defaults to `process.cwd()`. This option is always coerced to
-  use forward-slashes as a path separator, because it is not
-  tested as a glob pattern, so there is no need to escape
+- `cwd` String. The current working directory in which to
+  search. Defaults to `process.cwd()`. This option is always
+  coerced to use forward-slashes as a path separator, because it
+  is not tested as a glob pattern, so there is no need to escape
   anything. See also: "Windows, CWDs, Drive Letters, and UNC
   Paths", below.
+
 - `windowsPathsNoEscape` Use `\\` as a path separator _only_, and
   _never_ as an escape character. If set, all `\\` characters are
-  replaced with `/` in the pattern. Note that this makes it
-  **impossible** to match against paths containing literal glob
-  pattern characters, but allows matching with patterns
-  constructed using `path.join()` and `path.resolve()` on Windows
-  platforms, mimicking the (buggy!) behavior of Glob v7 and
-  before on Windows. Please use with caution, and be mindful of
-  [the caveat below about Windows paths](#windows). (For legacy
-  reasons, this is also set if `allowWindowsEscape` is set to the
-  exact value `false`.)
+  replaced with `/` in the pattern.
+
+  Note that this makes it **impossible** to match against paths
+  containing literal glob pattern characters, but allows matching
+  with patterns constructed using `path.join()` and
+  `path.resolve()` on Windows platforms, mimicking the (buggy!)
+  behavior of Glob v7 and before on Windows. Please use with
+  caution, and be mindful of [the caveat below about Windows
+  paths](#windows). (For legacy reasons, this is also set if
+  `allowWindowsEscape` is set to the exact value `false`.)
+
 - `dot` Include `.dot` files in normal matches and `globstar`
   matches. Note that an explicit dot in a portion of the pattern
   will always match dot files.
+
 - `mark` Add a `/` character to directory matches. Note that this
   requires additional stat calls.
-- `nosort` Don't sort the results.
-- `cache` See `cache` property above. Pass in a previously
-  generated cache object to save some fs calls.
-- `nounique` In some cases, brace-expanded patterns or symlinks
-  resolved with `{realpath: true}` can result in the same path
-  showing up multiple times in the result set. By default, this
-  implementation prevents duplicates in the result set. Set this
-  flag to disable that behavior.
+
 - `nobrace` Do not expand `{a,b}` and `{1..3}` brace sets.
+
 - `noglobstar` Do not match `**` against multiple filenames. (Ie,
   treat it as a normal `*` instead.)
-- `noext` Do not match `+(a|b)` "extglob" patterns.
-- `nocase` Perform a case-insensitive match. Note: on
-  case-insensitive filesystems, non-magic patterns may match
-  case-insensitively by default, since `stat` and `readdir` will
-  not raise errors.
+
+- `noext` Do not match "extglob" patterns such as `+(a|b)`.
+
+- `nocase` Perform a case-insensitive match. This defaults to
+  `true` on macOS and Windows systems, and `false` on all others.
+
+  **Note** `nocase` should only be explicitly set when it is
+  known that the filesystem's case sensitivity differs from the
+  platform default. If set `true` on case-sensitive file
+  systems, or `false` on case-insensitive file systems, then the
+  walk may return more or less results than expected.
+
 - `matchBase` Perform a basename-only match if the pattern does
   not contain any slash characters. That is, `*.js` would be
   treated as equivalent to `**/*.js`, matching all js files in
   all directories.
+
 - `nodir` Do not match directories, only files. (Note: to match
-  _only_ directories, simply put a `/` at the end of the
-  pattern.)
-- `ignore` A glob pattern or array of glob patterns to exclude
-  from matches. To ignore all children within a directory, as
-  well as the entry itself, append `/**'` to the ignore pattern.
-  Note: `ignore` patterns are _always_ in `dot:true` mode,
+  _only_ directories, put a `/` at the end of the pattern.)
+
+- `ignore` string or string[]. A glob pattern or array of glob
+  patterns to exclude from matches. To ignore all children within
+  a directory, as well as the entry itself, append `/**'` to the
+  ignore pattern.
+
+  **Note** `ignore` patterns are _always_ in `dot:true` mode,
   regardless of any other settings.
+
 - `follow` Follow symlinked directories when expanding `**`
-  patterns. Note that this can result in a lot of duplicate
-  references in the presence of cyclic links, and make
-  performance quite bad.
+  patterns. This can result in a lot of duplicate references in
+  the presence of cyclic links, and make performance quite bad.
+
+  By default, a `**` in a pattern will follow 1 symbolic link if
+  it is not the first item in the pattern, or none if it is the
+  first item in the pattern, following the same behavior as Bash.
+
 - `realpath` Set to true to call `fs.realpath` on all of the
   results. In the case of an entry that cannot be resolved, the
-  path-resolved absolute path to the matched entry is returned
-  (though it will usually be a broken symlink).
+  entry is omitted. This incurs a slight performance penalty, of
+  course, because of the added system calls.
+
 - `absolute` Set to true to always receive absolute paths for
-  matched files. Note that this does _not_ make an extra system
-  call to get the realpath, it only does string path resolution.
-- `nonull` When a brace-expanded portion of the pattern does not
-  have find matches, setting `{nonull:true}` will cause glob to
-  return the pattern itself instead of the empty set.
+  matched files. This does _not_ make an extra system call to get
+  the realpath, it only does string path resolution.
 
-`preserveSlashes` is always set to `true`, and `nocomment` and
-`nonegate` are always set to `false`.
+  By default, when this option is not set, absolute paths are
+  returned for patterns that are absolute, and otherwise paths
+  are returned that are relative to the `cwd` setting.
 
-## `hasMagic(pattern: string, options?: GlobOptions) => boolean`
+  `absolute` may not be used along with `withFileTypes`.
 
-Returns `true` if there are any special characters in the
-pattern, and `false` otherwise.
+- `platform` Defaults to value of `process.platform` if
+  available, or `'linux'` if not. Setting `platform:'win32'` on
+  non-Windows systems may cause strange behavior.
 
-Note that the options affect the results. If `noext:true` is set
-in the options object, then `+(a|b)` will not be considered a
-magic pattern. If the pattern has a brace expansion, like
-`a/{b/c,x/y}` then that is considered magical, unless
-`{nobrace:true}` is set in the options.
+- `withFileTypes` Return [PathScurry](http://npm.im/path-scurry)
+  `Path` objects instead of strings. These are similar to a
+  NodeJS `Dirent` object, but with additional methods and
+  properties.
 
-## Class: `Glob`
+  `withFileTypes` may not be used along with `absolute`.
 
-The implementation called by the `glob()` method.
+- `signal` An AbortSignal which will cancel the Glob walk when
+  triggered.
 
-```js
-import { Glob } from 'glob'
-const ohMyGlob = new Glob(pattern, options)
-
-// sync traversal
-const results = ohMyGlob.processSync()
-
-// async traversal
-const results = await ohMyGlob.process()
-```
-
-### `new Glob(pattern: string, options?: GlobOptions | Glob)`
-
-Constructs a new `Glob` object.
-
-### `glob.process() => Promise<string[]>`
-
-Performs a directory walk and returns the matching entries.
-
-### `glob.processSync() => string[]`
-
-Synchronous form of `glob.process()`
+- `scurry` A [PathScurry](http://npm.im/path-scurry) object used
+  to traverse the file system. If the `nocase` option is set
+  explicitly, then any provided `scurry` object must match this
+  setting.
 
 ## Glob Primer
 
@@ -189,16 +315,25 @@ sections may contain slash characters, so `a{/b/c,bcd}` would
 expand into `a/b/c` and `abcd`.
 
 The following characters have special magic meaning when used in
-a path portion:
+a path portion. With the exception of `**`, none of these match
+path separators (ie, `/` on all platforms, and `\` on Windows).
 
-- `*` Matches 0 or more characters in a single path portion
-- `?` Matches 1 character
+- `*` Matches 0 or more characters in a single path portion.
+  When alone in a path portion, it must match at least 1
+  character. If `dot:true` is not specified, then `*` will not
+  match against a `.` character at the start of a path portion.
+- `?` Matches 1 character. If `dot:true` is not specified, then
+  `?` will not match against a `.` character at the start of a
+  path portion.
 - `[...]` Matches a range of characters, similar to a RegExp
   range. If the first character of the range is `!` or `^` then
-  it matches any character not in the range.
+  it matches any character not in the range. If the first
+  character is `]`, then it will be considered the same as `\]`,
+  rather than the end of the character class.
 - `!(pattern|pattern|pattern)` Matches anything that does not
   match any of the patterns provided. May _not_ contain `/`
-  characters.
+  characters. Similar to `*`, if alone in a path portion, then
+  the path portion must have at least one character.
 - `?(pattern|pattern|pattern)` Matches zero or one occurrence of
   the patterns provided. May _not_ contain `/` characters.
 - `+(pattern|pattern|pattern)` Matches one or more occurrences of
@@ -210,10 +345,14 @@ a path portion:
 - `**` If a "globstar" is alone in a path portion, then it
   matches zero or more directories and subdirectories searching
   for matches. It does not crawl symlinked directories, unless
-  `{follow:true}` is passed in the options object.
+  `{follow:true}` is passed in the options object. A pattern
+  like `a/b/**` will only match `a/b` if it is a directory.
+  Follows 1 symbolic link if not the first item in the pattern,
+  or 0 if it is the first item, unless `follow:true` is set, in
+  which case it follows all symbolic links.
 
-Note that `[:class:]`, `[=c=]`, and `[.symbol.]` style class
-patterns are _not_ supported by this implementation.
+`[:class:]`, `[=c=]`, and `[.symbol.]` style class patterns are
+_not_ supported by this implementation at this time.
 
 ### Dots
 
@@ -247,9 +386,6 @@ $ echo a*s*d*f
 a*s*d*f
 ```
 
-To return the pattern when there are no matches, use the
-`{nonull:true}` option.
-
 ## Comparisons to other fnmatch/glob implementations
 
 While strict compliance with the existing standards is a
@@ -268,12 +404,9 @@ of the pattern. This prevents infinite loops and duplicates and
 the like. You can force glob to traverse symlinks with `**` by
 setting `{follow:true}` in the options.
 
-If an escaped pattern has no matches, and the `nonull` flag is
-set, then glob returns the pattern as-provided, rather than
-interpreting the character escapes. For example, `glob.match([],
-"\\*a\\?")` will return `"\\*a\\?"` rather than `"*a?"`. This is
-akin to setting the `nullglob` option in bash, except that it
-does not resolve escaped pattern characters.
+There is no equivalent of the `nonull` option. A pattern that
+does not find any matches simply resolves to nothing. (An empty
+array, immediately ended stream, etc.)
 
 If brace expansion is not disabled, then it is performed before
 any other interpretation of the glob pattern. Thus, a pattern
@@ -285,20 +418,12 @@ valid, matching proceeds.
 The character class patterns `[:class:]` (POSIX standard named
 classes), `[=c=]` (locale-specific character collation weight),
 and `[.symbol.]` (collating symbol) style class patterns are
-_not_ supported by this implementation.
+_not_ supported by this implementation at this time.
 
 ### Repeated Slashes
 
-Patterns that have excess `/` characters between non-magic
-portions will have their excess `/` characters preserved in the
-result. That is, empty path portions in the pattern will match
-the parent directory, be appended to the parent path with a `/`,
-and returned.
-
-Empty path portions immediately following any "magic" glob
-pattern will be omitted.
-
-This is by design to match the behavior of the Bash shell.
+Unlike Bash and zsh, repeated `/` are always coalesced into a
+single path separator.
 
 ### Comments and Negation
 
@@ -336,14 +461,17 @@ option is ignored, and the traversal starts at `/`, plus any
 non-magic path portions specified in the pattern.
 
 On Windows systems, the behavior is similar, but the concept of
-an "absolute path" is much more involved.
+an "absolute path" is somewhat more involved.
 
 #### UNC Paths
 
-A UNC path may be used as the start of a pattern. For example, a
-pattern like: `//?/x:/*` will return all file entries in the root
-of the `x:` drive. A pattern like `//ComputerName/Share/*` will
-return all files in the associated share.
+A UNC path may be used as the start of a pattern on Windows
+platforms. For example, a pattern like: `//?/x:/*` will return
+all file entries in the root of the `x:` drive. A pattern like
+`//ComputerName/Share/*` will return all files in the associated
+share.
+
+UNC path roots are always compared case insensitively.
 
 #### Drive Letters
 
@@ -358,9 +486,10 @@ traversal.
 For example, `glob('/tmp', { cwd: 'c:/any/thing' })` will return
 `['c:/tmp']` as the result.
 
-If an explicit `cwd` option is not provided, then the traversal
-will run on whichever drive the active `process.cwd()` returns.
-(That is, the result of `path.resolve('/')`.)
+If an explicit `cwd` option is not provided, and the pattern
+starts with `/`, then the traversal will run on the root of the
+drive provided as the `cwd` option. (That is, it is the result of
+`path.resolve('/')`.)
 
 ## Race Conditions
 
@@ -412,11 +541,89 @@ npm test
 # to re-generate test fixtures
 npm run test-regen
 
-# to benchmark against bash/zsh
+# run the benchmarks
 npm run bench
 
 # to profile javascript
 npm run prof
 ```
+
+## Comparison to Other JavaScript Glob Implementations
+
+**tl;dr**
+
+- If you want glob matching that is as faithful as possible to
+  Bash pattern expansion semantics, and as fast as possible
+  within that constraint, _use this module_.
+- If you are reasonably sure that the patterns you will encounter
+  are relatively simple, and want the absolutely fastest glob
+  matcher out there, _use [fast-glob](http://npm.im/fast-glob)_.
+- If you are reasonably sure that the patterns you will encounter
+  are relatively simple, and want the convenience of
+  automatically respecting `.gitignore` files, _use
+  [globby](http://npm.im/globby)_.
+
+There are some other glob matcher libraries on npm, but these
+three are (in my opinion, as of 2023) the best.
+
+----
+
+**full explanation**
+
+Every library reflects a set of opinions and priorities in the
+trade-offs it makes. Other than this library, I can personally
+recommend both [globby](http://npm.im/globby) and
+[fast-glob](http://npm.im/fast-glob), though they differ in their
+benefits and drawbacks.
+
+Both have very nice APIs and are reasonably fast.
+
+`fast-glob` is, as far as I am aware, the fastest glob
+implementation in JavaScript today. However, there are many
+cases where the choices that `fast-glob` makes in pursuit of
+speed mean that its results differ from the results returned by
+Bash and other sh-like shells, which may be surprising.
+
+In my testing, `fast-glob` is around 10-20% faster than this
+module when walking over 200k files nested 4 directories
+deep[1](#fn-webscale). However, there are some inconsistencies
+with Bash matching behavior that this module does not suffer
+from:
+
+- `**` only matches files, not directories
+- `..` path portions are not handled unless they appear at the
+  start of the pattern
+- `./!(<pattern>)` will not match any files that _start_ with
+  `<pattern>`, even if they do not match `<pattern>`. For
+  example, `!(9).txt` will not match `9999.txt`.
+- Some brace patterns in the middle of a pattern will result in
+  failing to find certain matches.
+- Extglob patterns are allowed to contain `/` characters.
+
+Globby exhibits all of the same pattern semantics as fast-glob,
+(as it is a wrapper around fast-glob) and is slightly slower than
+node-glob (by about 10-20% in the benchmark test set, or in other
+words, anywhere from 20-50% slower than fast-glob). However, it
+adds some API conveniences that may be worth the costs.
+
+- Support for `.gitignore` and other ignore files.
+- Support for negated globs (ie, patterns starting with `!`
+  rather than using a separate `ignore` option).
+
+The priority of this module is "correctness" in the sense of
+performing a glob pattern expansion as faithfully as possible to
+the behavior of Bash and other sh-like shells, with as much speed
+as possible.
+
+Note that prior versions of `node-glob` are _not_ on this list.
+Former versions of this module are far too slow for any cases
+where performance matters at all, and were designed with APIs
+that are extremely dated by current JavaScript standards.
+
+----
+
+<small id="fn-webscale">[1]: In the cases where this module
+returns results and `fast-glob` doesn't, it's even faster, of
+course.</small>
 
 ![](oh-my-glob.gif)

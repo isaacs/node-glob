@@ -1,13 +1,13 @@
-import {
-  Glob,
+import type {
   GlobOptions,
   GlobOptionsWithFileTypesFalse,
   GlobOptionsWithFileTypesTrue,
   GlobOptionsWithFileTypesUnset,
   Results,
 } from './glob.js'
+import { Glob } from './glob.js'
 import { hasMagic } from './has-magic.js'
-import {
+import type {
   GWOFileTypesFalse,
   GWOFileTypesTrue,
   GWOFileTypesUnset,
@@ -155,8 +155,16 @@ export function globIterateSync(
 
 /* c8 ignore start */
 export { Glob } from './glob.js'
-export type { GlobOptions } from './glob.js'
+export type {
+  GlobOptions,
+  GlobOptionsWithFileTypesFalse,
+  GlobOptionsWithFileTypesTrue,
+  GlobOptionsWithFileTypesUnset,
+  Result,
+  Results,
+} from './glob.js'
 export { hasMagic } from './has-magic.js'
+export type { MatchStream } from './walker.js'
 /* c8 ignore stop */
 export default Object.assign(glob, {
   glob,

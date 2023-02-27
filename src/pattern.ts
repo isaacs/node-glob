@@ -1,24 +1,20 @@
 // this is just a very light wrapper around 2 arrays with an offset index
 
 import { GLOBSTAR } from 'minimatch'
-type MMRegExp = RegExp & {
-  _glob?: string
-  _src?: string
-}
-export type MMPattern = string | MMRegExp | typeof GLOBSTAR
+export type MMPattern = string | RegExp | typeof GLOBSTAR
 
 // an array of length >= 1
-type PatternList = [p: MMPattern, ...rest: MMPattern[]]
-type UNCPatternList = [
+export type PatternList = [p: MMPattern, ...rest: MMPattern[]]
+export type UNCPatternList = [
   p0: '',
   p1: '',
   p2: string,
   p3: string,
   ...rest: MMPattern[]
 ]
-type DrivePatternList = [p0: string, ...rest: MMPattern[]]
-type AbsolutePatternList = [p0: '', ...rest: MMPattern[]]
-type GlobList = [p: string, ...rest: string[]]
+export type DrivePatternList = [p0: string, ...rest: MMPattern[]]
+export type AbsolutePatternList = [p0: '', ...rest: MMPattern[]]
+export type GlobList = [p: string, ...rest: string[]]
 
 const isPatternList = (pl: MMPattern[]): pl is PatternList =>
   pl.length >= 1
