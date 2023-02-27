@@ -198,12 +198,12 @@ If you are running many `glob` operations, you can pass a Glob
 object as the `options` argument to a subsequent operation to
 share the previously loaded cache.
 
-- `cwd` String. The current working directory in which to
-  search. Defaults to `process.cwd()`. This option is always
-  coerced to use forward-slashes as a path separator, because it
-  is not tested as a glob pattern, so there is no need to escape
-  anything. See also: "Windows, CWDs, Drive Letters, and UNC
-  Paths", below.
+- `cwd` String path or `file://` string or URL object. The
+  current working directory in which to search. Defaults to
+  `process.cwd()`. This option is always coerced to use
+  forward-slashes as a path separator, because it is not tested
+  as a glob pattern, so there is no need to escape anything. See
+  also: "Windows, CWDs, Drive Letters, and UNC Paths", below.
 
   This option may be eiher a string path or a `file://` URL
   object or string.
