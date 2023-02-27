@@ -7,7 +7,7 @@ import {
   PathScurryPosix,
   PathScurryWin32,
 } from 'path-scurry'
-import {fileURLToPath} from 'url'
+import { fileURLToPath } from 'url'
 import { Ignore } from './ignore.js'
 import { Pattern } from './pattern.js'
 import { GlobStream, GlobWalker } from './walker.js'
@@ -24,30 +24,163 @@ const defaultPlatform: NodeJS.Platform =
     ? process.platform
     : 'linux'
 
+/**
+ * A `GlobOptions` object may be provided to any of the exported methods, and
+ * must be provided to the `Glob` constructor.
+ *
+ * All options are optional, boolean, and false by default, unless otherwise
+ * noted.
+ *
+ * All resolved options are added to the Glob object as properties.
+ *
+ * If you are running many `glob` operations, you can pass a Glob object as the
+ * `options` argument to a subsequent operation to share the previously loaded
+ * cache.
+ */
 export interface GlobOptions {
+  /**
+   * Set to true to always receive absolute paths for
+   * matched files. This does _not_ make an extra system call to get
+   * the realpath, it only does string path resolution.
+   *
+   * By default, when this option is not set, absolute paths are
+   * returned for patterns that are absolute, and otherwise paths
+   * are returned that are relative to the `cwd` setting.
+   *
+   * Conflicts with {@link withFileTypes}
+   */
   absolute?: boolean
+  /**
+   * Set to false to enable {@link windowsPathsNoEscape}
+   *
+   * @deprecated
+   */
   allowWindowsEscape?: boolean
+  /**
+   * The current working directory in which to search. Defaults to
+   * `process.cwd()`.
+   *
+   * May be eiher a string path or a `file://` URL object or string.
+   */
   cwd?: string | URL
+  /**
+   * Include `.dot` files in normal matches and `globstar`
+   * matches. Note that an explicit dot in a portion of the pattern
+   * will always match dot files.
+   */
   dot?: boolean
+  /**
+   * Follow symlinked directories when expanding `**`
+   * patterns. This can result in a lot of duplicate references in
+   * the presence of cyclic links, and make performance quite bad.
+   *
+   * By default, a `**` in a pattern will follow 1 symbolic link if
+   * it is not the first item in the pattern, or none if it is the
+   * first item in the pattern, following the same behavior as Bash.
+   */
   follow?: boolean
+  /**
+   * A glob pattern or array of glob patterns to exclude from matches. To
+   * ignore all children within a directory, as well as the entry itself,
+   * append `/**'` to the ignore pattern.
+   */
   ignore?: string | string[] | Ignore
+  /**
+   * Add a `/` character to directory matches. Note that this requires
+   * additional stat calls in some cases.
+   */
   mark?: boolean
+  /**
+   * Perform a basename-only match if the pattern does not contain any slash
+   * characters. That is, `*.js` would be treated as equivalent to
+   * `**\/*.js`, matching all js files in all directories.
+   */
   matchBase?: boolean
+  /**
+   * Do not expand `{a,b}` and `{1..3}` brace sets.
+   */
   nobrace?: boolean
+  /**
+   * Perform a case-insensitive match. This defaults to `true` on macOS and
+   * Windows systems, and `false` on all others.
+   *
+   * **Note** `nocase` should only be explicitly set when it is
+   * known that the filesystem's case sensitivity differs from the
+   * platform default. If set `true` on case-sensitive file
+   * systems, or `false` on case-insensitive file systems, then the
+   * walk may return more or less results than expected.
+   */
   nocase?: boolean
+  /**
+   * Do not match directories, only files. (Note: to match
+   * _only_ directories, put a `/` at the end of the pattern.)
+   */
   nodir?: boolean
+  /**
+   * Do not match "extglob" patterns such as `+(a|b)`.
+   */
   noext?: boolean
+  /**
+   * Do not match `**` against multiple filenames. (Ie, treat it as a normal
+   * `*` instead.)
+   *
+   * Conflicts with {@link matchBase}
+   */
   noglobstar?: boolean
+  /**
+   * Defaults to value of `process.platform` if available, or `'linux'` if
+   * not. Setting `platform:'win32'` on non-Windows systems may cause strange
+   * behavior.
+   */
   platform?: NodeJS.Platform
+  /**
+   * Set to true to call `fs.realpath` on all of the
+   * results. In the case of an entry that cannot be resolved, the
+   * entry is omitted. This incurs a slight performance penalty, of
+   * course, because of the added system calls.
+   */
   realpath?: boolean
+  /**
+   * A [PathScurry](http://npm.im/path-scurry) object used
+   * to traverse the file system. If the `nocase` option is set
+   * explicitly, then any provided `scurry` object must match this
+   * setting.
+   */
   scurry?: PathScurry
+  /**
+   * An AbortSignal which will cancel the Glob walk when
+   * triggered.
+   */
   signal?: AbortSignal
+  /**
+   * Use `\\` as a path separator _only_, and
+   *  _never_ as an escape character. If set, all `\\` characters are
+   *  replaced with `/` in the pattern.
+   *
+   *  Note that this makes it **impossible** to match against paths
+   *  containing literal glob pattern characters, but allows matching
+   *  with patterns constructed using `path.join()` and
+   *  `path.resolve()` on Windows platforms, mimicking the (buggy!)
+   *  behavior of Glob v7 and before on Windows. Please use with
+   *  caution, and be mindful of [the caveat below about Windows
+   *  paths](#windows). (For legacy reasons, this is also set if
+   *  `allowWindowsEscape` is set to the exact value `false`.)
+   */
   windowsPathsNoEscape?: boolean
+  /**
+   * Return [PathScurry](http://npm.im/path-scurry)
+   * `Path` objects instead of strings. These are similar to a
+   * NodeJS `Dirent` object, but with additional methods and
+   * properties.
+   *
+   * Conflicts with {@link absolute}
+   */
   withFileTypes?: boolean
 }
 
 export type GlobOptionsWithFileTypesTrue = GlobOptions & {
   withFileTypes: true
+  absolute?: false
 }
 
 export type GlobOptionsWithFileTypesFalse = GlobOptions & {
@@ -75,7 +208,10 @@ export type FileTypes<Opts> = Opts extends GlobOptionsWithFileTypesTrue
   ? false
   : boolean
 
-export class Glob<Opts extends GlobOptions> {
+/**
+ * An object that can perform glob pattern traversals.
+ */
+export class Glob<Opts extends GlobOptions> implements GlobOptions {
   absolute: boolean
   cwd: string
   dot: boolean
@@ -96,9 +232,28 @@ export class Glob<Opts extends GlobOptions> {
   windowsPathsNoEscape: boolean
   withFileTypes: FileTypes<Opts>
 
+  /**
+   * The options provided to the constructor.
+   */
   opts: Opts
+
+  /**
+   * An array of parsed immutable {@link Pattern} objects.
+   */
   patterns: Pattern[]
 
+  /**
+   * All options are stored as properties on the `Glob` object.
+   *
+   * See {@link GlobOptions} for full options descriptions.
+   *
+   * Note that a previous `Glob` object can be passed as the
+   * `GlobOptions` to another `Glob` instantiation to re-use settings
+   * and caches with a new pattern.
+   *
+   * Traversal functions can be called multiple times to run the walk
+   * again.
+   */
   constructor(pattern: string | string[], opts: Opts) {
     this.withFileTypes = !!opts.withFileTypes as FileTypes<Opts>
     this.signal = opts.signal
@@ -198,6 +353,9 @@ export class Glob<Opts extends GlobOptions> {
     })
   }
 
+  /**
+   * Returns a Promise that resolves to the results array.
+   */
   async walk(): Promise<Results<Opts>>
   async walk(): Promise<(string | Path)[]> {
     // Walkers always return array of Path objects, so we just have to
@@ -213,6 +371,9 @@ export class Glob<Opts extends GlobOptions> {
     ]
   }
 
+  /**
+   * synchronous {@link Glob.walk}
+   */
   walkSync(): Results<Opts>
   walkSync(): (string | Path)[] {
     return [
@@ -224,6 +385,9 @@ export class Glob<Opts extends GlobOptions> {
     ]
   }
 
+  /**
+   * Stream results asynchronously.
+   */
   stream(): Minipass<Result<Opts>, Result<Opts>>
   stream(): Minipass<string | Path, string | Path> {
     return new GlobStream(this.patterns, this.scurry.cwd, {
@@ -233,6 +397,9 @@ export class Glob<Opts extends GlobOptions> {
     }).stream()
   }
 
+  /**
+   * Stream results synchronously.
+   */
   streamSync(): Minipass<Result<Opts>, Result<Opts>>
   streamSync(): Minipass<string | Path, string | Path> {
     return new GlobStream(this.patterns, this.scurry.cwd, {
@@ -242,6 +409,10 @@ export class Glob<Opts extends GlobOptions> {
     }).streamSync()
   }
 
+  /**
+   * Default sync iteration function. Returns a Generator that
+   * iterates over the results.
+   */
   iterateSync(): Generator<Result<Opts>, void, void> {
     return this.streamSync()[Symbol.iterator]()
   }
@@ -249,6 +420,10 @@ export class Glob<Opts extends GlobOptions> {
     return this.iterateSync()
   }
 
+  /**
+   * Default async iteration function. Returns an AsyncGenerator that
+   * iterates over the results.
+   */
   iterate(): AsyncGenerator<Result<Opts>, void, void> {
     return this.stream()[Symbol.asyncIterator]()
   }

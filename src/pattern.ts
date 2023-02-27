@@ -20,6 +20,10 @@ const isPatternList = (pl: MMPattern[]): pl is PatternList =>
   pl.length >= 1
 const isGlobList = (gl: string[]): gl is GlobList => gl.length >= 1
 
+/**
+ * An immutable-ish view on an array of glob parts and their parsed
+ * results
+ */
 export class Pattern {
   readonly #patternList: PatternList
   readonly #globList: GlobList
@@ -98,20 +102,35 @@ export class Pattern {
     }
   }
 
+  /**
+   * The first entry in the parsed list of patterns
+   */
   pattern(): MMPattern {
     return this.#patternList[this.#index]
   }
 
+  /**
+   * true of if pattern() returns a string
+   */
   isString(): boolean {
     return typeof this.#patternList[this.#index] === 'string'
   }
+  /**
+   * true of if pattern() returns GLOBSTAR
+   */
   isGlobstar(): boolean {
     return this.#patternList[this.#index] === GLOBSTAR
   }
+  /**
+   * true if pattern() returns a regexp
+   */
   isRegExp(): boolean {
     return this.#patternList[this.#index] instanceof RegExp
   }
 
+  /**
+   * The /-joined set of glob parts that make up this pattern
+   */
   globString(): string {
     return (this.#globString =
       this.#globString ||
@@ -122,10 +141,16 @@ export class Pattern {
         : this.#globList.slice(this.#index).join('/')))
   }
 
+  /**
+   * true if there are more pattern parts after this one
+   */
   hasMore(): boolean {
     return this.length > this.#index + 1
   }
 
+  /**
+   * The rest of the pattern after this part, or null if this is the end
+   */
   rest(): Pattern | null {
     if (this.#rest !== undefined) return this.#rest
     if (!this.hasMore()) return (this.#rest = null)
@@ -141,9 +166,11 @@ export class Pattern {
     return this.#rest
   }
 
-  // pattern like: //host/share/...
-  // split = [ '', '', 'host', 'share', ... ]
-  isUNC(pl = this.#patternList): pl is UNCPatternList {
+  /**
+   * true if the pattern represents a //unc/path/ on windows
+   */
+  isUNC(): boolean {
+    const pl = this.#patternList
     return this.#isUNC !== undefined
       ? this.#isUNC
       : (this.#isUNC =
@@ -162,7 +189,11 @@ export class Pattern {
   // XXX: would be nice to handle patterns like `c:*` to test the cwd
   // in c: for *, but I don't know of a way to even figure out what that
   // cwd is without actually chdir'ing into it?
-  isDrive(pl = this.#patternList): pl is DrivePatternList {
+  /**
+   * True if the pattern starts with a drive letter on Windows
+   */
+  isDrive(): boolean {
+    const pl = this.#patternList
     return this.#isDrive !== undefined
       ? this.#isDrive
       : (this.#isDrive =
@@ -176,16 +207,22 @@ export class Pattern {
   // pattern = '/' or '/...' or '/x/...'
   // split = ['', ''] or ['', ...] or ['', 'x', ...]
   // Drive and UNC both considered absolute on windows
-  isAbsolute(pl = this.#patternList): pl is AbsolutePatternList {
+  /**
+   * True if the pattern is rooted on an absolute path
+   */
+  isAbsolute(): boolean {
+    const pl = this.#patternList
     return this.#isAbsolute !== undefined
       ? this.#isAbsolute
       : (this.#isAbsolute =
           (pl[0] === '' && pl.length > 1) ||
-          this.isDrive(pl) ||
-          this.isUNC(pl))
+          this.isDrive() ||
+          this.isUNC())
   }
 
-  // consume the root of the pattern, and return it
+  /**
+   * consume the root of the pattern, and return it
+   */
   root(): string {
     const p = this.#patternList[0]
     return typeof p === 'string' && this.isAbsolute() && this.#index === 0
@@ -193,6 +230,9 @@ export class Pattern {
       : ''
   }
 
+  /**
+   * True if the pattern has any non-string components
+   */
   hasMagic(): boolean {
     for (let i = 0; i < this.length; i++) {
       if (typeof this.#patternList[i] !== 'string') {
@@ -202,6 +242,10 @@ export class Pattern {
     return false
   }
 
+  /**
+   * Check to see if the current globstar pattern is allowed to follow
+   * a symbolic link.
+   */
   checkFollowGlobstar(): boolean {
     return !(
       this.#index === 0 ||
@@ -210,6 +254,9 @@ export class Pattern {
     )
   }
 
+  /**
+   * Mark that the current globstar pattern is following a symbolic link
+   */
   markFollowGlobstar(): boolean {
     if (this.#index === 0 || !this.isGlobstar() || !this.#followGlobstar)
       return false

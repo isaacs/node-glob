@@ -1,3 +1,9 @@
+/**
+ * Single-use utility classes to provide functionality to the {@link Glob}
+ * methods.
+ *
+ * @module
+ */
 import Minipass from 'minipass'
 import { Path } from 'path-scurry'
 import { Ignore } from './ignore.js'

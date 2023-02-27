@@ -15,6 +15,11 @@ import type {
   Result,
 } from './walker.js'
 
+/**
+ * Syncronous form of {@link globStream}. Will read all the matches as fast as
+ * you consume them, even all in a single tick if you consume them immediately,
+ * but will still respond to backpressure if they're not consumed immediately.
+ */
 export function globStreamSync(
   pattern: string | string[],
   options: GlobOptionsWithFileTypesTrue
@@ -38,6 +43,10 @@ export function globStreamSync(
   return new Glob(pattern, options).streamSync()
 }
 
+/**
+ * Return a stream that emits all the strings or `Path` objects and
+ * then emits `end` when completed.
+ */
 export function globStream(
   pattern: string | string[],
   options: GlobOptionsWithFileTypesFalse
@@ -61,6 +70,9 @@ export function globStream(
   return new Glob(pattern, options).stream()
 }
 
+/**
+ * Synchronous form of {@link glob}
+ */
 export function globSync(
   pattern: string | string[],
   options: GlobOptionsWithFileTypesFalse
@@ -84,6 +96,12 @@ export function globSync(
   return new Glob(pattern, options).walkSync()
 }
 
+/**
+ * Perform an asynchronous glob search for the pattern(s) specified. Returns
+ * [Path](https://isaacs.github.io/path-scurry/classes/PathBase) objects if the
+ * {@link withFileTypes} option is set to `true`. See {@link GlobOptions} for
+ * full option descriptions.
+ */
 export async function glob(
   pattern: string | string[],
   options?: GlobOptionsWithFileTypesUnset | undefined
@@ -107,6 +125,9 @@ export async function glob(
   return new Glob(pattern, options).walk()
 }
 
+/**
+ * Return an async iterator for walking glob pattern matches.
+ */
 export function globIterate(
   pattern: string | string[],
   options?: GlobOptionsWithFileTypesUnset | undefined
@@ -130,6 +151,9 @@ export function globIterate(
   return new Glob(pattern, options).iterate()
 }
 
+/**
+ * Return a sync iterator for walking glob pattern matches.
+ */
 export function globIterateSync(
   pattern: string | string[],
   options?: GlobOptionsWithFileTypesUnset | undefined

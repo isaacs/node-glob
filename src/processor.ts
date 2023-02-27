@@ -5,6 +5,9 @@ import { Path } from 'path-scurry'
 import { MMPattern, Pattern } from './pattern.js'
 import { GlobWalkerOpts } from './walker.js'
 
+/**
+ * A cache of which patterns have been processed for a given Path
+ */
 export class HasWalkedCache {
   store: Map<string, Set<string>>
   constructor(store: Map<string, Set<string>> = new Map()) {
@@ -24,6 +27,11 @@ export class HasWalkedCache {
   }
 }
 
+/**
+ * A record of which paths have been matched in a given walk step,
+ * and whether they only are considered a match if they are a directory,
+ * and whether their absolute or relative path should be returned.
+ */
 export class MatchRecord {
   store: Map<Path, number> = new Map()
   add(target: Path, absolute: boolean, ifDir: boolean) {
@@ -41,6 +49,10 @@ export class MatchRecord {
   }
 }
 
+/**
+ * A collection of patterns that must be processed in a subsequent step
+ * for a given path.
+ */
 export class SubWalks {
   store: Map<Path, Pattern[]> = new Map()
   add(target: Path, pattern: Pattern) {
@@ -71,6 +83,12 @@ export class SubWalks {
   }
 }
 
+/**
+ * The class that processes patterns for a given path.
+ *
+ * Handles child entry filtering, and determining whether a path's
+ * directory contents must be read.
+ */
 export class Processor {
   hasWalkedCache: HasWalkedCache
   matches = new MatchRecord()

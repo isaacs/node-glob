@@ -1,5 +1,9 @@
 import { Glob, GlobOptions } from './glob.js'
 
+/**
+ * Return true if the patterns provided contain any magic
+ * glob characters.
+ */
 export const hasMagic = (
   pattern: string | string[],
   options: GlobOptions = {}

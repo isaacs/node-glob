@@ -200,10 +200,8 @@ share the previously loaded cache.
 
 - `cwd` String path or `file://` string or URL object. The
   current working directory in which to search. Defaults to
-  `process.cwd()`. This option is always coerced to use
-  forward-slashes as a path separator, because it is not tested
-  as a glob pattern, so there is no need to escape anything. See
-  also: "Windows, CWDs, Drive Letters, and UNC Paths", below.
+  `process.cwd()`.  See also: "Windows, CWDs, Drive Letters, and
+  UNC Paths", below.
 
   This option may be eiher a string path or a `file://` URL
   object or string.
@@ -354,8 +352,8 @@ path separators (ie, `/` on all platforms, and `\` on Windows).
   or 0 if it is the first item, unless `follow:true` is set, in
   which case it follows all symbolic links.
 
-`[:class:]`, `[=c=]`, and `[.symbol.]` style class patterns are
-_not_ supported by this implementation at this time.
+`[:class:]` patterns are supported by this implementation, but
+`[=c=]` and `[.symbol.]` style class patterns are not.
 
 ### Dots
 

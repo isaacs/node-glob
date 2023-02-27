@@ -15,6 +15,9 @@ const defaultPlatform: NodeJS.Platform =
     ? process.platform
     : 'linux'
 
+/**
+ * Class used to process ignored patterns
+ */
 export class Ignore {
   relative: Minimatch[]
   relativeChildren: Minimatch[]
