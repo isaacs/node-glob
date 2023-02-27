@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig-base.json",
+  "exclude": ["./test", "./tap-snapshots", "src/index-cjs.ts"],
+  "compilerOptions": {
+    "module": "esnext",
+    "outDir": "dist/mjs"
+  }
+}

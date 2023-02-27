@@ -1,19 +1,32 @@
 #!/bin/bash
 export CDPATH=
 set -e
+set -x
 
-tmp=${TMPDIR:-/tmp}
-bash make-benchmark-fixture.sh
+. patterns.sh
+
+bash -x make-benchmark-fixture.sh
 wd=$PWD
-cd $tmp/benchmark-fixture
+tmp="$wd/bench-working-dir"
+cd "$tmp"
 
-node --prof -e '
-  var glob=require(process.argv[1]);
-  glob("**/*.txt", function (er, files) {
-    console.log(files.length)
-  })
-  //console.log(glob.sync("**/*.txt").length);
-  ' "$wd"
-mv *v8.log "$wd/v8.log"
-cd "$wd"
-node-tick-processor > profile.txt
+export __GLOB_PROFILE__=1
+
+cat > "profscript.mjs" <<MJS
+import glob from '$wd/dist/mjs/index.js'
+const patterns = process.argv.slice(2)
+for (const p of patterns) {
+  glob.sync("./fixture/" + p)
+}
+await Promise.all(patterns.map(async p => {
+  await glob("./fixture/" + p)
+}))
+MJS
+
+node --prof profscript.mjs "${patterns[@]}" &> profile.out
+mkdir -p profiles
+d=./profiles/$(date +%s)
+mv isolate*.log ${d}.log
+node --prof-process ${d}.log > ${d}.txt
+cp ${d}.txt ../profile.txt
+#cat ${d}.txt
