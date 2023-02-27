@@ -515,7 +515,8 @@ majority of operations, this is never a problem.
 ### See Also:
 
 - `man sh`
-- `man bash` (Search for "Pattern Matching")
+- `man bash` [Pattern
+  Matching](https://www.gnu.org/software/bash/manual/html_node/Pattern-Matching.html)
 - `man 3 fnmatch`
 - `man 5 gitignore`
 - [minimatch documentation](https://github.com/isaacs/minimatch)
