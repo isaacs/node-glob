@@ -205,6 +205,9 @@ share the previously loaded cache.
   anything. See also: "Windows, CWDs, Drive Letters, and UNC
   Paths", below.
 
+  This option may be eiher a string path or a `file://` URL
+  object or string.
+
 - `windowsPathsNoEscape` Use `\\` as a path separator _only_, and
   _never_ as an escape character. If set, all `\\` characters are
   replaced with `/` in the pattern.

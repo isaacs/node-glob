@@ -41,6 +41,7 @@ changes.
   `mark:true`.)
 - Simplified `cwd` behavior so it is far less magical, and relies
   less on platform-specific absolute path representations.
+- `cwd` can be a File URL or a string path.
 - More efficient handling for absolute patterns. (That is,
   patterns that start with `/` on any platform, or start with a
   drive letter or UNC path on Windows.)

@@ -7,6 +7,7 @@ import {
   PathScurryPosix,
   PathScurryWin32,
 } from 'path-scurry'
+import {fileURLToPath} from 'url'
 import { Ignore } from './ignore.js'
 import { Pattern } from './pattern.js'
 import { GlobStream, GlobWalker } from './walker.js'
@@ -26,7 +27,7 @@ const defaultPlatform: NodeJS.Platform =
 export interface GlobOptions {
   absolute?: boolean
   allowWindowsEscape?: boolean
-  cwd?: string
+  cwd?: string | URL
   dot?: boolean
   follow?: boolean
   ignore?: string | string[] | Ignore
@@ -105,6 +106,11 @@ export class Glob<Opts extends GlobOptions> {
     this.dot = !!opts.dot
     this.nodir = !!opts.nodir
     this.mark = !!opts.mark
+    if (!opts.cwd) {
+      this.cwd = ''
+    } else if (opts.cwd instanceof URL || opts.cwd.startsWith('file://')) {
+      opts.cwd = fileURLToPath(opts.cwd)
+    }
     this.cwd = opts.cwd || ''
     this.nobrace = !!opts.nobrace
     this.noext = !!opts.noext

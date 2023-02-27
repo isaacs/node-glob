@@ -13,7 +13,7 @@ import { Processor } from './processor.js'
 export interface GlobWalkerOpts {
   absolute?: boolean
   allowWindowsEscape?: boolean
-  cwd?: string
+  cwd?: string | URL
   dot?: boolean
   follow?: boolean
   ignore?: string | string[] | Ignore
