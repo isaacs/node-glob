@@ -3,7 +3,7 @@
 Match files using the patterns the shell uses.
 
 The most correct and second fastest glob implementation in
-JavaScript.  (See **Comparison to Other JavaScript Glob
+JavaScript. (See **Comparison to Other JavaScript Glob
 Implementations** at the bottom of this readme.)
 
 ![a fun cartoon logo made of glob characters](logo/glob.png)
@@ -418,10 +418,10 @@ expanded **first** into the set of `+(a|b)` and `+(a|c)`, and
 those patterns are checked for validity. Since those two are
 valid, matching proceeds.
 
-The character class patterns `[:class:]` (POSIX standard named
-classes), `[=c=]` (locale-specific character collation weight),
-and `[.symbol.]` (collating symbol) style class patterns are
-_not_ supported by this implementation at this time.
+The character class patterns `[:class:]` (posix standard named
+classes) style class patterns are supported and unicode-aware,
+but `[=c=]` (locale-specific character collation weight), and
+`[.symbol.]` (collating symbol), are not.
 
 ### Repeated Slashes
 
@@ -569,7 +569,7 @@ npm run prof
 There are some other glob matcher libraries on npm, but these
 three are (in my opinion, as of 2023) the best.
 
-----
+---
 
 **full explanation**
 
@@ -623,7 +623,7 @@ Former versions of this module are far too slow for any cases
 where performance matters at all, and were designed with APIs
 that are extremely dated by current JavaScript standards.
 
-----
+---
 
 <small id="fn-webscale">[1]: In the cases where this module
 returns results and `fast-glob` doesn't, it's even faster, of
