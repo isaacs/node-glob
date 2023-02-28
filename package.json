@@ -9,6 +9,7 @@
   },
   "main": "./dist/cjs/index-cjs.js",
   "module": "./dist/mjs/index.js",
+  "types": "./dist/mjs/index.d.ts",
   "exports": {
     ".": {
       "import": {

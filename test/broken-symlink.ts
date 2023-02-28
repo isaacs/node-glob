@@ -1,6 +1,6 @@
 import { relative } from 'path'
 import t from 'tap'
-import { glob } from '../'
+import glob from '../'
 import { GlobOptionsWithFileTypesUnset } from '../src/glob.js'
 
 if (process.platform === 'win32') {

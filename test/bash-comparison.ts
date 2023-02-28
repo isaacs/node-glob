@@ -2,7 +2,7 @@
 // show that it does the same thing by default as the shell.
 import { resolve } from 'path'
 import t from 'tap'
-import { glob } from '../'
+import glob from '../'
 import { bashResults } from './bash-results'
 const globs = Object.keys(bashResults)
 
