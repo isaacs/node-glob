@@ -253,6 +253,16 @@ share the previously loaded cache.
   Only has effect on the {@link hasMagic} function, no effect on
   glob pattern matching itself.
 
+- `dotRelative` Prepend all relative path strings with `./` (or
+  `.\` on Windows).
+
+  Without this option, returned relative paths are "bare", so
+  instead of returning `'./foo/bar'`, they are returned as
+  `'foo/bar'`.
+
+  Relative patterns starting with `'../'` are not prepended with
+  `./`, even if this option is set.
+
 - `mark` Add a `/` character to directory matches. Note that this
   requires additional stat calls.
 

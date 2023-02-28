@@ -21,6 +21,7 @@ export interface GlobWalkerOpts {
   allowWindowsEscape?: boolean
   cwd?: string | URL
   dot?: boolean
+  dotRelative?: boolean
   follow?: boolean
   ignore?: string | string[] | Ignore
   mark?: boolean
@@ -200,7 +201,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       this.matchEmit(e.fullpath() + mark)
     } else {
       const rel = e.relative()
-      this.matchEmit(!rel && mark ? '.' + mark : rel + mark)
+      const pre = this.opts.dotRelative && !rel.startsWith('..' + this.#sep)
+        ? '.' + this.#sep : ''
+      this.matchEmit(!rel && mark ? '.' + mark : pre + rel + mark)
     }
   }
 
