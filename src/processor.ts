@@ -118,11 +118,15 @@ export class Processor {
       this.hasWalkedCache.storeWalked(t, pattern)
 
       const root = pattern.root()
-      const absolute = pattern.isAbsolute()
+      const absolute = pattern.isAbsolute() && this.opts.absolute !== false
 
       // start absolute patterns at root
       if (root) {
-        t = t.resolve(root)
+        t = t.resolve(
+          root === '/' && this.opts.root !== undefined
+            ? this.opts.root
+            : root
+        )
         const rest = pattern.rest()
         if (!rest) {
           this.matches.add(t, true, false)

@@ -39,23 +39,27 @@ const defaultPlatform: NodeJS.Platform =
  */
 export interface GlobOptions {
   /**
-   * Set to true to always receive absolute paths for
-   * matched files. This does _not_ make an extra system call to get
-   * the realpath, it only does string path resolution.
+   * Set to `true` to always receive absolute paths for
+   * matched files. Set to `false` to always return relative paths.
    *
-   * By default, when this option is not set, absolute paths are
-   * returned for patterns that are absolute, and otherwise paths
-   * are returned that are relative to the `cwd` setting.
+   * When this option is not set, absolute paths are returned for patterns
+   * that are absolute, and otherwise paths are returned that are relative
+   * to the `cwd` setting.
+   *
+   * This does _not_ make an extra system call to get
+   * the realpath, it only does string path resolution.
    *
    * Conflicts with {@link withFileTypes}
    */
   absolute?: boolean
+
   /**
    * Set to false to enable {@link windowsPathsNoEscape}
    *
    * @deprecated
    */
   allowWindowsEscape?: boolean
+
   /**
    * The current working directory in which to search. Defaults to
    * `process.cwd()`.
@@ -63,12 +67,14 @@ export interface GlobOptions {
    * May be eiher a string path or a `file://` URL object or string.
    */
   cwd?: string | URL
+
   /**
    * Include `.dot` files in normal matches and `globstar`
    * matches. Note that an explicit dot in a portion of the pattern
    * will always match dot files.
    */
   dot?: boolean
+
   /**
    * Follow symlinked directories when expanding `**`
    * patterns. This can result in a lot of duplicate references in
@@ -79,27 +85,32 @@ export interface GlobOptions {
    * first item in the pattern, following the same behavior as Bash.
    */
   follow?: boolean
+
   /**
    * A glob pattern or array of glob patterns to exclude from matches. To
    * ignore all children within a directory, as well as the entry itself,
    * append `/**'` to the ignore pattern.
    */
   ignore?: string | string[] | Ignore
+
   /**
    * Add a `/` character to directory matches. Note that this requires
    * additional stat calls in some cases.
    */
   mark?: boolean
+
   /**
    * Perform a basename-only match if the pattern does not contain any slash
    * characters. That is, `*.js` would be treated as equivalent to
    * `**\/*.js`, matching all js files in all directories.
    */
   matchBase?: boolean
+
   /**
    * Do not expand `{a,b}` and `{1..3}` brace sets.
    */
   nobrace?: boolean
+
   /**
    * Perform a case-insensitive match. This defaults to `true` on macOS and
    * Windows systems, and `false` on all others.
@@ -111,15 +122,18 @@ export interface GlobOptions {
    * walk may return more or less results than expected.
    */
   nocase?: boolean
+
   /**
    * Do not match directories, only files. (Note: to match
    * _only_ directories, put a `/` at the end of the pattern.)
    */
   nodir?: boolean
+
   /**
    * Do not match "extglob" patterns such as `+(a|b)`.
    */
   noext?: boolean
+
   /**
    * Do not match `**` against multiple filenames. (Ie, treat it as a normal
    * `*` instead.)
@@ -127,12 +141,14 @@ export interface GlobOptions {
    * Conflicts with {@link matchBase}
    */
   noglobstar?: boolean
+
   /**
    * Defaults to value of `process.platform` if available, or `'linux'` if
    * not. Setting `platform:'win32'` on non-Windows systems may cause strange
    * behavior.
    */
   platform?: NodeJS.Platform
+
   /**
    * Set to true to call `fs.realpath` on all of the
    * results. In the case of an entry that cannot be resolved, the
@@ -140,6 +156,32 @@ export interface GlobOptions {
    * course, because of the added system calls.
    */
   realpath?: boolean
+
+  /**
+   *
+   * A string path resolved against the `cwd` option, which
+   * is used as the starting point for absolute patterns that start
+   * with `/`, (but not drive letters or UNC paths on Windows).
+   *
+   * Note that this _doesn't_ necessarily limit the walk to the
+   * `root` directory, and doesn't affect the cwd starting point for
+   * non-absolute patterns. A pattern containing `..` will still be
+   * able to traverse out of the root directory, if it is not an
+   * actual root directory on the filesystem, and any non-absolute
+   * patterns will be matched in the `cwd`. For example, the
+   * pattern `/../*` with `{root:'/some/path'}` will return all
+   * files in `/some`, not all files in `/some/path`. The pattern
+   * `*` with `{root:'/some/path'}` will return all the entries in
+   * the cwd, not the entries in `/some/path`.
+   *
+   * To start absolute and non-absolute patterns in the same
+   * path, you can use `{root:''}`. However, be aware that on
+   * Windows systems, a pattern like `x:/*` or `//host/share/*` will
+   * _always_ start in the `x:/` or `//host/share` directory,
+   * regardless of the `root` setting.
+   */
+  root?: string
+
   /**
    * A [PathScurry](http://npm.im/path-scurry) object used
    * to traverse the file system. If the `nocase` option is set
@@ -147,11 +189,13 @@ export interface GlobOptions {
    * setting.
    */
   scurry?: PathScurry
+
   /**
    * An AbortSignal which will cancel the Glob walk when
    * triggered.
    */
   signal?: AbortSignal
+
   /**
    * Use `\\` as a path separator _only_, and
    *  _never_ as an escape character. If set, all `\\` characters are
@@ -167,6 +211,7 @@ export interface GlobOptions {
    *  `allowWindowsEscape` is set to the exact value `false`.)
    */
   windowsPathsNoEscape?: boolean
+
   /**
    * Return [PathScurry](http://npm.im/path-scurry)
    * `Path` objects instead of strings. These are similar to a
@@ -180,7 +225,7 @@ export interface GlobOptions {
 
 export type GlobOptionsWithFileTypesTrue = GlobOptions & {
   withFileTypes: true
-  absolute?: false
+  absolute?: undefined
 }
 
 export type GlobOptionsWithFileTypesFalse = GlobOptions & {
@@ -212,8 +257,9 @@ export type FileTypes<Opts> = Opts extends GlobOptionsWithFileTypesTrue
  * An object that can perform glob pattern traversals.
  */
 export class Glob<Opts extends GlobOptions> implements GlobOptions {
-  absolute: boolean
+  absolute?: boolean
   cwd: string
+  root?: string
   dot: boolean
   follow: boolean
   ignore?: Ignore
@@ -267,16 +313,17 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
       opts.cwd = fileURLToPath(opts.cwd)
     }
     this.cwd = opts.cwd || ''
+    this.root = opts.root
     this.nobrace = !!opts.nobrace
     this.noext = !!opts.noext
     this.realpath = !!opts.realpath
-    this.absolute = !!opts.absolute
+    this.absolute = opts.absolute
 
     this.noglobstar = !!opts.noglobstar
     this.matchBase = !!opts.matchBase
 
-    if (this.withFileTypes && this.absolute) {
-      throw new Error('cannot set absolute:true and withFileTypes:true')
+    if (this.withFileTypes && this.absolute !== undefined) {
+      throw new Error('cannot set absolute and withFileTypes:true')
     }
 
     if (typeof pattern === 'string') {

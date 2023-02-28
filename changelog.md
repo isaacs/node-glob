@@ -1,3 +1,12 @@
+## 9.1
+
+- Bring back the `root` option, albeit with slightly different
+  semantics than in v8 and before.
+- Support `{ absolute:false }` option to explicitly always return
+  relative paths. An unset `absolute` setting will still return
+  absolute or relative paths based on whether the pattern is
+  absolute.
+
 ## 9.0
 
 This is a full rewrite, with significant API and algorithm

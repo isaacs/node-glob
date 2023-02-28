@@ -200,11 +200,32 @@ share the previously loaded cache.
 
 - `cwd` String path or `file://` string or URL object. The
   current working directory in which to search. Defaults to
-  `process.cwd()`.  See also: "Windows, CWDs, Drive Letters, and
+  `process.cwd()`. See also: "Windows, CWDs, Drive Letters, and
   UNC Paths", below.
 
   This option may be eiher a string path or a `file://` URL
   object or string.
+
+- `root` A string path resolved against the `cwd` option, which
+  is used as the starting point for absolute patterns that start
+  with `/`, (but not drive letters or UNC paths on Windows).
+
+  Note that this _doesn't_ necessarily limit the walk to the
+  `root` directory, and doesn't affect the cwd starting point for
+  non-absolute patterns. A pattern containing `..` will still be
+  able to traverse out of the root directory, if it is not an
+  actual root directory on the filesystem, and any non-absolute
+  patterns will be matched in the `cwd`. For example, the
+  pattern `/../*` with `{root:'/some/path'}` will return all
+  files in `/some`, not all files in `/some/path`. The pattern
+  `*` with `{root:'/some/path'}` will return all the entries in
+  the cwd, not the entries in `/some/path`.
+
+  To start absolute and non-absolute patterns in the same
+  path, you can use `{root:''}`. However, be aware that on
+  Windows systems, a pattern like `x:/*` or `//host/share/*` will
+  _always_ start in the `x:/` or `//host/share` directory,
+  regardless of the `root` setting.
 
 - `windowsPathsNoEscape` Use `\\` as a path separator _only_, and
   _never_ as an escape character. If set, all `\\` characters are
@@ -272,12 +293,15 @@ share the previously loaded cache.
   course, because of the added system calls.
 
 - `absolute` Set to true to always receive absolute paths for
-  matched files. This does _not_ make an extra system call to get
-  the realpath, it only does string path resolution.
+  matched files. Set to `false` to always receive relative paths
+  for matched files.
 
   By default, when this option is not set, absolute paths are
   returned for patterns that are absolute, and otherwise paths
   are returned that are relative to the `cwd` setting.
+
+  This does _not_ make an extra system call to get the realpath,
+  it only does string path resolution.
 
   `absolute` may not be used along with `withFileTypes`.
 

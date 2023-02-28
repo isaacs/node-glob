@@ -32,6 +32,7 @@ export interface GlobWalkerOpts {
   noglobstar?: boolean
   platform?: NodeJS.Platform
   realpath?: boolean
+  root?: string
   signal?: AbortSignal
   windowsPathsNoEscape?: boolean
   withFileTypes?: boolean
@@ -188,16 +189,18 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
 
   matchFinish(e: Path, absolute: boolean) {
     if (this.#ignored(e)) return
+    const abs =
+      this.opts.absolute === undefined ? absolute : this.opts.absolute
     this.seen.add(e)
     const mark = this.opts.mark && e.isDirectory() ? this.#sep : ''
     // ok, we have what we need!
     if (this.opts.withFileTypes) {
       this.matchEmit(e)
-    } else if (this.opts.absolute || absolute) {
+    } else if (abs) {
       this.matchEmit(e.fullpath() + mark)
     } else {
       const rel = e.relative()
-      this.matchEmit(!rel && mark ? './' : rel + mark)
+      this.matchEmit(!rel && mark ? '.' + mark : rel + mark)
     }
   }
 
