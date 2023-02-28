@@ -6,6 +6,8 @@
   relative paths. An unset `absolute` setting will still return
   absolute or relative paths based on whether the pattern is
   absolute.
+- Add `magicalBraces` option to treat brace expansion as "magic"
+  in the `hasMagic` function.
 
 ## 9.0
 

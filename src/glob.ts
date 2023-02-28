@@ -94,6 +94,14 @@ export interface GlobOptions {
   ignore?: string | string[] | Ignore
 
   /**
+   * Treat brace expansion like `{a,b}` as a "magic" pattern. Has no
+   * effect if {@link nobrace} is set.
+   *
+   * Only has effect on the {@link hasMagic} function.
+   */
+  magicalBraces?: boolean
+
+  /**
    * Add a `/` character to directory matches. Note that this requires
    * additional stat calls in some cases.
    */
@@ -263,7 +271,8 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
   dot: boolean
   follow: boolean
   ignore?: Ignore
-  mark: boolean
+  magicalBraces: boolean
+  mark?: boolean
   matchBase: boolean
   nobrace: boolean
   nocase: boolean
@@ -314,6 +323,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
     }
     this.cwd = opts.cwd || ''
     this.root = opts.root
+    this.magicalBraces = !!opts.magicalBraces
     this.nobrace = !!opts.nobrace
     this.noext = !!opts.noext
     this.realpath = !!opts.realpath
