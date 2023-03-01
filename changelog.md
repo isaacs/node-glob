@@ -7,6 +7,8 @@ changes.
 
 - Only support node 16 and higher.
 - Promise API instead of callbacks.
+- Exported function names have changed, as have the methods on
+  the Glob class. See API documentation for details.
 - Accept pattern as string or array of strings.
 - Hybrid module distribution.
 - Full TypeScript support.
