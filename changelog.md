@@ -9,6 +9,7 @@
 - Add `magicalBraces` option to treat brace expansion as "magic"
   in the `hasMagic` function.
 - Add `dotRelative` option
+- Add `escape()` and `unescape()` methods
 
 ## 9.0
 
