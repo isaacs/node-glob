@@ -3,7 +3,7 @@
 This is a full rewrite, with significant API and algorithm
 changes.
 
-## High-Level Feature and API Surface Changes
+### High-Level Feature and API Surface Changes
 
 - Only support node 16 and higher.
 - Promise API instead of callbacks.
@@ -32,7 +32,7 @@ changes.
   constructor. `{}` may be provided to accept all default
   options.
 
-## Options Changes
+### Options Changes
 
 - Removed `root` option and mounting behavior.
 - Removed `stat` option. It's slow and pointless. (Could bring
@@ -71,7 +71,7 @@ changes.
 - `realpath:true` will cause invalid symbolic links to be
   omitted, rather than matching the link itself.
 
-## Performance and Algorithm Changes
+### Performance and Algorithm Changes
 
 - Massive performance improvements.
 - Removed nearly all stat calls, in favor of using
