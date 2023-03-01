@@ -1,6 +1,7 @@
 import { Minimatch, MinimatchOptions } from 'minimatch'
 import Minipass from 'minipass'
 import {
+  FSOption,
   Path,
   PathScurry,
   PathScurryDarwin,
@@ -240,6 +241,12 @@ export interface GlobOptions {
    * Conflicts with {@link absolute}
    */
   withFileTypes?: boolean
+
+  /**
+   * An fs implementation to override some or all of the defaults.  See
+   * http://npm.im/path-scurry for details about what can be overridden.
+   */
+  fs?: FSOption
 }
 
 export type GlobOptionsWithFileTypesTrue = GlobOptions & {
@@ -389,7 +396,10 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
           : opts.platform
           ? PathScurryPosix
           : PathScurry
-      this.scurry = new Scurry(this.cwd, { nocase: opts.nocase })
+      this.scurry = new Scurry(this.cwd, {
+        nocase: opts.nocase,
+        fs: opts.fs,
+      })
     }
     this.nocase = this.scurry.nocase
 

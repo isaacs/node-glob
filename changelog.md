@@ -1,3 +1,9 @@
+# cganhe glo
+
+## 9.2
+
+- Support using a custom fs object, which is passed to PathScurry
+
 ## 9.1
 
 - Bring back the `root` option, albeit with slightly different

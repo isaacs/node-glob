@@ -366,6 +366,10 @@ share the previously loaded cache.
 - `signal` An AbortSignal which will cancel the Glob walk when
   triggered.
 
+- `fs` An override object to pass in custom filesystem methods.
+  See [PathScurry docs](http://npm.im/path-scurry) for what can
+  be overridden.
+
 - `scurry` A [PathScurry](http://npm.im/path-scurry) object used
   to traverse the file system. If the `nocase` option is set
   explicitly, then any provided `scurry` object must match this
