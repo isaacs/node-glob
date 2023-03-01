@@ -231,18 +231,6 @@ export class Pattern {
   }
 
   /**
-   * True if the pattern has any non-string components
-   */
-  hasMagic(): boolean {
-    for (let i = 0; i < this.length; i++) {
-      if (typeof this.#patternList[i] !== 'string') {
-        return true
-      }
-    }
-    return false
-  }
-
-  /**
    * Check to see if the current globstar pattern is allowed to follow
    * a symbolic link.
    */

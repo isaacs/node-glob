@@ -138,6 +138,34 @@ if you had called it on `['xay', 'xby']`. When
 `magicalBraces:true` is in the options, brace expansion _is_
 treated as a pattern having magic.
 
+## `escape(pattern: string, options?: GlobOptions) => string`
+
+Escape all magic characters in a glob pattern, so that it will
+only ever match literal strings
+
+If the `windowsPathsNoEscape` option is used, then characters are
+escaped by wrapping in `[]`, because a magic character wrapped in
+a character class can only be satisfied by that exact character.
+
+Slashes (and backslashes in `windowsPathsNoEscape` mode) cannot
+be escaped or unescaped.
+
+## `unescape(pattern: string, options?: GlobOptions) => string`
+
+Un-escape a glob string that may contain some escaped characters.
+
+If the `windowsPathsNoEscape` option is used, then square-brace
+escapes are removed, but not backslash escapes.  For example, it
+will turn the string `'[*]'` into `*`, but it will not turn
+`'\\*'` into `'*'`, because `\` is a path separator in
+`windowsPathsNoEscape` mode.
+
+When `windowsPathsNoEscape` is not set, then both brace escapes
+and backslash escapes are removed.
+
+Slashes (and backslashes in `windowsPathsNoEscape` mode) cannot
+be escaped or unescaped.
+
 ## Class `Glob`
 
 An object that can perform glob pattern traversals.

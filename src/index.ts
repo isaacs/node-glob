@@ -1,3 +1,4 @@
+import { escape, unescape } from 'minimatch'
 import type {
   GlobOptions,
   GlobOptionsWithFileTypesFalse,
@@ -178,6 +179,7 @@ export function globIterateSync(
 }
 
 /* c8 ignore start */
+export { escape, unescape } from 'minimatch'
 export { Glob } from './glob.js'
 export type {
   GlobOptions,
@@ -189,6 +191,7 @@ export type {
 } from './glob.js'
 export { hasMagic } from './has-magic.js'
 export type { MatchStream } from './walker.js'
+
 /* c8 ignore stop */
 export default Object.assign(glob, {
   glob,
@@ -199,4 +202,6 @@ export default Object.assign(glob, {
   globIterateSync,
   Glob,
   hasMagic,
+  escape,
+  unescape,
 })
