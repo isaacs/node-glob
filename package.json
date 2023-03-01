@@ -20,6 +20,14 @@
         "types": "./dist/cjs/index.d.ts",
         "default": "./dist/cjs/index.js"
       }
+    },
+    "./*.js": {
+      "import": "./dist/mjs/*.js",
+      "require": "./dist/cjs/*.js"
+    },
+    "./*": {
+      "import": "./dist/mjs/*.js",
+      "require": "./dist/cjs/*.js"
     }
   },
   "files": [
