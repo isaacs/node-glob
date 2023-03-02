@@ -1,7 +1,7 @@
 import t from 'tap'
 import { Glob } from '../'
 import { bashResults } from './bash-results'
-import {resolve, sep} from 'path'
+import { resolve, sep } from 'path'
 
 const pattern = 'a/b/**'
 process.chdir(__dirname + '/fixtures')
@@ -39,19 +39,22 @@ for (const mark of marks) {
       }
     })
 
-    t.test('does not prefix with ./ unless dotRelative is true', async t => {
-      const g = new Glob(pattern, {})
-      const results = await g.walk()
+    t.test(
+      'does not prefix with ./ unless dotRelative is true',
+      async t => {
+        const g = new Glob(pattern, {})
+        const results = await g.walk()
 
-      t.equal(
-        results.length,
-        bashResults[pattern].length,
-        'must match all files'
-      )
-      for (const m of results) {
-        t.ok(mark && m === '.' + sep || !m.startsWith('.' + sep))
+        t.equal(
+          results.length,
+          bashResults[pattern].length,
+          'must match all files'
+        )
+        for (const m of results) {
+          t.ok((mark && m === '.' + sep) || !m.startsWith('.' + sep))
+        }
       }
-    })
+    )
   })
 }
 

@@ -6,11 +6,16 @@ for (const pattern of Object.keys(bashResults)) {
   t.notOk(hasMagic(escape(pattern)), `escape(${pattern})`)
   const pp = escape(pattern)
   const pw = escape(pattern, {
-    windowsPathsNoEscape: true
+    windowsPathsNoEscape: true,
   })
-  t.notOk(hasMagic(pp, { platform: 'linux' }), 'no magic after posix escape')
-  t.notOk(hasMagic(pw, { platform: 'win32', windowsPathsNoEscape: true }),
-    'no magic after windows escape')
+  t.notOk(
+    hasMagic(pp, { platform: 'linux' }),
+    'no magic after posix escape'
+  )
+  t.notOk(
+    hasMagic(pw, { platform: 'win32', windowsPathsNoEscape: true }),
+    'no magic after windows escape'
+  )
   const up = unescape(pp)
   const uw = unescape(pw, { windowsPathsNoEscape: true })
   t.equal(up, pattern, 'unescaped posix pattern returned')

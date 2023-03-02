@@ -201,8 +201,10 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       this.matchEmit(e.fullpath() + mark)
     } else {
       const rel = e.relative()
-      const pre = this.opts.dotRelative && !rel.startsWith('..' + this.#sep)
-        ? '.' + this.#sep : ''
+      const pre =
+        this.opts.dotRelative && !rel.startsWith('..' + this.#sep)
+          ? '.' + this.#sep
+          : ''
       this.matchEmit(!rel && mark ? '.' + mark : pre + rel + mark)
     }
   }

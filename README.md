@@ -155,7 +155,7 @@ be escaped or unescaped.
 Un-escape a glob string that may contain some escaped characters.
 
 If the `windowsPathsNoEscape` option is used, then square-brace
-escapes are removed, but not backslash escapes.  For example, it
+escapes are removed, but not backslash escapes. For example, it
 will turn the string `'[*]'` into `*`, but it will not turn
 `'\\*'` into `'*'`, because `\` is a path separator in
 `windowsPathsNoEscape` mode.
