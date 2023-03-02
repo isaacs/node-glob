@@ -310,6 +310,9 @@ share the previously loaded cache.
   systems, or `false` on case-insensitive file systems, then the
   walk may return more or less results than expected.
 
+- `maxDepth` Specify a number to limit the depth of the directory
+  traversal to this many levels below the `cwd`.
+
 - `matchBase` Perform a basename-only match if the pattern does
   not contain any slash characters. That is, `*.js` would be
   treated as equivalent to `**/*.js`, matching all js files in

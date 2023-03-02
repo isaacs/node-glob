@@ -127,6 +127,14 @@ export interface GlobOptions {
   matchBase?: boolean
 
   /**
+   * Limit the directory traversal to a given depth below the cwd.
+   * Note that this does NOT prevent traversal to sibling folders,
+   * root patterns, and so on. It only limits the maximum folder depth
+   * that the walk will descend, relative to the cwd.
+   */
+  maxDepth?: number
+
+  /**
    * Do not expand `{a,b}` and `{1..3}` brace sets.
    */
   nobrace?: boolean
@@ -293,6 +301,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
   magicalBraces: boolean
   mark?: boolean
   matchBase: boolean
+  maxDepth: number
   nobrace: boolean
   nocase: boolean
   nodir: boolean
@@ -351,6 +360,8 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
 
     this.noglobstar = !!opts.noglobstar
     this.matchBase = !!opts.matchBase
+    this.maxDepth =
+      typeof opts.maxDepth === 'number' ? opts.maxDepth : Infinity
 
     if (this.withFileTypes && this.absolute !== undefined) {
       throw new Error('cannot set absolute and withFileTypes:true')
@@ -445,6 +456,10 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
     return [
       ...(await new GlobWalker(this.patterns, this.scurry.cwd, {
         ...this.opts,
+        maxDepth:
+          this.maxDepth !== Infinity
+            ? this.maxDepth + this.scurry.cwd.depth()
+            : Infinity,
         platform: this.platform,
         nocase: this.nocase,
       }).walk()),
@@ -459,6 +474,10 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
     return [
       ...new GlobWalker(this.patterns, this.scurry.cwd, {
         ...this.opts,
+        maxDepth:
+          this.maxDepth !== Infinity
+            ? this.maxDepth + this.scurry.cwd.depth()
+            : Infinity,
         platform: this.platform,
         nocase: this.nocase,
       }).walkSync(),
@@ -472,6 +491,10 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
   stream(): Minipass<string | Path, string | Path> {
     return new GlobStream(this.patterns, this.scurry.cwd, {
       ...this.opts,
+      maxDepth:
+        this.maxDepth !== Infinity
+          ? this.maxDepth + this.scurry.cwd.depth()
+          : Infinity,
       platform: this.platform,
       nocase: this.nocase,
     }).stream()
@@ -484,6 +507,10 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
   streamSync(): Minipass<string | Path, string | Path> {
     return new GlobStream(this.patterns, this.scurry.cwd, {
       ...this.opts,
+      maxDepth:
+        this.maxDepth !== Infinity
+          ? this.maxDepth + this.scurry.cwd.depth()
+          : Infinity,
       platform: this.platform,
       nocase: this.nocase,
     }).streamSync()

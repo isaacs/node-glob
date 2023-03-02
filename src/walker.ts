@@ -26,6 +26,9 @@ export interface GlobWalkerOpts {
   ignore?: string | string[] | Ignore
   mark?: boolean
   matchBase?: boolean
+  // Note: maxDepth here means "maximum actual Path.depth()",
+  // not "maximum depth beyond cwd"
+  maxDepth?: number
   nobrace?: boolean
   nocase?: boolean
   nodir?: boolean
@@ -100,6 +103,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   #ignore?: Ignore
   #sep: '\\' | '/'
   signal?: AbortSignal
+  maxDepth: number
 
   constructor(patterns: Pattern[], path: Path, opts: O)
   constructor(patterns: Pattern[], path: Path, opts: O) {
@@ -110,6 +114,11 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     if (opts.ignore) {
       this.#ignore = makeIgnore(opts.ignore, opts)
     }
+    // ignore, always set with maxDepth, but it's optional on the
+    // GlobOptions type
+    /* c8 ignore start */
+    this.maxDepth = opts.maxDepth || Infinity
+    /* c8 ignore stop */
     if (opts.signal) {
       this.signal = opts.signal
       this.signal.addEventListener('abort', () => {
@@ -166,6 +175,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
 
   matchCheckTest(e: Path | undefined, ifDir: boolean): Path | undefined {
     return e &&
+      (this.maxDepth === Infinity || e.depth() <= this.maxDepth) &&
       !this.#ignored(e) &&
       (!ifDir || e.canReaddir()) &&
       (!this.opts.nodir || !e.isDirectory())
@@ -255,6 +265,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
 
     for (const t of processor.subwalkTargets()) {
+      if (this.maxDepth !== Infinity && t.depth() >= this.maxDepth) {
+        continue
+      }
       tasks++
       const childrenCached = t.readdirCached()
       if (t.calledReaddir())
@@ -333,6 +346,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
 
     for (const t of processor.subwalkTargets()) {
+      if (this.maxDepth !== Infinity && t.depth() >= this.maxDepth) {
+        continue
+      }
       tasks++
       const children = t.readdirSync()
       this.walkCB3Sync(t, children, processor, next)
