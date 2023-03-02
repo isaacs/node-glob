@@ -36,8 +36,6 @@ t.test('set maxDepth', async t => {
 
   const ssync = j(syncRes.map(p => p.relative()))
   const sasync = j(asyncRes.map(p => p.relative()))
-  t.matchSnapshot(sasync, 'async results')
-  t.matchSnapshot(ssync, 'sync results')
   t.same(ssync, expect, 'got all results sync')
   t.same(sasync, expect, 'got all results async')
   for (const p of syncRes) {
