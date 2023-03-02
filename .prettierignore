@@ -7,3 +7,5 @@
 /.nyc_output
 /coverage
 /benchmark
+/scripts/fixture
+/test/fixture
