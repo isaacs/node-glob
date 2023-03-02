@@ -219,6 +219,15 @@ export interface GlobOptions {
   scurry?: PathScurry
 
   /**
+   * Call `lstat()` on all entries, whether required or not to determine
+   * whether it's a valid match. When used with {@link withFileTypes}, this
+   * means that matches will include data such as modified time, permissions,
+   * and so on.  Note that this will incur a performance cost due to the added
+   * system calls.
+   */
+  stat?: boolean
+
+  /**
    * An AbortSignal which will cancel the Glob walk when
    * triggered.
    */
@@ -311,6 +320,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
   platform: NodeJS.Platform
   realpath: boolean
   scurry: PathScurry
+  stat: boolean
   signal?: AbortSignal
   windowsPathsNoEscape: boolean
   withFileTypes: FileTypes<Opts>
@@ -362,6 +372,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
     this.matchBase = !!opts.matchBase
     this.maxDepth =
       typeof opts.maxDepth === 'number' ? opts.maxDepth : Infinity
+    this.stat = !!opts.stat
 
     if (this.withFileTypes && this.absolute !== undefined) {
       throw new Error('cannot set absolute and withFileTypes:true')

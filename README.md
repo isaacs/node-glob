@@ -82,6 +82,21 @@ g3.stream().on('data', path => {
     path.readdirSync().map(e => e.name)
   )
 })
+
+// if you use stat:true and withFileTypes, you can sort results
+// by things like modified time, filter by permission mode, etc.
+// All Stats fields will be avialable in that case. Slightly
+// slower, though.
+// For example:
+const results = await glob('**', { stat: true, withFileTypes: true })
+
+const timeSortedFiles = results
+  .sort((a, b) => a.mtimeMS - b.mtimeMS)
+  .map(path => path.fullpath())
+
+const groupReadableFiles = results
+  .filter(path => path.mode & 0o040)
+  .map(path => path.fullpath())
 ```
 
 **Note** Glob patterns should always use `/` as a path separator,
@@ -320,6 +335,12 @@ share the previously loaded cache.
 
 - `nodir` Do not match directories, only files. (Note: to match
   _only_ directories, put a `/` at the end of the pattern.)
+
+- `stat` Call `lstat()` on all entries, whether required or not
+  to determine whether it's a valid match. When used with
+  `withFileTypes`, this means that matches will include data such
+  as modified time, permissions, and so on. Note that this will
+  incur a performance cost due to the added system calls.
 
 - `ignore` string or string[]. A glob pattern or array of glob
   patterns to exclude from matches. To ignore all children within

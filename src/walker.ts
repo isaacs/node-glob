@@ -37,6 +37,7 @@ export interface GlobWalkerOpts {
   platform?: NodeJS.Platform
   realpath?: boolean
   root?: string
+  stat?: boolean
   signal?: AbortSignal
   windowsPathsNoEscape?: boolean
   withFileTypes?: boolean
@@ -169,7 +170,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       if (!rpc) return undefined
       e = rpc
     }
-    const needStat = e.isUnknown()
+    const needStat = e.isUnknown() || this.opts.stat
     return this.matchCheckTest(needStat ? await e.lstat() : e, ifDir)
   }
 
@@ -191,7 +192,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       if (!rpc) return undefined
       e = rpc
     }
-    const needStat = e.isUnknown()
+    const needStat = e.isUnknown() || this.opts.stat
     return this.matchCheckTest(needStat ? e.lstatSync() : e, ifDir)
   }
 
