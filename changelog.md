@@ -3,6 +3,9 @@
 ## 9.2
 
 - Support using a custom fs object, which is passed to PathScurry
+- add maxDepth option
+- add stat option
+- add custom Ignore support
 
 ## 9.1
 
