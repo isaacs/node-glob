@@ -8,6 +8,11 @@ import { Path } from 'path-scurry'
 import { Pattern } from './pattern.js'
 import { GlobWalkerOpts } from './walker.js'
 
+export interface IgnoreLike {
+  ignored?: (p: Path) => boolean
+  childrenIgnored?: (p: Path) => boolean
+}
+
 const defaultPlatform: NodeJS.Platform =
   typeof process === 'object' &&
   process &&
@@ -18,7 +23,7 @@ const defaultPlatform: NodeJS.Platform =
 /**
  * Class used to process ignored patterns
  */
-export class Ignore {
+export class Ignore implements IgnoreLike {
   relative: Minimatch[]
   relativeChildren: Minimatch[]
   absolute: Minimatch[]
@@ -46,6 +51,8 @@ export class Ignore {
       noglobstar,
       optimizationLevel: 2,
       platform,
+      nocomment: true,
+      nonegate: true,
     }
 
     // this is a little weird, but it gives us a clean set of optimized

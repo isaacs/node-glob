@@ -97,6 +97,43 @@ const timeSortedFiles = results
 const groupReadableFiles = results
   .filter(path => path.mode & 0o040)
   .map(path => path.fullpath())
+
+// custom ignores can be done like this, for example by saying
+// you'll ignore all markdown files, and all folders named 'docs'
+const customIgnoreResults = await glob('**', {
+  ignore: {
+    ignored: (p) => /\.md$/.test(p.name),
+    childrenIgnored: (p) => p.isNamed('docs'),
+  },
+})
+
+// another fun use case, only return files with the same name as
+// their parent folder, plus either `.ts` or `.js`
+const folderNamedModules = await glob('**/*.{ts,js}', {
+  ignore: {
+    ignored: (p) => {
+      const pp = p.parent
+      return !(p.isNamed(pp.name + '.ts') || p.isNamed(pp.name + '.js'))
+    }
+  }
+})
+
+// find all files edited in the last hour
+const newFiles = await glob('**', {
+  // need stat so we have mtime
+  stat: true,
+  // only want the files, not the dirs
+  nodir: true,
+  ignore: {
+    ignored: (p) => {
+      return (new Date() - p.mtime) <= (60 * 60 * 1000)
+    },
+    // could add similar childrenIgnored here as well, but
+    // directory mtime is inconsistent across platforms, so
+    // probably better not to, unless you know the system
+    // tracks this reliably.
+  }
+})
 ```
 
 **Note** Glob patterns should always use `/` as a path separator,
@@ -342,13 +379,21 @@ share the previously loaded cache.
   as modified time, permissions, and so on. Note that this will
   incur a performance cost due to the added system calls.
 
-- `ignore` string or string[]. A glob pattern or array of glob
-  patterns to exclude from matches. To ignore all children within
-  a directory, as well as the entry itself, append `/**'` to the
-  ignore pattern.
+- `ignore` string or string[], or an object with `ignore` and
+  `ignoreChildren` methods.
+
+  If a string or string[] is provided, then this is treated as a
+  glob pattern or array of glob patterns to exclude from matches.
+  To ignore all children within a directory, as well as the entry
+  itself, append `'/**'` to the ignore pattern.
 
   **Note** `ignore` patterns are _always_ in `dot:true` mode,
   regardless of any other settings.
+
+  If an object is provided that has `ignored(path)` and/or
+  `childrenIgnored(path)` methods, then these methods will be
+  called to determine whether any Path is a match or if its
+  children should be traversed, respectively.
 
 - `follow` Follow symlinked directories when expanding `**`
   patterns. This can result in a lot of duplicate references in

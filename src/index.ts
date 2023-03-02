@@ -182,9 +182,10 @@ export type {
   GlobOptionsWithFileTypesUnset,
 } from './glob.js'
 export { hasMagic } from './has-magic.js'
+export type { IgnoreLike } from './ignore.js'
 export type { MatchStream } from './walker.js'
-
 /* c8 ignore stop */
+
 export default Object.assign(glob, {
   glob,
   globSync,

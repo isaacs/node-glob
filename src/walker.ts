@@ -6,7 +6,7 @@
  */
 import Minipass from 'minipass'
 import { Path } from 'path-scurry'
-import { Ignore } from './ignore.js'
+import { Ignore, IgnoreLike } from './ignore.js'
 
 // XXX can we somehow make it so that it NEVER processes a given path more than
 // once, enough that the match set tracking is no longer needed?  that'd speed
@@ -23,7 +23,7 @@ export interface GlobWalkerOpts {
   dot?: boolean
   dotRelative?: boolean
   follow?: boolean
-  ignore?: string | string[] | Ignore
+  ignore?: string | string[] | IgnoreLike
   mark?: boolean
   matchBase?: boolean
   // Note: maxDepth here means "maximum actual Path.depth()",
@@ -79,16 +79,14 @@ export type MatchStream<O extends GlobWalkerOpts> =
     : Minipass<Path | string, Path | string>
 
 const makeIgnore = (
-  ignore: string | string[] | Ignore,
+  ignore: string | string[] | IgnoreLike,
   opts: GlobWalkerOpts
-): Ignore =>
+): IgnoreLike =>
   typeof ignore === 'string'
     ? new Ignore([ignore], opts)
     : Array.isArray(ignore)
     ? new Ignore(ignore, opts)
-    : /* c8 ignore start */
-      ignore
-/* c8 ignore stop */
+    : ignore
 
 /**
  * basic walking utilities that all the glob walker types use
@@ -101,7 +99,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   paused: boolean = false
   aborted: boolean = false
   #onResume: (() => any)[] = []
-  #ignore?: Ignore
+  #ignore?: IgnoreLike
   #sep: '\\' | '/'
   signal?: AbortSignal
   maxDepth: number
@@ -129,10 +127,10 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   #ignored(path: Path): boolean {
-    return this.seen.has(path) || !!this.#ignore?.ignored(path)
+    return this.seen.has(path) || !!this.#ignore?.ignored?.(path)
   }
   #childrenIgnored(path: Path): boolean {
-    return !!this.#ignore?.childrenIgnored(path)
+    return !!this.#ignore?.childrenIgnored?.(path)
   }
 
   // backpressure mechanism
@@ -177,9 +175,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   matchCheckTest(e: Path | undefined, ifDir: boolean): Path | undefined {
     return e &&
       (this.maxDepth === Infinity || e.depth() <= this.maxDepth) &&
-      !this.#ignored(e) &&
       (!ifDir || e.canReaddir()) &&
-      (!this.opts.nodir || !e.isDirectory())
+      (!this.opts.nodir || !e.isDirectory()) &&
+      !this.#ignored(e)
       ? e
       : undefined
   }

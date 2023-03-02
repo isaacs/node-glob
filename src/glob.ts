@@ -9,7 +9,7 @@ import {
   PathScurryWin32,
 } from 'path-scurry'
 import { fileURLToPath } from 'url'
-import { Ignore } from './ignore.js'
+import { IgnoreLike } from './ignore.js'
 import { Pattern } from './pattern.js'
 import { GlobStream, GlobWalker } from './walker.js'
 
@@ -99,11 +99,23 @@ export interface GlobOptions {
   follow?: boolean
 
   /**
-   * A glob pattern or array of glob patterns to exclude from matches. To
-   * ignore all children within a directory, as well as the entry itself,
-   * append `/**'` to the ignore pattern.
+   * string or string[], or an object with `ignore` and `ignoreChildren`
+   * methods.
+   *
+   * If a string or string[] is provided, then this is treated as a glob
+   * pattern or array of glob patterns to exclude from matches. To ignore all
+   * children within a directory, as well as the entry itself, append `'/**'`
+   * to the ignore pattern.
+   *
+   * **Note** `ignore` patterns are _always_ in `dot:true` mode, regardless of
+   * any other settings.
+   *
+   * If an object is provided that has `ignored(path)` and/or
+   * `childrenIgnored(path)` methods, then these methods will be called to
+   * determine whether any Path is a match or if its children should be
+   * traversed, respectively.
    */
-  ignore?: string | string[] | Ignore
+  ignore?: string | string[] | IgnoreLike
 
   /**
    * Treat brace expansion like `{a,b}` as a "magic" pattern. Has no
@@ -306,7 +318,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
   dot: boolean
   dotRelative: boolean
   follow: boolean
-  ignore?: Ignore
+  ignore?: string | string[] | IgnoreLike
   magicalBraces: boolean
   mark?: boolean
   matchBase: boolean
@@ -373,6 +385,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
     this.maxDepth =
       typeof opts.maxDepth === 'number' ? opts.maxDepth : Infinity
     this.stat = !!opts.stat
+    this.ignore = opts.ignore
 
     if (this.withFileTypes && this.absolute !== undefined) {
       throw new Error('cannot set absolute and withFileTypes:true')
