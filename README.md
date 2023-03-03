@@ -118,7 +118,8 @@ const folderNamedModules = await glob('**/*.{ts,js}', {
   }
 })
 
-// find all files edited in the last hour
+// find all files edited in the last hour, to do this, we ignore
+// all of them that are more than an hour old
 const newFiles = await glob('**', {
   // need stat so we have mtime
   stat: true,
@@ -126,7 +127,7 @@ const newFiles = await glob('**', {
   nodir: true,
   ignore: {
     ignored: (p) => {
-      return (new Date() - p.mtime) <= (60 * 60 * 1000)
+      return (new Date() - p.mtime) > (60 * 60 * 1000)
     },
     // could add similar childrenIgnored here as well, but
     // directory mtime is inconsistent across platforms, so
