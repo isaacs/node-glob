@@ -41,3 +41,5 @@ jobs:
 
       - name: Run Tests
         run: npm test -- -c -t0 --statements=80 --branches=80 --functions=80 --lines=80
+        env:
+         NODE_OPTIONS: '--experimental-abortcontroller' # Only for Node 14 compat
