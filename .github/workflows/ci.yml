@@ -31,9 +31,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run Tests
         run: npm test -- -c -t0 --statements=80 --branches=80 --functions=80 --lines=80
