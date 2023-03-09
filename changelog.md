@@ -1,5 +1,3 @@
-# cganhe glo
-
 ## 9.2
 
 - Support using a custom fs object, which is passed to PathScurry
