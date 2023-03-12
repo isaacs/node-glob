@@ -153,7 +153,7 @@ Returns
 objects if the `withFileTypes` option is set to `true`. See below
 for full options field desciptions.
 
-## `globSync(pattern: string, options?: GlobOptions) => string[] | Path[]`
+## `globSync(pattern: string | string[], options?: GlobOptions) => string[] | Path[]`
 
 Synchronous form of `glob()`.
 
