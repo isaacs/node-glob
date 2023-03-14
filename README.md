@@ -6,7 +6,7 @@ The most correct and second fastest glob implementation in
 JavaScript. (See **Comparison to Other JavaScript Glob
 Implementations** at the bottom of this readme.)
 
-![a fun cartoon logo made of glob characters](logo/glob.png)
+![a fun cartoon logo made of glob characters](https://github.com/isaacs/node-glob/raw/main/logo/glob.png)
 
 ## Usage
 
@@ -15,6 +15,9 @@ Install with npm
 ```
 npm i glob
 ```
+
+**Note** the npm package name is _not_ `node-glob` that's a
+different thing that was abandoned years ago.  Just `glob`.
 
 ```js
 // load using import
@@ -784,7 +787,7 @@ that are extremely dated by current JavaScript standards.
 returns results and `fast-glob` doesn't, it's even faster, of
 course.</small>
 
-![](oh-my-glob.gif)
+![lumpy space princess saying 'oh my GLOB'](https://github.com/isaacs/node-glob/raw/main/oh-my-glob.gif)
 
 ### Benchmark Results
 
