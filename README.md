@@ -29,6 +29,7 @@ const {
 } = require('glob')
 
 // or default export is fine too, just returns the glob function
+// with all the aliases attached.
 import glob from 'glob'
 // or using commonjs
 const glob = require('glob')
@@ -157,18 +158,26 @@ for full options field desciptions.
 
 Synchronous form of `glob()`.
 
+Alias: `glob.sync()`
+
 ## `globIterate(pattern: string | string[], options?: GlobOptions) => AsyncGenerator<string>`
 
 Return an async iterator for walking glob pattern matches.
+
+Alias: `glob.iterate()`
 
 ## `globIterateSync(pattern: string | string[], options?: GlobOptions) => Generator<string>`
 
 Return a sync iterator for walking glob pattern matches.
 
+Alias: `glob.iterate.sync()`, `glob.sync.iterate()`
+
 ## `globStream(pattern: string | string[], options?: GlobOptions) => Minipass<string | Path>`
 
 Return a stream that emits all the strings or `Path` objects and
 then emits `end` when completed.
+
+Alias: `glob.stream()`
 
 ## `globStreamSync(pattern: string | string[], options?: GlobOptions) => Minipass<string | Path>`
 
@@ -176,6 +185,8 @@ Syncronous form of `globStream()`. Will read all the matches as
 fast as you consume them, even all in a single tick if you
 consume them immediately, but will still respond to backpressure
 if they're not consumed immediately.
+
+Alias: `glob.stream.sync()`, `glob.sync.stream()`
 
 ## `hasMagic(pattern: string | string[], options?: GlobOptions) => boolean`
 

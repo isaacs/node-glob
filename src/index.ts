@@ -121,32 +121,6 @@ export async function glob(
 }
 
 /**
- * Return an async iterator for walking glob pattern matches.
- */
-export function globIterate(
-  pattern: string | string[],
-  options?: GlobOptionsWithFileTypesUnset | undefined
-): AsyncGenerator<string, void, void>
-export function globIterate(
-  pattern: string | string[],
-  options: GlobOptionsWithFileTypesTrue
-): AsyncGenerator<Path, void, void>
-export function globIterate(
-  pattern: string | string[],
-  options: GlobOptionsWithFileTypesFalse
-): AsyncGenerator<string, void, void>
-export function globIterate(
-  pattern: string | string[],
-  options: GlobOptions
-): AsyncGenerator<Path, void, void> | AsyncGenerator<string, void, void>
-export function globIterate(
-  pattern: string | string[],
-  options: GlobOptions = {}
-) {
-  return new Glob(pattern, options).iterate()
-}
-
-/**
  * Return a sync iterator for walking glob pattern matches.
  */
 export function globIterateSync(
@@ -172,6 +146,44 @@ export function globIterateSync(
   return new Glob(pattern, options).iterateSync()
 }
 
+/**
+ * Return an async iterator for walking glob pattern matches.
+ */
+export function globIterate(
+  pattern: string | string[],
+  options?: GlobOptionsWithFileTypesUnset | undefined
+): AsyncGenerator<string, void, void>
+export function globIterate(
+  pattern: string | string[],
+  options: GlobOptionsWithFileTypesTrue
+): AsyncGenerator<Path, void, void>
+export function globIterate(
+  pattern: string | string[],
+  options: GlobOptionsWithFileTypesFalse
+): AsyncGenerator<string, void, void>
+export function globIterate(
+  pattern: string | string[],
+  options: GlobOptions
+): AsyncGenerator<Path, void, void> | AsyncGenerator<string, void, void>
+export function globIterate(
+  pattern: string | string[],
+  options: GlobOptions = {}
+) {
+  return new Glob(pattern, options).iterate()
+}
+
+// aliases: glob.sync.stream() glob.stream.sync() glob.sync() etc
+export const streamSync = globStreamSync
+export const stream = Object.assign(globStream, { sync: globStreamSync })
+export const iterateSync = globIterateSync
+export const iterate = Object.assign(globIterate, {
+  sync: globIterateSync,
+})
+export const sync = Object.assign(globSync, {
+  stream: globStreamSync,
+  iterate: globIterateSync,
+})
+
 /* c8 ignore start */
 export { escape, unescape } from 'minimatch'
 export { Glob } from './glob.js'
@@ -189,10 +201,15 @@ export type { MatchStream } from './walker.js'
 export default Object.assign(glob, {
   glob,
   globSync,
+  sync,
   globStream,
+  stream,
   globStreamSync,
+  streamSync,
   globIterate,
+  iterate,
   globIterateSync,
+  iterateSync,
   Glob,
   hasMagic,
   escape,

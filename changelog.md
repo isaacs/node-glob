@@ -1,5 +1,10 @@
 # changeglob
 
+## 9.3
+
+- Add aliases for methods. `glob.sync`, `glob.stream`,
+  `glob.stream.sync`, etc.
+
 ## 9.2
 
 - Support using a custom fs object, which is passed to PathScurry
