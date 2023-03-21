@@ -405,30 +405,30 @@ export class GlobWalker<
 
   async walk(): Promise<Matches<O>> {
     if (this.signal?.aborted) throw this.signal.reason
-    const t = this.path.isUnknown() ? await this.path.lstat() : this.path
-    if (t) {
-      await new Promise((res, rej) => {
-        this.walkCB(t, this.patterns, () => {
-          if (this.signal?.aborted) {
-            rej(this.signal.reason)
-          } else {
-            res(this.matches)
-          }
-        })
-      })
+    if (this.path.isUnknown()) {
+      await this.path.lstat()
     }
+    await new Promise((res, rej) => {
+      this.walkCB(this.path, this.patterns, () => {
+        if (this.signal?.aborted) {
+          rej(this.signal.reason)
+        } else {
+          res(this.matches)
+        }
+      })
+    })
     return this.matches
   }
 
   walkSync(): Matches<O> {
     if (this.signal?.aborted) throw this.signal.reason
-    const t = this.path.isUnknown() ? this.path.lstatSync() : this.path
-    // nothing for the callback to do, because this never pauses
-    if (t) {
-      this.walkCBSync(t, this.patterns, () => {
-        if (this.signal?.aborted) throw this.signal.reason
-      })
+    if (this.path.isUnknown()) {
+      this.path.lstatSync()
     }
+    // nothing for the callback to do, because this never pauses
+    this.walkCBSync(this.path, this.patterns, () => {
+      if (this.signal?.aborted) throw this.signal.reason
+    })
     return this.matches
   }
 }
@@ -463,12 +463,8 @@ export class GlobStream<
   stream(): MatchStream<O> {
     const target = this.path
     if (target.isUnknown()) {
-      target.lstat().then(e => {
-        if (e) {
-          this.walkCB(target, this.patterns, () => this.results.end())
-        } else {
-          this.results.end()
-        }
+      target.lstat().then(() => {
+        this.walkCB(target, this.patterns, () => this.results.end())
       })
     } else {
       this.walkCB(target, this.patterns, () => this.results.end())
@@ -477,14 +473,10 @@ export class GlobStream<
   }
 
   streamSync(): MatchStream<O> {
-    const target = this.path.isUnknown()
-      ? this.path.lstatSync()
-      : this.path
-    if (target) {
-      this.walkCBSync(target, this.patterns, () => this.results.end())
-    } else {
-      this.results.end()
+    if (this.path.isUnknown()) {
+      this.path.lstatSync()
     }
+    this.walkCBSync(this.path, this.patterns, () => this.results.end())
     return this.results
   }
 }

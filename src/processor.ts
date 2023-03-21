@@ -136,6 +136,8 @@ export class Processor {
         }
       }
 
+      if (t.isENOENT()) continue
+
       let p: MMPattern
       let rest: Pattern | null
       let changed = false
