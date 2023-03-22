@@ -1,10 +1,11 @@
+import t from 'tap'
+
 if (process.platform === 'win32') {
   t.plan(0, 'this test does not work on windows')
   process.exit(0)
 }
 
 import { fs as memfs, vol } from 'memfs'
-import t from 'tap'
 import { glob } from '../'
 t.beforeEach(() => vol.fromJSON({ '/x': 'abc' }))
 
