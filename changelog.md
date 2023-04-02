@@ -1,5 +1,10 @@
 # changeglob
 
+## 9.3.3
+
+- Upgraded minimatch to v8, adding support for any degree of
+  nested extglob patterns.
+
 ## 9.3
 
 - Add aliases for methods. `glob.sync`, `glob.stream`,
