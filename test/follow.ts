@@ -1,5 +1,5 @@
 import t from 'tap'
-import glob from '../'
+import { glob } from '../'
 
 if (process.platform === 'win32') {
   t.plan(0, 'skip on windows')

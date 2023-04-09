@@ -4,7 +4,7 @@
  *
  * @module
  */
-import Minipass from 'minipass'
+import { Minipass } from 'minipass'
 import { Path } from 'path-scurry'
 import { Ignore, IgnoreLike } from './ignore.js'
 

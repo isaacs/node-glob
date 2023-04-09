@@ -1,5 +1,5 @@
 import t from 'tap'
-import glob from '../'
+import { glob } from '../'
 process.chdir(__dirname + '/fixtures')
 
 const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')

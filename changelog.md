@@ -1,5 +1,9 @@
 # changeglob
 
+## 10.0.0
+
+- No default exports, only named exports
+
 ## 9.3.3
 
 - Upgraded minimatch to v8, adding support for any degree of

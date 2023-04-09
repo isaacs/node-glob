@@ -13,7 +13,7 @@ cd "$tmp"
 export __GLOB_PROFILE__=1
 
 cat > "profscript.mjs" <<MJS
-import glob from '$wd/dist/mjs/index.js'
+import { glob } from '$wd/dist/mjs/index.js'
 const patterns = process.argv.slice(2)
 for (const p of patterns) {
   glob.sync("./fixture/" + p)

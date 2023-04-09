@@ -31,12 +31,6 @@ const {
   Glob,
 } = require('glob')
 
-// or default export is fine too, just returns the glob function
-// with all the aliases attached.
-import glob from 'glob'
-// or using commonjs
-const glob = require('glob')
-
 // the main glob() and globSync() resolve/return array of filenames
 
 // all js files, but don't look in node_modules

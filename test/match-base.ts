@@ -1,5 +1,5 @@
 import t from 'tap'
-import glob from '../'
+import { glob } from '../'
 
 import { resolve } from 'path'
 import { sep } from 'path'

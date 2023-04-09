@@ -1,5 +1,5 @@
 import { Minimatch, MinimatchOptions } from 'minimatch'
-import Minipass from 'minipass'
+import { Minipass } from 'minipass'
 import {
   FSOption,
   Path,

@@ -2,7 +2,7 @@
 // Show that glob ignores results matching pattern on ignore option
 
 import t from 'tap'
-import glob from '../'
+import { glob } from '../'
 import type { GlobOptions } from '../src/index.js'
 
 import { sep } from 'path'

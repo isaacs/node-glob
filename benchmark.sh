@@ -152,7 +152,7 @@ MJS
 
   echo -n $'node current glob async mjs   \t'
   cat > "$wd/bench-working-dir/async.mjs" <<MJS
-  import glob from '$wd/dist/mjs/index.js'
+  import { glob } from '$wd/dist/mjs/index.js'
   glob(process.argv[2]).then(files => console.log(files.length))
 MJS
   t node "$wd/bench-working-dir/async.mjs" "$p"

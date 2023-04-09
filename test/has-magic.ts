@@ -1,5 +1,5 @@
 import t from 'tap'
-import glob from '../'
+import { glob } from '../'
 process.chdir(__dirname)
 
 t.test('non-string pattern is evil magic', async t => {

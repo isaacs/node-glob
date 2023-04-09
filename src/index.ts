@@ -1,5 +1,5 @@
 import { escape, unescape } from 'minimatch'
-import Minipass from 'minipass'
+import { Minipass } from 'minipass'
 import { Path } from 'path-scurry'
 import type {
   GlobOptions,
@@ -97,23 +97,23 @@ export function globSync(
  * {@link withFileTypes} option is set to `true`. See {@link GlobOptions} for
  * full option descriptions.
  */
-export async function glob(
+async function glob_(
   pattern: string | string[],
   options?: GlobOptionsWithFileTypesUnset | undefined
 ): Promise<string[]>
-export async function glob(
+async function glob_(
   pattern: string | string[],
   options: GlobOptionsWithFileTypesTrue
 ): Promise<Path[]>
-export async function glob(
+async function glob_(
   pattern: string | string[],
   options: GlobOptionsWithFileTypesFalse
 ): Promise<string[]>
-export async function glob(
+async function glob_(
   pattern: string | string[],
   options: GlobOptions
 ): Promise<Path[] | string[]>
-export async function glob(
+async function glob_(
   pattern: string | string[],
   options: GlobOptions = {}
 ) {
@@ -198,8 +198,8 @@ export type { IgnoreLike } from './ignore.js'
 export type { MatchStream } from './walker.js'
 /* c8 ignore stop */
 
-export default Object.assign(glob, {
-  glob,
+export const glob = Object.assign(glob_, {
+  glob: glob_,
   globSync,
   sync,
   globStream,
@@ -215,3 +215,4 @@ export default Object.assign(glob, {
   escape,
   unescape,
 })
+glob.glob = glob

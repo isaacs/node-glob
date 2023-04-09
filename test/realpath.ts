@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import * as fsp from 'fs/promises'
 import { resolve } from 'path'
 import t from 'tap'
-import glob from '../'
+import { glob } from '../'
 import { GlobOptionsWithFileTypesUnset } from '../src/glob'
 
 const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
