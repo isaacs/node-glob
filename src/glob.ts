@@ -276,6 +276,12 @@ export interface GlobOptions {
    * http://npm.im/path-scurry for details about what can be overridden.
    */
   fs?: FSOption
+
+  /**
+   * Just passed along to Minimatch.  Note that this makes all pattern
+   * matching operations slower and *extremely* noisy.
+   */
+  debug?: boolean
 }
 
 export type GlobOptionsWithFileTypesTrue = GlobOptions & {
@@ -452,6 +458,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
       optimizationLevel: 2,
       platform: this.platform,
       windowsPathsNoEscape: this.windowsPathsNoEscape,
+      debug: !!this.opts.debug,
     }
 
     const mms = this.pattern.map(p => new Minimatch(p, mmo))
