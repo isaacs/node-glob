@@ -214,7 +214,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
         this.opts.dotRelative && !rel.startsWith('..' + this.#sep)
           ? '.' + this.#sep
           : ''
-      this.matchEmit(!rel && mark ? '.' + mark : pre + rel + mark)
+      this.matchEmit(!rel ? '.' + mark : pre + rel + mark)
     }
   }
 

@@ -11,7 +11,7 @@ import { glob, globSync } from '../dist/cjs'
 const cwd = resolve(__dirname, 'fixtures/a')
 const j = (a: string[]) => a.map(a => a.split('/').join(sep))
 const expect = j([
-  '',
+  '.',
   'z',
   'x',
   'cb',

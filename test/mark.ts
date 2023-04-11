@@ -173,7 +173,7 @@ for (const mark of [true, false]) {
       if (mark) {
         t.equal(res, './')
       } else {
-        t.equal(res, '')
+        t.equal(res, '.')
       }
       t.equal(syncRes, res, 'sync should match async')
     })

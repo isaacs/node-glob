@@ -16,7 +16,7 @@ const cwd = t.testdir({
 })
 
 t.same(
-  new Set(['a', 'b', 'c', '']),
+  new Set(['a', 'b', 'c', '.']),
   new Set(
     globSync('**', {
       fs: {

@@ -16,7 +16,9 @@ t.test('ignore files with long names', async t => {
   const syncRes = globSync('**', { cwd, ignore })
   const asyncRes = await glob('**', { cwd, ignore })
   const expect = j(
-    globSync('**', { cwd }).filter(p => basename(p).length === 1)
+    globSync('**', { cwd }).filter(p => {
+      return basename(p).length === 1 && basename(p) !== '.'
+    })
   )
   t.same(j(syncRes), expect)
   t.same(j(asyncRes), expect)

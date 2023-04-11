@@ -58,7 +58,7 @@ const cases: Case[] = [
     '**',
     ['c/**', 'bc/**', 'symlink/**', 'abcdef/**'],
     j([
-      '',
+      '.',
       'abcfed',
       'abcfed/g',
       'abcfed/g/h',
@@ -80,7 +80,7 @@ const cases: Case[] = [
     '**',
     ['b'],
     j([
-      '',
+      '.',
       'abcdef',
       'abcdef/g',
       'abcdef/g/h',
@@ -112,7 +112,7 @@ const cases: Case[] = [
     '**',
     ['b', 'c'],
     j([
-      '',
+      '.',
       'abcdef',
       'abcdef/g',
       'abcdef/g/h',
@@ -143,7 +143,7 @@ const cases: Case[] = [
     '**',
     ['b**'],
     j([
-      '',
+      '.',
       'abcdef',
       'abcdef/g',
       'abcdef/g/h',
@@ -174,7 +174,7 @@ const cases: Case[] = [
     '**',
     ['b/**'],
     j([
-      '',
+      '.',
       'abcdef',
       'abcdef/g',
       'abcdef/g/h',
@@ -204,7 +204,7 @@ const cases: Case[] = [
     '**',
     ['b**/**'],
     j([
-      '',
+      '.',
       'abcdef',
       'abcdef/g',
       'abcdef/g/h',
@@ -231,7 +231,7 @@ const cases: Case[] = [
     '**',
     ['ab**ef/**'],
     j([
-      '',
+      '.',
       'abcfed',
       'abcfed/g',
       'abcfed/g/h',
@@ -261,7 +261,7 @@ const cases: Case[] = [
     '**',
     ['abc{def,fed}/**'],
     j([
-      '',
+      '.',
       'b',
       'b/c',
       'b/c/d',
@@ -288,7 +288,7 @@ const cases: Case[] = [
     '**',
     ['abc{def,fed}/*'],
     j([
-      '',
+      '.',
       'abcdef',
       'abcdef/g/h',
       'abcfed',

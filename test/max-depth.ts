@@ -31,11 +31,11 @@ t.test('set maxDepth', async t => {
   const expect = j(
     noMaxDepth
       .filter(p => p.depth() <= startDepth + maxDepth)
-      .map(p => p.relative())
+      .map(p => p.relative() || '.')
   )
 
-  const ssync = j(syncRes.map(p => p.relative()))
-  const sasync = j(asyncRes.map(p => p.relative()))
+  const ssync = j(syncRes.map(p => p.relative() || '.'))
+  const sasync = j(asyncRes.map(p => p.relative() || '.'))
   t.same(ssync, expect, 'got all results sync')
   t.same(sasync, expect, 'got all results async')
   for (const p of syncRes) {
@@ -87,12 +87,12 @@ t.test('set maxDepth', async t => {
 
   t.same(
     await glob(pattern, { cwd, maxDepth: 0, follow: true }),
-    [''],
+    ['.'],
     'async maxDepth 0'
   )
   t.same(
     globSync(pattern, { cwd, maxDepth: 0, follow: true }),
-    [''],
+    ['.'],
     'async maxDepth 0'
   )
 

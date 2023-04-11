@@ -5,7 +5,7 @@ import { glob } from '../'
 import type { GlobOptions } from '../src/index.js'
 
 const pattern = '../{*.md,test}/'
-const expect = ['']
+const expect = ['.']
 const cwd = __dirname
 const opt: GlobOptions = { cwd }
 process.chdir(__dirname + '/..')
