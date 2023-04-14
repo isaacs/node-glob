@@ -30,7 +30,9 @@ for (const pattern of patterns) {
           t.strictSame(await glob(pattern, { nodir: true, cwd }), ['/x'])
         })
         t.test('passing in fs argument', async t => {
-          t.strictSame(await glob(pattern, { nodir: true, cwd, fs }), ['/x'])
+          t.strictSame(await glob(pattern, { nodir: true, cwd, fs }), [
+            '/x',
+          ])
         })
       })
     }

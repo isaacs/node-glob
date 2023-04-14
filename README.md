@@ -17,7 +17,7 @@ npm i glob
 ```
 
 **Note** the npm package name is _not_ `node-glob` that's a
-different thing that was abandoned years ago.  Just `glob`.
+different thing that was abandoned years ago. Just `glob`.
 
 ```js
 // load using import
@@ -100,8 +100,8 @@ const groupReadableFiles = results
 // you'll ignore all markdown files, and all folders named 'docs'
 const customIgnoreResults = await glob('**', {
   ignore: {
-    ignored: (p) => /\.md$/.test(p.name),
-    childrenIgnored: (p) => p.isNamed('docs'),
+    ignored: p => /\.md$/.test(p.name),
+    childrenIgnored: p => p.isNamed('docs'),
   },
 })
 
@@ -109,11 +109,11 @@ const customIgnoreResults = await glob('**', {
 // their parent folder, plus either `.ts` or `.js`
 const folderNamedModules = await glob('**/*.{ts,js}', {
   ignore: {
-    ignored: (p) => {
+    ignored: p => {
       const pp = p.parent
       return !(p.isNamed(pp.name + '.ts') || p.isNamed(pp.name + '.js'))
-    }
-  }
+    },
+  },
 })
 
 // find all files edited in the last hour, to do this, we ignore
@@ -124,14 +124,14 @@ const newFiles = await glob('**', {
   // only want the files, not the dirs
   nodir: true,
   ignore: {
-    ignored: (p) => {
-      return (new Date() - p.mtime) > (60 * 60 * 1000)
+    ignored: p => {
+      return new Date() - p.mtime > 60 * 60 * 1000
     },
     // could add similar childrenIgnored here as well, but
     // directory mtime is inconsistent across platforms, so
     // probably better not to, unless you know the system
     // tracks this reliably.
-  }
+  },
 })
 ```
 
@@ -431,7 +431,7 @@ share the previously loaded cache.
   `absolute` may not be used along with `withFileTypes`.
 
 - `posix` Set to true to use `/` as the path separator in
-  returned results.  On posix systems, this has no effect.  On
+  returned results. On posix systems, this has no effect. On
   Windows systems, this will return `/` delimited path results,
   and absolute paths will be returned in their full resolved UNC
   path form, eg insted of `'C:\\foo\\bar'`, it will return
