@@ -1,5 +1,12 @@
 # changeglob
 
+## 10.1.0
+
+- Return `'.'` instead of the empty string `''` when the current
+  working directory is returned as a match.
+- Add `posix: true` option to return `/` delimited paths, even on
+  Windows.
+
 ## 10.0.0
 
 - No default exports, only named exports
