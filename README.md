@@ -430,6 +430,13 @@ share the previously loaded cache.
 
   `absolute` may not be used along with `withFileTypes`.
 
+- `posix` Set to true to use `/` as the path separator in
+  returned results.  On posix systems, this has no effect.  On
+  Windows systems, this will return `/` delimited path results,
+  and absolute paths will be returned in their full resolved UNC
+  path form, eg insted of `'C:\\foo\\bar'`, it will return
+  `//?/C:/foo/bar`.
+
 - `platform` Defaults to value of `process.platform` if
   available, or `'linux'` if not. Setting `platform:'win32'` on
   non-Windows systems may cause strange behavior.

@@ -31,9 +31,7 @@ t.test('treat backslash as escape', t => {
   for (const [pattern, expect] of cases) {
     t.test(pattern, async t => {
       t.strictSame(
-        glob
-          .globSync(pattern, { cwd: dir })
-          .map(s => s.replace(/\\/g, '/')),
+        glob.globSync(pattern, { cwd: dir, posix: true }),
         expect,
         'sync'
       )

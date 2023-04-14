@@ -62,7 +62,7 @@
     "fs.realpath": "^1.0.0",
     "minimatch": "^9.0.0",
     "minipass": "^5.0.0",
-    "path-scurry": "^1.6.4"
+    "path-scurry": "^1.7.0"
   },
   "devDependencies": {
     "@types/node": "^18.11.18",

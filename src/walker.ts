@@ -35,6 +35,7 @@ export interface GlobWalkerOpts {
   noext?: boolean
   noglobstar?: boolean
   platform?: NodeJS.Platform
+  posix?: boolean
   realpath?: boolean
   root?: string
   stat?: boolean
@@ -109,7 +110,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     this.patterns = patterns
     this.path = path
     this.opts = opts
-    this.#sep = opts.platform === 'win32' ? '\\' : '/'
+    this.#sep = !opts.posix && opts.platform === 'win32' ? '\\' : '/'
     if (opts.ignore) {
       this.#ignore = makeIgnore(opts.ignore, opts)
     }
@@ -207,9 +208,10 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     if (this.opts.withFileTypes) {
       this.matchEmit(e)
     } else if (abs) {
-      this.matchEmit(e.fullpath() + mark)
+      const abs = this.opts.posix ? e.fullpathPosix() : e.fullpath()
+      this.matchEmit(abs + mark)
     } else {
-      const rel = e.relative()
+      const rel = this.opts.posix ? e.relativePosix() : e.relative()
       const pre =
         this.opts.dotRelative && !rel.startsWith('..' + this.#sep)
           ? '.' + this.#sep

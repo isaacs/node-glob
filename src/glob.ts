@@ -282,11 +282,24 @@ export interface GlobOptions {
    * matching operations slower and *extremely* noisy.
    */
   debug?: boolean
+
+  /**
+   * Return `/` delimited paths, even on Windows.
+   *
+   * On posix systems, this has no effect.  But, on Windows, it means that
+   * paths will be `/` delimited, and absolute paths will be their full
+   * resolved UNC forms, eg instead of `'C:\\foo\\bar'`, it would return
+   * `'//?/C:/foo/bar'`
+   */
+  posix?: boolean
 }
 
 export type GlobOptionsWithFileTypesTrue = GlobOptions & {
   withFileTypes: true
+  // string options not relevant if returning Path objects.
   absolute?: undefined
+  mark?: undefined
+  posix?: undefined
 }
 
 export type GlobOptionsWithFileTypesFalse = GlobOptions & {

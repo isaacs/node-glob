@@ -1,9 +1,9 @@
+import { sep } from 'path'
 import t from 'tap'
 import { glob } from '../'
 process.chdir(__dirname + '/fixtures')
 
 const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
-import { sep } from 'path'
 const j = (a: string[]) =>
   a.map(s => s.split('/').join(sep)).sort(alphasort)
 
@@ -146,11 +146,14 @@ for (const mark of [true, false]) {
   for (const slash of [true, false]) {
     t.test('cwd mark:' + mark + ' slash:' + slash, async t => {
       const pattern = cwd + (slash ? '/' : '')
-      const results = await glob(pattern, { mark })
+      const results = await glob(pattern, { mark, posix: true })
       t.equal(results.length, 1)
-      const res = results[0].replace(/\\/g, '/')
-      const syncResults = glob.globSync(pattern, { mark: mark })
-      const syncRes = syncResults[0].replace(/\\/g, '/')
+      const res = results[0]
+      const syncResults = glob.globSync(pattern, {
+        mark: mark,
+        posix: true,
+      })
+      const syncRes = syncResults[0]
       if (mark) {
         t.equal(res, cwd + '/')
       } else {
