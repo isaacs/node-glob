@@ -83,7 +83,7 @@ g3.stream().on('data', path => {
 
 // if you use stat:true and withFileTypes, you can sort results
 // by things like modified time, filter by permission mode, etc.
-// All Stats fields will be avialable in that case. Slightly
+// All Stats fields will be available in that case. Slightly
 // slower, though.
 // For example:
 const results = await glob('**', { stat: true, withFileTypes: true })
