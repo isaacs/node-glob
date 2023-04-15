@@ -15,7 +15,7 @@ for (const mark of marks) {
     t.plan(2)
 
     t.test('Emits absolute matches if option set', async t => {
-      var g = new Glob(pattern, { absolute: true })
+      var g = new Glob(pattern, { absolute: true, posix: true })
       const results = await g.walk()
 
       t.equal(
@@ -24,7 +24,7 @@ for (const mark of marks) {
         'must match all files'
       )
       for (const m of results) {
-        ok(t, m)
+        t.ok(m.startsWith('/'), 'starts with / ' + m)
       }
     })
 
