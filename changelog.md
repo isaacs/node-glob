@@ -1,5 +1,9 @@
 # changeglob
 
+## 10.2.0
+
+- Add glob cli
+
 ## 10.1.0
 
 - Return `'.'` instead of the empty string `''` when the current
