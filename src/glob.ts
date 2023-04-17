@@ -232,9 +232,9 @@ export interface GlobOptions {
 
   /**
    * Call `lstat()` on all entries, whether required or not to determine
-   * whether it's a valid match. When used with {@link withFileTypes}, this
-   * means that matches will include data such as modified time, permissions,
-   * and so on.  Note that this will incur a performance cost due to the added
+   * if it's a valid match. When used with {@link withFileTypes}, this means
+   * that matches will include data such as modified time, permissions, and
+   * so on.  Note that this will incur a performance cost due to the added
    * system calls.
    */
   stat?: boolean

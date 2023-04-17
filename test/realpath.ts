@@ -63,7 +63,7 @@ if (process.platform === 'win32') {
 
   t.test('realpath failure', async t => {
     process.chdir(origCwd)
-    const { glob } = t.mock('../dist/cjs/index.js', {
+    const { glob } = t.mock('../dist/cjs/src/index.js', {
       fs: {
         ...fs,
         realpathSync: Object.assign(fs.realpathSync, {

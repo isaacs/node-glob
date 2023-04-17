@@ -8,9 +8,8 @@ import {
   PathScurryWin32,
 } from 'path-scurry'
 import { Glob } from '../'
-import { glob } from '../dist/cjs'
-import { GlobWalker } from '../dist/cjs/walker'
-import { Pattern } from '../dist/cjs/pattern'
+import { Pattern } from '../dist/cjs/src/pattern'
+import { GlobWalker } from '../dist/cjs/src/walker'
 
 t.test('default platform is process.platform', t => {
   const g = new Glob('.', {})

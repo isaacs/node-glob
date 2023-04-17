@@ -1,7 +1,7 @@
 import { GLOBSTAR } from 'minimatch'
 import t from 'tap'
 import { Glob } from '../'
-import { Pattern } from '../dist/cjs/pattern'
+import { Pattern } from '../dist/cjs/src/pattern'
 
 t.same(
   new Glob(

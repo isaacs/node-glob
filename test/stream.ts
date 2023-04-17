@@ -7,7 +7,7 @@ import {
   globStream,
   globStreamSync,
 } from '../'
-import { glob, globSync } from '../dist/cjs'
+import { glob, globSync } from '../dist/cjs/src/index.js'
 const cwd = resolve(__dirname, 'fixtures/a')
 const j = (a: string[]) => a.map(a => a.split('/').join(sep))
 const expect = j([
