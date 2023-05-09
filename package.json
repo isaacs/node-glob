@@ -2,7 +2,7 @@
   "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
   "name": "glob",
   "description": "the most correct and second fastest glob implementation in JavaScript",
-  "version": "10.2.2",
+  "version": "10.2.3",
   "bin": "./dist/cjs/src/bin.js",
   "repository": {
     "type": "git",
