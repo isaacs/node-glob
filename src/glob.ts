@@ -457,6 +457,13 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
     }
     this.nocase = this.scurry.nocase
 
+    // If you do nocase:true on a case-sensitive file system, then
+    // we need to use regexps instead of strings for non-magic
+    // path portions, because statting `aBc` won't return results
+    // for the file `AbC` for example.
+    const nocaseMagicOnly =
+      this.platform === 'darwin' || this.platform === 'win32'
+
     const mmo: MinimatchOptions = {
       // default nocase based on platform
       ...opts,
@@ -464,7 +471,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
       matchBase: this.matchBase,
       nobrace: this.nobrace,
       nocase: this.nocase,
-      nocaseMagicOnly: true,
+      nocaseMagicOnly,
       nocomment: true,
       noext: this.noext,
       nonegate: true,
