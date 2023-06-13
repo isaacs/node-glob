@@ -2,11 +2,11 @@
 import { foregroundChild } from 'foreground-child'
 import { existsSync } from 'fs'
 import { jack } from 'jackspeak'
-import { globStream } from './index.js'
 import { version } from '../package.json'
+import { globStream } from './index.js'
 
 const j = jack({
-  usage: 'glob [options] [<pattern> [<pattern> ...]]'
+  usage: 'glob [options] [<pattern> [<pattern> ...]]',
 })
   .description(
     `
@@ -22,6 +22,14 @@ const j = jack({
       hint: 'command',
       description: `Run the command provided, passing the glob expression
                     matches as arguments.`,
+    },
+  })
+  .opt({
+    default: {
+      short: 'p',
+      hint: 'pattern',
+      description: `If no positional arguments are provided, glob will use
+                    this pattern`,
     },
   })
   .flag({
@@ -219,7 +227,10 @@ try {
     console.log(j.usage())
     process.exit(0)
   }
-  if (positionals.length === 0) throw 'No patterns provided'
+  if (positionals.length === 0 && !values.default)
+    throw 'No patterns provided'
+  if (positionals.length === 0 && values.default)
+    positionals.push(values.default)
   const patterns = values.all
     ? positionals
     : positionals.filter(p => !existsSync(p))

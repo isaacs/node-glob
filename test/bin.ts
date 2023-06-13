@@ -82,3 +82,24 @@ t.test('prioritizes exact match if exists, unless --all', async t => {
   t.match(all.stdout, 'routes/i.tsx\n')
   t.match(all.stdout, 'routes/d.tsx\n')
 })
+
+t.test('uses default pattern if none provided', async t => {
+  const cwd = t.testdir({
+    a: {
+      'x.y': '',
+      'x.a': '',
+      b: {
+        'z.y': '',
+        'z.a': '',
+      },
+    },
+  })
+
+  const def = await run(['-p', '**/*.y'], { cwd })
+  t.match(def.stdout, `a${sep}x.y\n`)
+  t.match(def.stdout, `a${sep}b${sep}z.y\n`)
+
+  const exp = await run(['-p', '**/*.y', '**/*.a'], { cwd })
+  t.match(exp.stdout, `a${sep}x.a\n`)
+  t.match(exp.stdout, `a${sep}b${sep}z.a\n`)
+})
