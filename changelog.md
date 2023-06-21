@@ -1,5 +1,9 @@
 # changeglob
 
+## 10.3.0
+
+- Add `--default -p` flag to provide a default pattern
+
 ## 10.2.0
 
 - Add glob cli
