@@ -18,7 +18,7 @@ Object {
     Usage:
       glob [options] [<pattern> [<pattern> ...]]
     
-    Glob v10.2.7
+    Glob v{VERSION}
     
     Expand the positional glob expression arguments into any matching file system
     paths found.

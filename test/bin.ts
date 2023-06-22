@@ -1,7 +1,10 @@
 import { spawn, SpawnOptions } from 'child_process'
 import t from 'tap'
 import { sep } from 'path'
+import { version } from '../package.json'
 const bin = require.resolve('../dist/cjs/src/bin.js')
+
+t.cleanSnapshot = s => s.split(version).join('{VERSION}')
 
 interface Result {
   args: string[]
