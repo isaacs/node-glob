@@ -62,8 +62,8 @@
     "foreground-child": "^3.1.0",
     "jackspeak": "^2.0.3",
     "minimatch": "^9.0.1",
-    "minipass": "^5.0.0 || ^6.0.2",
-    "path-scurry": "^1.10.0"
+    "minipass": "^5.0.0 || ^6.0.2 || ^7.0.0",
+    "path-scurry": "^1.10.1"
   },
   "devDependencies": {
     "@types/node": "^20.3.2",
