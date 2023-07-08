@@ -55,7 +55,7 @@ const filesStream = globStream(['**/*.dat', 'logs/**/*.log'])
 // construct a Glob object if you wanna do it that way, which
 // allows for much faster walks if you have to look in the same
 // folder multiple times.
-const g = new Glob('**/foo')
+const g = new Glob('**/foo', {})
 // glob objects are async iterators, can also do globIterate() or
 // g.iterate(), same deal
 for await (const file of g) {
@@ -357,6 +357,8 @@ be escaped or unescaped.
 An object that can perform glob pattern traversals.
 
 ### `const g = new Glob(pattern: string | string[], options: GlobOptions)`
+
+Options object is required.
 
 See full options descriptions below.
 

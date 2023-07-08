@@ -379,6 +379,9 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
    * again.
    */
   constructor(pattern: string | string[], opts: Opts) {
+    /* c8 ignore start */
+    if (!opts) throw new TypeError('glob options required')
+    /* c8 ignore stop */
     this.withFileTypes = !!opts.withFileTypes as FileTypes<Opts>
     this.signal = opts.signal
     this.follow = !!opts.follow
