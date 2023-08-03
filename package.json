@@ -36,7 +36,7 @@
     "test": "c8 tap",
     "snap": "c8 tap",
     "format": "prettier --write . --loglevel warn",
-    "typedoc": "typedoc --tsconfig tsconfig-esm.json ./src/*.ts",
+    "typedoc": "typedoc --tsconfig tsconfig/esm.json ./src/*.ts",
     "prepublish": "npm run benchclean",
     "profclean": "rm -f v8.log profile.txt",
     "test-regen": "npm run profclean && TEST_REGEN=1 node --no-warnings --loader ts-node/esm test/00-setup.ts",
