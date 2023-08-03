@@ -79,11 +79,11 @@ t.test('prioritizes exact match if exists, unless --all', async t => {
     }
   })
   const res = await run(['routes/[id].tsx'], { cwd })
-  t.equal(res.stdout, 'routes/[id].tsx\n')
+  t.equal(res.stdout, `routes${sep}[id].tsx\n`)
 
   const all = await run(['routes/[id].tsx', '--all'], { cwd })
-  t.match(all.stdout, 'routes/i.tsx\n')
-  t.match(all.stdout, 'routes/d.tsx\n')
+  t.match(all.stdout, `routes${sep}i.tsx\n`)
+  t.match(all.stdout, `routes${sep}d.tsx\n`)
 })
 
 t.test('uses default pattern if none provided', async t => {
