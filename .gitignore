@@ -1,4 +1,5 @@
 .*.swp
+/deleteme
 /old
 /*.tap
 /dist

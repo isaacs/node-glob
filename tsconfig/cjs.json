@@ -1,0 +1,6 @@
+{
+  "extends": "./build.json",
+  "compilerOptions": {
+    "outDir": "../dist-tmp/cjs"
+  }
+}

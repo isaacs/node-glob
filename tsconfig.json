@@ -1,8 +1,16 @@
 {
-  "extends": "./tsconfig-base.json",
   "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "declarationMap": true,
+    "inlineSources": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
     "module": "commonjs",
-    "outDir": "dist/cjs",
-    "moduleResolution": "Node"
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2022",
+    "outDir": "deleteme"
   }
 }
