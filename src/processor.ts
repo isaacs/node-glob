@@ -146,8 +146,6 @@ export class Processor {
         (rest = pattern.rest())
       ) {
         const c = t.resolve(p)
-        // we can be reasonably sure that .. is a readable dir
-        if (c.isUnknown() && p !== '..') break
         t = c
         pattern = rest
         changed = true
@@ -163,13 +161,10 @@ export class Processor {
       // more strings for an unknown entry,
       // or a pattern starting with magic, mounted on t.
       if (typeof p === 'string') {
-        // must be final entry
-        if (!rest) {
-          const ifDir = p === '..' || p === '' || p === '.'
-          this.matches.add(t.resolve(p), absolute, ifDir)
-        } else {
-          this.subwalks.add(t, pattern)
-        }
+        // must not be final entry, otherwise we would have
+        // concatenated it earlier.
+        const ifDir = p === '..' || p === '' || p === '.'
+        this.matches.add(t.resolve(p), absolute, ifDir)
         continue
       } else if (p === GLOBSTAR) {
         // if no rest, match and subwalk pattern

@@ -41,6 +41,7 @@ t () {
 # warm up the fs cache so we don't get a spurious slow first result
 bash -c 'for i in **; do :; done'
 
+cd "$wd/bench-working-dir/fixture"
 
 for p in "${patterns[@]}"; do
   echo

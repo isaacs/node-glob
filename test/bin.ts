@@ -1,6 +1,6 @@
 import { spawn, SpawnOptions } from 'child_process'
-import t from 'tap'
 import { sep } from 'path'
+import t from 'tap'
 import { version } from '../package.json'
 const bin = require.resolve('../dist/cjs/src/bin.js')
 
@@ -66,8 +66,14 @@ t.test('finds matches for a pattern', async t => {
 
   const c = `node -p "process.argv.map(s=>s.toUpperCase())"`
   const cmd = await run(['**/*.y', '-c', c], { cwd })
-  t.match(cmd.stdout, `'a${sep}x.y'`.toUpperCase())
-  t.match(cmd.stdout, `'a${sep}b${sep}z.y'`.toUpperCase())
+  t.match(cmd.stdout, `'a${sep.replace(/\\/g, '\\\\')}x.y'`.toUpperCase())
+  t.match(
+    cmd.stdout,
+    `'a${sep.replace(/\\/g, '\\\\')}b${sep.replace(
+      /\\/g,
+      '\\\\'
+    )}z.y'`.toUpperCase()
+  )
 })
 
 t.test('prioritizes exact match if exists, unless --all', async t => {
@@ -76,7 +82,7 @@ t.test('prioritizes exact match if exists, unless --all', async t => {
       '[id].tsx': '',
       'i.tsx': '',
       'd.tsx': '',
-    }
+    },
   })
   const res = await run(['routes/[id].tsx'], { cwd })
   t.equal(res.stdout, `routes${sep}[id].tsx\n`)

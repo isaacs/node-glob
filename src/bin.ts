@@ -2,6 +2,7 @@
 import { foregroundChild } from 'foreground-child'
 import { existsSync } from 'fs'
 import { jack } from 'jackspeak'
+import { join } from 'path'
 import { version } from '../package.json'
 import { globStream } from './index.js'
 
@@ -234,7 +235,9 @@ try {
   const patterns = values.all
     ? positionals
     : positionals.filter(p => !existsSync(p))
-  const matches = values.all ? [] : positionals.filter(p => existsSync(p))
+  const matches = values.all
+    ? []
+    : positionals.filter(p => existsSync(p)).map(p => join(p))
   const stream = globStream(patterns, {
     absolute: values.absolute,
     cwd: values.cwd,
