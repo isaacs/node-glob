@@ -107,7 +107,7 @@ export class Ignore implements IgnoreLike {
       if (m.match(relative)) return true
     }
     for (const m of this.absoluteChildren) {
-      if (m.match(fullpath)) true
+      if (m.match(fullpath)) return true
     }
     return false
   }
