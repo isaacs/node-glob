@@ -196,6 +196,14 @@ export type {
 export { hasMagic } from './has-magic.js'
 export type { IgnoreLike } from './ignore.js'
 export type { MatchStream } from './walker.js'
+export type {
+  Path,
+  WalkOptionsWithFileTypesTrue,
+  WalkOptionsWithFileTypesUnset,
+  WalkOptions,
+  FSOption,
+} from 'path-scurry'
+
 /* c8 ignore stop */
 
 export const glob = Object.assign(glob_, {
