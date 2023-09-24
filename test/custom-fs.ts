@@ -1,5 +1,5 @@
 import t from 'tap'
-import { globSync } from '../'
+import { globSync } from '../dist/esm/index.js'
 
 // just a rudimentary test, since PathScurry tests it more anyway
 import { readdirSync } from 'fs'

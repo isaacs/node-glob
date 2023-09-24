@@ -1,8 +1,10 @@
-import { basename, resolve } from 'path'
+import { basename } from 'path'
 import { Path } from 'path-scurry'
 import t from 'tap'
-import { glob, globSync, IgnoreLike } from '../'
-const cwd = resolve(__dirname, 'fixtures')
+import { fileURLToPath } from 'url'
+import { glob, globSync, IgnoreLike } from '../dist/esm/index.js'
+
+const cwd = fileURLToPath(new URL('./fixtures', import.meta.url))
 
 const j = (a: string[]) =>
   a

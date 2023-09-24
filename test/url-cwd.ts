@@ -1,6 +1,6 @@
 import t from 'tap'
 import { pathToFileURL } from 'url'
-import { Glob } from '../'
+import { Glob } from '../dist/esm/index.js'
 
 t.test('can use file url as cwd option', t => {
   const fileURL = pathToFileURL(process.cwd())

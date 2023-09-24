@@ -1,5 +1,5 @@
 import t from 'tap'
-import { glob } from '../'
+import { glob } from '../dist/esm/index.js'
 
 // Patterns that cannot match anything
 const patterns = [

@@ -1,7 +1,7 @@
 import { relative } from 'path'
 import t from 'tap'
-import { glob } from '../'
-import { GlobOptionsWithFileTypesUnset } from '../src/glob.js'
+import { glob } from '../dist/esm/index.js'
+import { GlobOptionsWithFileTypesUnset } from '../dist/esm/glob.js'
 
 if (process.platform === 'win32') {
   t.plan(0, 'skip on windows')

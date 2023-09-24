@@ -1,6 +1,7 @@
 import t from 'tap'
 import { PathScurry } from 'path-scurry'
-import { Glob } from '../'
+import { Glob } from '../dist/esm/index.js'
+
 const scurry = new PathScurry()
 t.test('/', t => {
   const g = new Glob('/', { withFileTypes: true, scurry })

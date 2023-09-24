@@ -1,22 +1,25 @@
 import * as fs from 'fs'
 import { resolve } from 'path'
 import t from 'tap'
-import { glob, globStream, globStreamSync, globSync } from '../'
+import { fileURLToPath } from 'url'
+import {
+  glob,
+  globStream,
+  globStreamSync,
+  globSync,
+} from '../dist/esm/index.js'
 
-const mocks = (ac: AbortController) => {
-  const fsMock = {
+const mocks = (ac: AbortController) => ({
+  fs: {
     ...fs,
     readdirSync: (path: string, options: any) => {
       ac.abort(yeet)
       return fs.readdirSync(path, options)
     },
-  }
-  return {
-    fs: fsMock,
-    'path-scurry': t.mock('path-scurry', { fs: fsMock }),
-  }
-}
+  },
+})
 
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const cwd = resolve(__dirname, 'fixtures/a')
 
 const yeet = new Error('yeet')
@@ -41,11 +44,13 @@ t.test('pre abort sync walk', t => {
   t.end()
 })
 
-t.test('mid-abort sync walk', t => {
+t.test('mid-abort sync walk', async t => {
   const ac = new AbortController()
-  const { globSync } = t.mock('../', mocks(ac))
+  const { globSync } = await t.mockImport(
+    '../dist/esm/index.js',
+    mocks(ac)
+  )
   t.throws(() => globSync('./**', { cwd, signal: ac.signal }))
-  t.end()
 })
 
 t.test('pre abort stream', t => {

@@ -106,7 +106,7 @@ export class Pattern {
    * The first entry in the parsed list of patterns
    */
   pattern(): MMPattern {
-    return this.#patternList[this.#index]
+    return this.#patternList[this.#index] as MMPattern
   }
 
   /**

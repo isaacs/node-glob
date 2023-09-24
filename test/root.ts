@@ -1,6 +1,6 @@
 import { resolve, sep } from 'path'
 import t from 'tap'
-import { Glob } from '../'
+import { Glob } from '../dist/esm/index.js'
 
 const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
 const j = (a: string[]) =>

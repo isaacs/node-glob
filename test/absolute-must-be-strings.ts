@@ -1,4 +1,4 @@
-import { Glob } from '../'
+import { Glob } from '../dist/esm/index.js'
 import t from 'tap'
 t.throws(() => {
   new Glob('.', {

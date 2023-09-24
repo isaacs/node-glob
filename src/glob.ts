@@ -494,7 +494,11 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
       [[], []]
     )
     this.patterns = matchSet.map((set, i) => {
-      return new Pattern(set, globParts[i], 0, this.platform)
+      const g = globParts[i]
+      /* c8 ignore start */
+      if (!g) throw new Error('invalid pattern object')
+      /* c8 ignore stop */
+      return new Pattern(set, g, 0, this.platform)
     })
   }
 

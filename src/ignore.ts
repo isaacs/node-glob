@@ -72,6 +72,11 @@ export class Ignore implements IgnoreLike {
       for (let i = 0; i < mm.set.length; i++) {
         const parsed = mm.set[i]
         const globParts = mm.globParts[i]
+        /* c8 ignore start */
+        if (!parsed || !globParts) {
+          throw new Error('invalid pattern object')
+        }
+        /* c8 ignore stop */
         const p = new Pattern(parsed, globParts, 0, platform)
         const m = new Minimatch(p.globString(), mmopts)
         const children = globParts[globParts.length - 1] === '**'

@@ -1,10 +1,12 @@
-import t from 'tap'
-import { Glob } from '../'
-import { bashResults } from './bash-results'
 import { resolve, sep } from 'path'
+import t from 'tap'
+import { fileURLToPath } from 'url'
+import { Glob } from '../dist/esm/index.js'
+import { bashResults } from './bash-results.js'
 
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const pattern = 'a/b/**'
-process.chdir(__dirname + '/fixtures')
+process.chdir(fileURLToPath(new URL('./fixtures', import.meta.url)))
 
 const marks = [true, false]
 for (const mark of marks) {
@@ -17,7 +19,7 @@ for (const mark of marks) {
 
       t.equal(
         results.length,
-        bashResults[pattern].length,
+        bashResults[pattern]?.length,
         'must match all files'
       )
       for (const m of results) {
@@ -31,7 +33,7 @@ for (const mark of marks) {
 
       t.equal(
         results.length,
-        bashResults[pattern].length,
+        bashResults[pattern]?.length,
         'must match all files'
       )
       for (const m of results) {
@@ -47,7 +49,7 @@ for (const mark of marks) {
 
         t.equal(
           results.length,
-          bashResults[pattern].length,
+          bashResults[pattern]?.length,
           'must match all files'
         )
         for (const m of results) {
@@ -68,11 +70,10 @@ t.test('does not add ./ for patterns starting in ../', async t => {
       t.ok(!m.startsWith('.' + sep + '..' + sep))
     }
   })
-  t.test('sync', t => {
+  t.test('sync', async t => {
     const g = new Glob(pattern, { dotRelative: true, cwd })
     for (const m of g) {
       t.ok(!m.startsWith('.' + sep + '..' + sep))
     }
-    t.end()
   })
 })

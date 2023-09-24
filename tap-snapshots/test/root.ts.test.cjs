@@ -5,7 +5,7 @@
  * Make sure to inspect the output below.  Do not ignore changes!
  */
 'use strict'
-exports[`test/root.ts TAP set root option absolute=false > async 1`] = `
+exports[`test/root.ts > TAP > set root option > absolute=false > async 1`] = `
 Array [
   "x/x/a",
   "x/x/x/a",
@@ -19,7 +19,7 @@ Array [
 ]
 `
 
-exports[`test/root.ts TAP set root option absolute=false > sync 1`] = `
+exports[`test/root.ts > TAP > set root option > absolute=false > sync 1`] = `
 Array [
   "x/x/a",
   "x/x/x/a",
@@ -33,41 +33,41 @@ Array [
 ]
 `
 
-exports[`test/root.ts TAP set root option absolute=true > async 1`] = `
+exports[`test/root.ts > TAP > set root option > absolute=true > async 1`] = `
 Array [
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/a",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/x/a",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/x/y",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/x/y/r",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/y",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/y/r",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/y",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/y/r",
-  "{CWD}/test/tap-testdir-root-set-root-option/y/r",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/a",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/x/a",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/x/y",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/x/y/r",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/y",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/y/r",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/y",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/y/r",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/y/r",
 ]
 `
 
-exports[`test/root.ts TAP set root option absolute=true > sync 1`] = `
+exports[`test/root.ts > TAP > set root option > absolute=true > sync 1`] = `
 Array [
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/a",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/x/a",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/x/y",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/x/y/r",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/y",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/y/r",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/y",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/y/r",
-  "{CWD}/test/tap-testdir-root-set-root-option/y/r",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/a",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/x/a",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/x/y",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/x/y/r",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/y",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/y/r",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/y",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/y/r",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/y/r",
 ]
 `
 
-exports[`test/root.ts TAP set root option absolute=undefined > async 1`] = `
+exports[`test/root.ts > TAP > set root option > absolute=undefined > async 1`] = `
 Array [
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/a",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/x/a",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/x/y",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/y",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/y",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/a",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/x/a",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/x/y",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/y",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/y",
   "x/x/x/y/r",
   "x/x/y/r",
   "x/y/r",
@@ -75,13 +75,13 @@ Array [
 ]
 `
 
-exports[`test/root.ts TAP set root option absolute=undefined > sync 1`] = `
+exports[`test/root.ts > TAP > set root option > absolute=undefined > sync 1`] = `
 Array [
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/a",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/x/a",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/x/y",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/x/y",
-  "{CWD}/test/tap-testdir-root-set-root-option/x/y",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/a",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/x/a",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/x/y",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/x/y",
+  "{CWD}/.tap/fixtures/test-root.ts-set-root-option/x/y",
   "x/x/x/y/r",
   "x/x/y/r",
   "x/y/r",

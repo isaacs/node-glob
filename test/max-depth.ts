@@ -1,14 +1,24 @@
 import { resolve } from 'path'
 import { PathScurry } from 'path-scurry'
 import t from 'tap'
-import { Glob, glob, globStream, globStreamSync, globSync } from '../'
+import { fileURLToPath } from 'url'
+import {
+  Glob,
+  glob,
+  globStream,
+  globStreamSync,
+  globSync,
+} from '../dist/esm/index.js'
+
 const j = (a: string[]) =>
   a
     .map(s => s.replace(/\\/g, '/'))
     .sort((a, b) => a.localeCompare(b, 'en'))
 t.test('set maxDepth', async t => {
   const maxDepth = 2
-  const cwd = resolve(__dirname, 'fixtures')
+  const cwd = resolve(
+    fileURLToPath(new URL('./fixtures', import.meta.url))
+  )
   const startDepth = new PathScurry(cwd).cwd.depth()
   const pattern = '{*/*/*/**,*/*/**,**}'
   const asyncRes = await glob(pattern, {

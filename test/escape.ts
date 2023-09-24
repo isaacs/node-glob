@@ -1,6 +1,6 @@
 import t from 'tap'
-import { unescape, escape, hasMagic } from '../'
-import { bashResults } from './bash-results'
+import { unescape, escape, hasMagic } from '../dist/esm/index.js'
+import { bashResults } from './bash-results.js'
 
 for (const pattern of Object.keys(bashResults)) {
   t.notOk(hasMagic(escape(pattern)), `escape(${pattern})`)

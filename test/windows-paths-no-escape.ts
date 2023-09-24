@@ -1,5 +1,5 @@
 import t from 'tap'
-import { Glob } from '../'
+import { Glob } from '../dist/esm/index.js'
 
 const platforms = ['win32', 'posix']
 const originalPlatform = Object.getOwnPropertyDescriptor(

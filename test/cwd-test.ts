@@ -1,11 +1,11 @@
-import { resolve } from 'path'
+import { resolve, sep } from 'path'
 import t from 'tap'
-import { glob } from '../'
-import { sep } from 'path'
+import { fileURLToPath } from 'url'
+import { glob } from '../dist/esm/index.js'
 const j = (a: string[]) => a.map(s => s.split('/').join(sep))
 
 const origCwd = process.cwd()
-process.chdir(__dirname + '/fixtures')
+process.chdir(fileURLToPath(new URL('./fixtures', import.meta.url)))
 t.teardown(() => process.chdir(origCwd))
 
 t.test('changing cwd and searching for **/d', t => {

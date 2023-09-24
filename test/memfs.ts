@@ -6,7 +6,8 @@ if (process.platform === 'win32') {
 }
 
 import { fs as memfs, vol } from 'memfs'
-import { glob } from '../'
+import { glob } from '../dist/esm/index.js'
+
 t.beforeEach(() => vol.fromJSON({ '/x': 'abc' }))
 
 const fs = memfs as unknown as typeof import('fs')
@@ -23,10 +24,10 @@ for (const pattern of patterns) {
     for (const cwd of cwds) {
       t.test(`cwd=${cwd}`, async t => {
         t.test('mocking the fs', async t => {
-          const { glob } = t.mock('../', {
-            ...mock,
-            'path-scurry': t.mock('path-scurry', mock),
-          })
+          const { glob } = (await t.mockImport(
+            '../dist/esm/index.js',
+            mock
+        )) as typeof import('../dist/esm/index.js')
           t.strictSame(await glob(pattern, { nodir: true, cwd }), ['/x'])
         })
         t.test('passing in fs argument', async t => {

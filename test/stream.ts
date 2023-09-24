@@ -1,13 +1,15 @@
 import { resolve, sep } from 'path'
 import t from 'tap'
+import {fileURLToPath} from 'url'
 import {
   Glob,
   globIterate,
   globIterateSync,
   globStream,
   globStreamSync,
-} from '../'
-import { glob, globSync } from '../dist/cjs/src/index.js'
+} from '../dist/esm/index.js'
+import { glob, globSync } from '../dist/esm/index.js'
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const cwd = resolve(__dirname, 'fixtures/a')
 const j = (a: string[]) => a.map(a => a.split('/').join(sep))
 const expect = j([

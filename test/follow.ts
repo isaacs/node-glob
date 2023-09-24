@@ -1,12 +1,13 @@
 import t from 'tap'
-import { glob } from '../'
+import { fileURLToPath } from 'url'
+import { glob } from '../dist/esm/index.js'
 
 if (process.platform === 'win32') {
   t.plan(0, 'skip on windows')
   process.exit(0)
 }
 
-process.chdir(__dirname + '/fixtures')
+process.chdir(fileURLToPath(new URL('./fixtures', import.meta.url)))
 
 t.test('follow symlinks', async t => {
   const pattern = 'a/symlink/**'
@@ -16,8 +17,16 @@ t.test('follow symlinks', async t => {
     glob(pattern),
     glob(pattern, { follow: true }),
   ])
-  t.same(follow, syncFollow, 'sync and async follow should match')
-  t.same(noFollow, syncNoFollow, 'sync and async noFollow should match')
+  t.same(
+    new Set(follow),
+    new Set(syncFollow),
+    'sync and async follow should match'
+  )
+  t.same(
+    new Set(noFollow),
+    new Set(syncNoFollow),
+    'sync and async noFollow should match'
+  )
   var long = 'a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c'
   t.ok(follow.includes(long), 'follow should have long entry')
   t.ok(syncFollow.includes(long), 'syncFollow should have long entry')

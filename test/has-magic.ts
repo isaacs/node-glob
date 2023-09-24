@@ -1,6 +1,8 @@
 import t from 'tap'
-import { glob } from '../'
-process.chdir(__dirname)
+import { fileURLToPath } from 'url'
+import { glob } from '../dist/esm/index.js'
+
+process.chdir(fileURLToPath(new URL('.', import.meta.url)))
 
 t.test('non-string pattern is evil magic', async t => {
   const patterns = [0, null, 12, { x: 1 }, undefined, /x/, NaN]

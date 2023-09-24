@@ -1,10 +1,25 @@
 #!/usr/bin/env node
 import { foregroundChild } from 'foreground-child'
 import { existsSync } from 'fs'
+import { readFile } from 'fs/promises'
 import { jack } from 'jackspeak'
 import { join } from 'path'
-import { version } from '../package.json'
+import { fileURLToPath } from 'url'
 import { globStream } from './index.js'
+
+/* c8 ignore start */
+const { version } = JSON.parse(
+  await readFile(
+    fileURLToPath(new URL('../../package.json', import.meta.url)),
+    'utf8'
+  ).catch(() =>
+    readFile(
+      fileURLToPath(new URL('../../package.json', import.meta.url)),
+      'utf8'
+    )
+  )
+) as { version: string }
+/* c8 ignore stop */
 
 const j = jack({
   usage: 'glob [options] [<pattern> [<pattern> ...]]',

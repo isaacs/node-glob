@@ -1,5 +1,0 @@
-{
-  "extends": "../tsconfig.json",
-  "exclude": ["../test", "../tap-snapshots"],
-  "include": ["../src/**/*.ts"]
-}

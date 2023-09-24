@@ -3,15 +3,17 @@
 
 import { spawn } from 'child_process'
 import { createWriteStream, promises } from 'fs'
-import mkdirp from 'mkdirp'
+import { mkdirp } from 'mkdirp'
 import { join, dirname, resolve } from 'path'
 import t from 'tap'
+import {fileURLToPath} from 'url'
 
 const { writeFile, symlink } = promises
 //@ts-ignore
 t.pipe(createWriteStream('00-setup.tap'))
 process.env.TAP_BAIL = '1'
 
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const fixtureDir = resolve(__dirname, 'fixtures')
 
 const filesUnresolved = [
@@ -136,7 +138,7 @@ if (process.platform === 'win32' || !process.env.TEST_REGEN) {
     const fname = resolve(__dirname, 'bash-results.ts')
     const data = `// generated via 'npm run test-regen'
 if (module === require.main) {
-  console.log('TAP version 13\\n1..1\\nok\\n')
+  console.log('TAP version 14\\n1..1\\nok\\n')
 }
 export const bashResults:{ [path: string]: string[] } = ${
       JSON.stringify(bashOutput, null, 2) + '\n'

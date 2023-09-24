@@ -7,9 +7,12 @@ import {
   PathScurryPosix,
   PathScurryWin32,
 } from 'path-scurry'
-import { Glob } from '../'
-import { Pattern } from '../dist/cjs/src/pattern'
-import { GlobWalker } from '../dist/cjs/src/walker'
+import { fileURLToPath } from 'url'
+import { Glob } from '../dist/esm/index.js'
+import { Pattern } from '../dist/esm/pattern.js'
+import { GlobWalker } from '../dist/esm/walker.js'
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 t.test('default platform is process.platform', t => {
   const g = new Glob('.', {})
@@ -27,7 +30,10 @@ t.test('default linux when not found', async t => {
     value: null,
     configurable: true,
   })
-  const { Glob } = t.mock('../', {})
+  const { Glob } = (await t.mockImport(
+    '../dist/esm/index.js',
+    {}
+  )) as typeof import('../dist/esm/index.js')
   const g = new Glob('.', {})
   t.equal(g.platform, 'linux')
   t.end()

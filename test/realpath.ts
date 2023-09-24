@@ -2,13 +2,15 @@ import * as fs from 'fs'
 import * as fsp from 'fs/promises'
 import { resolve } from 'path'
 import t from 'tap'
-import { glob } from '../'
-import { GlobOptionsWithFileTypesUnset } from '../src/glob'
+import { glob } from '../dist/esm/index.js'
+import { GlobOptionsWithFileTypesUnset } from '../dist/esm/glob.js'
+import {fileURLToPath} from 'url'
 
 const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
 
 // pattern to find a bunch of duplicates
 const pattern = 'a/symlink/{*,**/*/*/*,*/*/**,*/*/*/*/*/*}'
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const fixtureDir = resolve(__dirname, 'fixtures')
 const origCwd = process.cwd()
 process.chdir(fixtureDir)
@@ -62,8 +64,9 @@ if (process.platform === 'win32') {
   }
 
   t.test('realpath failure', async t => {
+    // failing realpath means that it does not include the result
     process.chdir(origCwd)
-    const { glob } = t.mock('../dist/cjs/src/index.js', {
+    const { glob } = await t.mockImport('../dist/esm/index.js', {
       fs: {
         ...fs,
         realpathSync: Object.assign(fs.realpathSync, {
@@ -78,19 +81,18 @@ if (process.platform === 'win32') {
           throw new Error('no error for you async')
         },
       },
-    })
+    }) as typeof import('../dist/esm/index.js')
     const pattern = 'a/symlink/a/b/c/a/b/**'
-    const expect = ['a/symlink', 'a/symlink/a/b'].sort(alphasort)
     t.test('setting cwd explicitly', async t => {
       const opt = { realpath: true, cwd: fixtureDir }
-      t.same(glob.globSync(pattern, opt).sort(alphasort), expect)
-      t.same((await glob(pattern, opt)).sort(alphasort), expect)
+      t.same(glob.globSync(pattern, opt), [])
+      t.same((await glob(pattern, opt)), [])
     })
     t.test('looking in cwd', async t => {
       process.chdir(fixtureDir)
       const opt = { realpath: true }
-      t.same(glob.globSync(pattern, opt).sort(alphasort), expect)
-      t.same((await glob(pattern, opt)).sort(alphasort), expect)
+      t.same(glob.globSync(pattern, opt), [])
+      t.same((await glob(pattern, opt)), [])
     })
   })
 }

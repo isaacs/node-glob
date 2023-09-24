@@ -2,7 +2,7 @@
 // when found in patterns and paths containing glob magic.
 
 import t from 'tap'
-import { glob } from '../'
+import { glob } from '../dist/esm/index.js'
 
 const dir = t.testdir({
   // treat escapes as path separators

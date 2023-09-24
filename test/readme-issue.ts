@@ -1,5 +1,5 @@
 import t from 'tap'
-import { glob } from '../'
+import { glob } from '../dist/esm/index.js'
 
 const dir = t.testdir({
   'package.json': '{}',

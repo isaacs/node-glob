@@ -1,7 +1,9 @@
-import { resolve } from 'path'
 import t from 'tap'
-import { Glob } from '../'
-const cwd = resolve(__dirname, 'fixtures/does-not-exist')
+import { fileURLToPath } from 'url'
+import { Glob } from '../dist/esm/index.js'
+const cwd = fileURLToPath(
+  new URL('./fixtures/does-not-exist', import.meta.url)
+)
 
 t.test('walk', async t => {
   const g = new Glob('**', { cwd })

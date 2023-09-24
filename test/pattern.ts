@@ -1,7 +1,7 @@
 import { GLOBSTAR } from 'minimatch'
 import t from 'tap'
-import { Glob } from '../'
-import { Pattern } from '../dist/cjs/src/pattern'
+import { MMPattern, Pattern } from '../dist/esm/pattern.js'
+import { Glob } from '../dist/esm/index.js'
 
 t.same(
   new Glob(
@@ -49,7 +49,12 @@ t.throws(() => {
 })
 
 const s = new Pattern(['x'], ['x'], 0, process.platform)
-const g = new Pattern([GLOBSTAR], ['**'], 0, process.platform)
+const g = new Pattern(
+  [GLOBSTAR as unknown as MMPattern],
+  ['**'],
+  0,
+  process.platform
+)
 const r = new Pattern([/./], ['?'], 0, process.platform)
 t.equal(s.isString(), true)
 t.equal(g.isString(), false)

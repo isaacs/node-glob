@@ -1,8 +1,10 @@
 import { resolve, sep } from 'path'
 import t from 'tap'
-import { glob } from '../'
-import type { GlobOptions } from '../src/index.js'
-process.chdir(__dirname + '/fixtures')
+import { fileURLToPath } from 'url'
+import type { GlobOptions } from '../dist/esm/index.js'
+import { glob } from '../dist/esm/index.js'
+
+process.chdir(fileURLToPath(new URL('./fixtures', import.meta.url)))
 
 const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
 const j = (a: string[]) =>

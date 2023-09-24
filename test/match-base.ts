@@ -1,13 +1,13 @@
 import t from 'tap'
-import { glob } from '../'
-
-import { resolve } from 'path'
+import { glob } from '../dist/esm/index.js'
 import { sep } from 'path'
+import { fileURLToPath } from 'url'
+
 const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
 const j = (a: string[]) =>
   a.map(s => s.split('/').join(sep)).sort(alphasort)
 
-const fixtureDir = resolve(__dirname, 'fixtures')
+const fixtureDir = fileURLToPath(new URL('./fixtures', import.meta.url))
 
 const pattern = 'a*'
 const expect = ['a', 'a/abcdef', 'a/abcfed']

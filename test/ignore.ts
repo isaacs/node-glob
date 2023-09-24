@@ -1,16 +1,18 @@
 // Ignore option test
 // Show that glob ignores results matching pattern on ignore option
 
-import t from 'tap'
-import { glob } from '../'
-import type { GlobOptions } from '../src/index.js'
-
 import { sep } from 'path'
+import t from 'tap'
+import { fileURLToPath } from 'url'
+import type { GlobOptions } from '../dist/esm/index.js'
+import { glob } from '../dist/esm/index.js'
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
 const j = (a: string[]) =>
   a.map(s => s.split('/').join(sep)).sort(alphasort)
 
-process.chdir(__dirname + '/fixtures')
+process.chdir(fileURLToPath(new URL('./fixtures', import.meta.url)))
 
 // [pattern, ignore, expect, opt (object) or cwd (string)]
 type Case = [
@@ -28,7 +30,7 @@ const cases: Case[] = [
   ],
   [
     '*',
-    'b',
+    ['b'],
     j(['abcdef', 'abcfed', 'bc', 'c', 'cb', 'symlink', 'x', 'z']),
     'a',
   ],

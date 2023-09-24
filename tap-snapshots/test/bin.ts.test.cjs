@@ -5,7 +5,7 @@
  * Make sure to inspect the output below.  Do not ignore changes!
  */
 'use strict'
-exports[`test/bin.ts TAP usage > -h shows usage 1`] = `
+exports[`test/bin.ts > TAP > usage > -h shows usage 1`] = `
 Object {
   "args": Array [
     "-h",

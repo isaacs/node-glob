@@ -1,8 +1,10 @@
 import { spawn, SpawnOptions } from 'child_process'
 import { sep } from 'path'
 import t from 'tap'
-import { version } from '../package.json'
-const bin = require.resolve('../dist/cjs/src/bin.js')
+import { fileURLToPath } from 'url'
+import pkg from '../package.json' assert { type: 'json' }
+const { version } = pkg
+const bin = fileURLToPath(new URL('../dist/esm/bin.mjs', import.meta.url))
 
 t.cleanSnapshot = s => s.split(version).join('{VERSION}')
 

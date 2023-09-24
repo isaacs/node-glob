@@ -2,12 +2,14 @@
 // show that it does the same thing by default as the shell.
 import { resolve } from 'path'
 import t from 'tap'
-import { glob } from '../'
-import { bashResults } from './bash-results'
+import { fileURLToPath } from 'url'
+import { glob } from '../dist/esm/index.js'
+import { bashResults } from './bash-results.js'
 const globs = Object.keys(bashResults)
 
 // run from the root of the project
 // this is usually where you're at anyway, but be sure.
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const fixtures = resolve(__dirname, 'fixtures')
 process.chdir(fixtures)
 
@@ -38,7 +40,7 @@ globs.forEach(function (pattern) {
   // anything regarding the symlink thing will fail on windows, so just skip it
   if (
     process.platform === 'win32' &&
-    expect.some((m: string) => /\bsymlink\b/.test(m))
+    expect?.some((m: string) => /\bsymlink\b/.test(m))
   ) {
     return
   }

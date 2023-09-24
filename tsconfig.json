@@ -1,16 +1,18 @@
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
     "declaration": true,
     "declarationMap": true,
-    "inlineSources": true,
+    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
+    "inlineSources": true,
+    "jsx": "react",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "noUncheckedIndexedAccess": true,
     "resolveJsonModule": true,
-    "module": "commonjs",
+    "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
-    "target": "es2022",
-    "outDir": "deleteme"
+    "target": "es2022"
   }
 }

@@ -1,9 +1,11 @@
+import { sep } from 'path'
 import t from 'tap'
-import { glob } from '../'
-process.chdir(__dirname + '/fixtures')
+import { fileURLToPath } from 'url'
+import { glob } from '../dist/esm/index.js'
+
+process.chdir(fileURLToPath(new URL('./fixtures', import.meta.url)))
 
 const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
-import { sep } from 'path'
 const j = (a: string[]) =>
   a.map(s => s.split('/').join(sep)).sort(alphasort)
 
@@ -148,13 +150,13 @@ for (const mark of [true, false]) {
       const pattern = cwd + (slash ? '/' : '')
       const results = await glob(pattern, { mark })
       t.equal(results.length, 1)
-      const res = results[0].replace(/\\/g, '/')
+      const res = results[0]?.replace(/\\/g, '/')
       const syncResults = glob.globSync(pattern, { mark: mark })
-      const syncRes = syncResults[0].replace(/\\/g, '/')
+      const syncRes = syncResults[0]?.replace(/\\/g, '/')
       if (mark) {
         t.equal(res, cwd + '/')
       } else {
-        t.equal(res.indexOf(cwd), 0)
+        t.equal(res?.indexOf(cwd), 0)
       }
       t.equal(syncRes, res, 'sync should match async')
     })
@@ -167,9 +169,9 @@ for (const mark of [true, false]) {
       const pattern = '.' + (slash ? '/' : '')
       const results = await glob(pattern, { mark })
       t.equal(results.length, 1)
-      const res = results[0].replace(/\\/g, '/')
+      const res = results[0]?.replace(/\\/g, '/')
       const syncResults = glob.globSync(pattern, { mark: mark })
-      const syncRes = syncResults[0].replace(/\\/g, '/')
+      const syncRes = syncResults[0]?.replace(/\\/g, '/')
       if (mark) {
         t.equal(res, './')
       } else {

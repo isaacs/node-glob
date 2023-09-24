@@ -1,7 +1,7 @@
 // https://github.com/isaacs/node-glob/issues/547
 import t from 'tap'
 
-import { globSync } from '../dist/cjs/src/index.js'
+import { globSync } from '../dist/esm/index.js'
 
 if (process.platform !== 'win32') {
   t.pass('no need to test this except on windows')
