@@ -8,6 +8,16 @@
     "type": "git",
     "url": "git://github.com/isaacs/node-glob.git"
   },
+  "type": "module",
+  "main": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "tshy": {
+    "main": "esm",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": "./src/index.ts"
+    }
+  },
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -70,7 +80,7 @@
     "rimraf": "^5.0.1",
     "sync-content": "^1.0.2",
     "tap": "^18.1.4",
-    "tshy": "^1.1.1",
+    "tshy": "^1.2.1",
     "typedoc": "^0.25.1",
     "typescript": "^5.2.2"
   },
@@ -83,12 +93,5 @@
   },
   "engines": {
     "node": ">=16 || 14 >=14.17"
-  },
-  "type": "module",
-  "tshy": {
-    "exports": {
-      "./package.json": "./package.json",
-      ".": "./src/index.ts"
-    }
   }
 }
