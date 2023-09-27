@@ -3,11 +3,17 @@
   "name": "glob",
   "description": "the most correct and second fastest glob implementation in JavaScript",
   "version": "10.3.9",
-  "bin": "./dist/esm/bin.mjs",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/isaacs/node-glob.git"
+  "type": "module",
+  "tshy": {
+    "main": true,
+    "exports": {
+      "./package.json": "./package.json",
+      ".": "./src/index.ts"
+    }
   },
+  "bin": "./dist/esm/bin.mjs",
+  "main": "./dist/commonjs/index.js",
+  "types": "./dist/commonjs/index.d.ts",
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -20,6 +26,10 @@
         "default": "./dist/commonjs/index.js"
       }
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/isaacs/node-glob.git"
   },
   "files": [
     "dist"
@@ -83,12 +93,5 @@
   },
   "engines": {
     "node": ">=16 || 14 >=14.17"
-  },
-  "type": "module",
-  "tshy": {
-    "exports": {
-      "./package.json": "./package.json",
-      ".": "./src/index.ts"
-    }
   }
 }
