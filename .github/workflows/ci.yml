@@ -36,5 +36,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Tests
+      - name: Run Tests Windows (incomplete coverage)
+        if: matrix.platform.os == 'windows-latest'
+        run: npm test -- -c -t0 --allow-incomplete-coverage
+
+      - name: Run Tests Unix (complete coverage)
+        if: matrix.platform.os != 'windows-latest'
         run: npm test -- -c -t0
