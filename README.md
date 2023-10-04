@@ -422,7 +422,7 @@ share the previously loaded cache.
   `process.cwd()`. See also: "Windows, CWDs, Drive Letters, and
   UNC Paths", below.
 
-  This option may be eiher a string path or a `file://` URL
+  This option may be either a string path or a `file://` URL
   object or string.
 
 - `root` A string path resolved against the `cwd` option, which
