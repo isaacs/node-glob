@@ -32,3 +32,29 @@ t.test('follow symlinks', async t => {
   t.ok(syncFollow.includes(long), 'syncFollow should have long entry')
   t.end()
 })
+
+t.test('follow + nodir means no symlinks to dirs in results', async t => {
+  const pattern = 'dir_baz/**'
+  const cwd = t.testdir({
+    dir_baz: {
+      bar: t.fixture('symlink', '../dir_bar'),
+    },
+    dir_bar: {
+      foo: t.fixture('symlink', '../dir_foo'),
+    },
+    dir_foo: {
+      'foo.txt': 'hello',
+    },
+  })
+  const follow = true
+  const nodir = true
+  const posix = true
+  const syncResult = glob
+    .globSync(pattern, { follow, nodir, cwd, posix })
+    .sort((a, b) => a.localeCompare(b))
+  const asyncResult = (
+    await glob(pattern, { follow, nodir, cwd, posix })
+  ).sort((a, b) => a.localeCompare(b))
+  t.strictSame(syncResult, asyncResult)
+  t.strictSame(syncResult, ['dir_baz/bar/foo/foo.txt'])
+})

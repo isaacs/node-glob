@@ -170,7 +170,16 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       e = rpc
     }
     const needStat = e.isUnknown() || this.opts.stat
-    return this.matchCheckTest(needStat ? await e.lstat() : e, ifDir)
+    const s = needStat ? await e.lstat() : e
+    if (this.opts.follow && this.opts.nodir && s?.isSymbolicLink()) {
+      const target = await s.realpath()
+      /* c8 ignore start */
+      if (target && (target.isUnknown() || this.opts.stat)) {
+        await target.lstat()
+      }
+      /* c8 ignore stop */
+    }
+    return this.matchCheckTest(s, ifDir)
   }
 
   matchCheckTest(e: Path | undefined, ifDir: boolean): Path | undefined {
@@ -178,6 +187,10 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       (this.maxDepth === Infinity || e.depth() <= this.maxDepth) &&
       (!ifDir || e.canReaddir()) &&
       (!this.opts.nodir || !e.isDirectory()) &&
+      (!this.opts.nodir ||
+        !this.opts.follow ||
+        !e.isSymbolicLink() ||
+        !e.realpathCached()?.isDirectory()) &&
       !this.#ignored(e)
       ? e
       : undefined
@@ -192,7 +205,14 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       e = rpc
     }
     const needStat = e.isUnknown() || this.opts.stat
-    return this.matchCheckTest(needStat ? e.lstatSync() : e, ifDir)
+    const s = needStat ? e.lstatSync() : e
+    if (this.opts.follow && this.opts.nodir && s?.isSymbolicLink()) {
+      const target = s.realpathSync()
+      if (target && (target?.isUnknown() || this.opts.stat)) {
+        target.lstatSync()
+      }
+    }
+    return this.matchCheckTest(s, ifDir)
   }
 
   abstract matchEmit(p: Result<O>): void

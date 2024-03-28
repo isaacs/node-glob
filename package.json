@@ -69,19 +69,20 @@
     "foreground-child": "^3.1.0",
     "jackspeak": "^2.3.6",
     "minimatch": "^9.0.1",
-    "minipass": "^5.0.0 || ^6.0.2 || ^7.0.0",
-    "path-scurry": "^1.10.1"
+    "minipass": "^7.0.4",
+    "path-scurry": "^1.10.2"
   },
   "devDependencies": {
-    "@types/node": "^20.3.2",
+    "@types/node": "^20.11.30",
     "memfs": "^3.4.13",
     "mkdirp": "^3.0.1",
     "prettier": "^2.8.3",
     "rimraf": "^5.0.1",
     "sync-content": "^1.0.2",
-    "tap": "^18.1.4",
-    "tshy": "^1.2.2",
-    "typedoc": "^0.25.1",
+    "tap": "^18.7.2",
+    "ts-node": "^10.9.2",
+    "tshy": "^1.12.0",
+    "typedoc": "^0.25.12",
     "typescript": "^5.2.2"
   },
   "tap": {

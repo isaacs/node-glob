@@ -137,9 +137,12 @@ if (process.platform === 'win32' || !process.env.TEST_REGEN) {
   t.test('save fixtures', async () => {
     const fname = resolve(__dirname, 'bash-results.ts')
     const data = `// generated via 'npm run test-regen'
-if (module === require.main) {
-  console.log('TAP version 14\\n1..1\\nok\\n')
+import { fileURLToPath } from 'url'
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  console.log('TAP version 14\\n1..1\nok\\n')
 }
+
 export const bashResults:{ [path: string]: string[] } = ${
       JSON.stringify(bashOutput, null, 2) + '\n'
     }
