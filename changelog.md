@@ -1,14 +1,16 @@
 # changeglob
 
-## 10.3.0
+## 10.3
 
 - Add `--default -p` flag to provide a default pattern
+- exclude symbolic links to directories when `follow` and `nodir`
+  are both set
 
-## 10.2.0
+## 10.2
 
 - Add glob cli
 
-## 10.1.0
+## 10.1
 
 - Return `'.'` instead of the empty string `''` when the current
   working directory is returned as a match.
