@@ -21,6 +21,7 @@ type Case = [
   expect: string[],
   optOrCwd?: GlobOptions | string | undefined
 ]
+
 const cases: Case[] = [
   [
     '*',
@@ -335,6 +336,18 @@ const cases: Case[] = [
     'a/*/.y/b',
     (process.cwd() + '/a/x/**').split(sep).join('/'),
     j(['a/z/.y/b']),
+  ],
+  [
+    './*',
+    '{./,c}b',
+    j(['abcdef', 'abcfed', 'bc', 'c', 'symlink', 'x', 'z']),
+    'a',
+  ],
+  [
+    './*',
+    './c/../b',
+    j(['abcdef', 'abcfed', 'bc', 'c', 'cb', 'symlink', 'x', 'z']),
+    'a',
   ],
 ]
 
