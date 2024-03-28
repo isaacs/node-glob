@@ -140,7 +140,7 @@ if (process.platform === 'win32' || !process.env.TEST_REGEN) {
 import { fileURLToPath } from 'url'
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  console.log('TAP version 14\\n1..1\nok\\n')
+  console.log('TAP version 14\\n1..1\\nok\\n')
 }
 
 export const bashResults:{ [path: string]: string[] } = ${

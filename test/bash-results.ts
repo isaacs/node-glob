@@ -1,6 +1,6 @@
+// generated via 'npm run test-regen'
 import { fileURLToPath } from 'url'
 
-// generated via 'npm run test-regen'
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   console.log('TAP version 14\n1..1\nok\n')
 }
