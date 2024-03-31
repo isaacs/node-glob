@@ -8,7 +8,7 @@ import {
   PathScurryPosix,
   PathScurryWin32,
 } from 'path-scurry'
-import { fileURLToPath } from 'url'
+import { fileURLToPath } from 'node:url'
 import { IgnoreLike } from './ignore.js'
 import { Pattern } from './pattern.js'
 import { GlobStream, GlobWalker } from './walker.js'
