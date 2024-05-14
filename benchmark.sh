@@ -109,14 +109,14 @@ MJS
 
   echo -n $'node current globSync mjs    \t'
   cat > "$wd/bench-working-dir/sync.mjs" <<MJS
-  import {globSync} from '$wd/dist/mjs/index.js'
+  import {globSync} from '$wd/dist/esm/index.js'
   console.log(globSync(process.argv[2]).length)
 MJS
   t node "$wd/bench-working-dir/sync.mjs" "$p"
 
   echo -n $'node current glob syncStream  \t'
   cat > "$wd/bench-working-dir/stream-sync.mjs" <<MJS
-  import {globStreamSync} from '$wd/dist/mjs/index.js'
+  import {globStreamSync} from '$wd/dist/esm/index.js'
   let c = 0
   globStreamSync(process.argv[2])
     .on('data', () => c++)
@@ -153,14 +153,14 @@ MJS
 
   echo -n $'node current glob async mjs   \t'
   cat > "$wd/bench-working-dir/async.mjs" <<MJS
-  import { glob } from '$wd/dist/mjs/index.js'
+  import { glob } from '$wd/dist/esm/index.js'
   glob(process.argv[2]).then(files => console.log(files.length))
 MJS
   t node "$wd/bench-working-dir/async.mjs" "$p"
 
   echo -n $'node current glob stream      \t'
   cat > "$wd/bench-working-dir/stream.mjs" <<MJS
-  import {globStream} from '$wd/dist/mjs/index.js'
+  import {globStream} from '$wd/dist/esm/index.js'
   let c = 0
   globStream(process.argv[2])
     .on('data', () => c++)
