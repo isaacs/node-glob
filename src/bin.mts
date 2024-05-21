@@ -201,8 +201,7 @@ const j = jack({
       description: `Defaults to the value of 'process.platform' if
                     available, or 'linux' if not. Setting --platform=win32
                     on non-Windows systems may cause strange behavior!`,
-      validate: v =>
-        new Set([
+      validOptions: [
           'aix',
           'android',
           'darwin',
@@ -214,7 +213,7 @@ const j = jack({
           'win32',
           'cygwin',
           'netbsd',
-        ]).has(v),
+        ]
     },
   })
   .optList({

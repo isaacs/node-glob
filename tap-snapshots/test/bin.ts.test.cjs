@@ -133,8 +133,13 @@ Object {
                              available, or 'linux' if not. Setting --platform=win32
                              on non-Windows systems may cause strange behavior!
     
+                             Valid options: "aix", "android", "darwin", "freebsd",
+                             "haiku", "linux", "openbsd", "sunos", "win32",
+                             "cygwin", "netbsd"
+    
       -i<ignore> --ignore=<ignore>
-                             Glob patterns to ignore Can be set multiple times
+                             Glob patterns to ignore
+                             Can be set multiple times
       -v --debug             Output a huge amount of noisy debug information about
                              patterns as they are parsed and used to match files.
     

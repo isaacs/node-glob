@@ -67,7 +67,7 @@
   },
   "dependencies": {
     "foreground-child": "^3.1.0",
-    "jackspeak": "^2.3.6",
+    "jackspeak": "^3.1.2",
     "minimatch": "^9.0.1",
     "minipass": "^7.0.4",
     "path-scurry": "^1.11.0"
