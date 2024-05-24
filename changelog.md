@@ -1,5 +1,10 @@
 # changeglob
 
+## 10.4
+
+- Add `includeChildMatches: false` option
+- Export the `Ignore` class
+
 ## 10.3
 
 - Add `--default -p` flag to provide a default pattern
