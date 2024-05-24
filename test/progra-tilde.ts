@@ -18,7 +18,7 @@ const dir = t.testdir({
 
 t.strictSame(
   globSync('progra~1\\*', { cwd: dir, windowsPathsNoEscape: true }).sort(
-    (a, b) => a.localeCompare(b, 'en')
+    (a, b) => a.localeCompare(b, 'en'),
   ),
-  ['progra~1\\a', 'progra~1\\b', 'progra~1\\c']
+  ['progra~1\\a', 'progra~1\\b', 'progra~1\\c'],
 )

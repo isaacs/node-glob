@@ -37,23 +37,23 @@ export type { MatchStream } from './walker.js'
  */
 export function globStreamSync(
   pattern: string | string[],
-  options: GlobOptionsWithFileTypesTrue
+  options: GlobOptionsWithFileTypesTrue,
 ): Minipass<Path, Path>
 export function globStreamSync(
   pattern: string | string[],
-  options: GlobOptionsWithFileTypesFalse
+  options: GlobOptionsWithFileTypesFalse,
 ): Minipass<string, string>
 export function globStreamSync(
   pattern: string | string[],
-  options: GlobOptionsWithFileTypesUnset
+  options: GlobOptionsWithFileTypesUnset,
 ): Minipass<string, string>
 export function globStreamSync(
   pattern: string | string[],
-  options: GlobOptions
+  options: GlobOptions,
 ): Minipass<Path, Path> | Minipass<string, string>
 export function globStreamSync(
   pattern: string | string[],
-  options: GlobOptions = {}
+  options: GlobOptions = {},
 ) {
   return new Glob(pattern, options).streamSync()
 }
@@ -64,23 +64,23 @@ export function globStreamSync(
  */
 export function globStream(
   pattern: string | string[],
-  options: GlobOptionsWithFileTypesFalse
+  options: GlobOptionsWithFileTypesFalse,
 ): Minipass<string, string>
 export function globStream(
   pattern: string | string[],
-  options: GlobOptionsWithFileTypesTrue
+  options: GlobOptionsWithFileTypesTrue,
 ): Minipass<Path, Path>
 export function globStream(
   pattern: string | string[],
-  options?: GlobOptionsWithFileTypesUnset | undefined
+  options?: GlobOptionsWithFileTypesUnset | undefined,
 ): Minipass<string, string>
 export function globStream(
   pattern: string | string[],
-  options: GlobOptions
+  options: GlobOptions,
 ): Minipass<Path, Path> | Minipass<string, string>
 export function globStream(
   pattern: string | string[],
-  options: GlobOptions = {}
+  options: GlobOptions = {},
 ) {
   return new Glob(pattern, options).stream()
 }
@@ -90,23 +90,23 @@ export function globStream(
  */
 export function globSync(
   pattern: string | string[],
-  options: GlobOptionsWithFileTypesFalse
+  options: GlobOptionsWithFileTypesFalse,
 ): string[]
 export function globSync(
   pattern: string | string[],
-  options: GlobOptionsWithFileTypesTrue
+  options: GlobOptionsWithFileTypesTrue,
 ): Path[]
 export function globSync(
   pattern: string | string[],
-  options?: GlobOptionsWithFileTypesUnset | undefined
+  options?: GlobOptionsWithFileTypesUnset | undefined,
 ): string[]
 export function globSync(
   pattern: string | string[],
-  options: GlobOptions
+  options: GlobOptions,
 ): Path[] | string[]
 export function globSync(
   pattern: string | string[],
-  options: GlobOptions = {}
+  options: GlobOptions = {},
 ) {
   return new Glob(pattern, options).walkSync()
 }
@@ -119,23 +119,23 @@ export function globSync(
  */
 async function glob_(
   pattern: string | string[],
-  options?: GlobOptionsWithFileTypesUnset | undefined
+  options?: GlobOptionsWithFileTypesUnset | undefined,
 ): Promise<string[]>
 async function glob_(
   pattern: string | string[],
-  options: GlobOptionsWithFileTypesTrue
+  options: GlobOptionsWithFileTypesTrue,
 ): Promise<Path[]>
 async function glob_(
   pattern: string | string[],
-  options: GlobOptionsWithFileTypesFalse
+  options: GlobOptionsWithFileTypesFalse,
 ): Promise<string[]>
 async function glob_(
   pattern: string | string[],
-  options: GlobOptions
+  options: GlobOptions,
 ): Promise<Path[] | string[]>
 async function glob_(
   pattern: string | string[],
-  options: GlobOptions = {}
+  options: GlobOptions = {},
 ) {
   return new Glob(pattern, options).walk()
 }
@@ -145,23 +145,23 @@ async function glob_(
  */
 export function globIterateSync(
   pattern: string | string[],
-  options?: GlobOptionsWithFileTypesUnset | undefined
+  options?: GlobOptionsWithFileTypesUnset | undefined,
 ): Generator<string, void, void>
 export function globIterateSync(
   pattern: string | string[],
-  options: GlobOptionsWithFileTypesTrue
+  options: GlobOptionsWithFileTypesTrue,
 ): Generator<Path, void, void>
 export function globIterateSync(
   pattern: string | string[],
-  options: GlobOptionsWithFileTypesFalse
+  options: GlobOptionsWithFileTypesFalse,
 ): Generator<string, void, void>
 export function globIterateSync(
   pattern: string | string[],
-  options: GlobOptions
+  options: GlobOptions,
 ): Generator<Path, void, void> | Generator<string, void, void>
 export function globIterateSync(
   pattern: string | string[],
-  options: GlobOptions = {}
+  options: GlobOptions = {},
 ) {
   return new Glob(pattern, options).iterateSync()
 }
@@ -171,23 +171,23 @@ export function globIterateSync(
  */
 export function globIterate(
   pattern: string | string[],
-  options?: GlobOptionsWithFileTypesUnset | undefined
+  options?: GlobOptionsWithFileTypesUnset | undefined,
 ): AsyncGenerator<string, void, void>
 export function globIterate(
   pattern: string | string[],
-  options: GlobOptionsWithFileTypesTrue
+  options: GlobOptionsWithFileTypesTrue,
 ): AsyncGenerator<Path, void, void>
 export function globIterate(
   pattern: string | string[],
-  options: GlobOptionsWithFileTypesFalse
+  options: GlobOptionsWithFileTypesFalse,
 ): AsyncGenerator<string, void, void>
 export function globIterate(
   pattern: string | string[],
-  options: GlobOptions
+  options: GlobOptions,
 ): AsyncGenerator<Path, void, void> | AsyncGenerator<string, void, void>
 export function globIterate(
   pattern: string | string[],
-  options: GlobOptions = {}
+  options: GlobOptions = {},
 ) {
   return new Glob(pattern, options).iterate()
 }

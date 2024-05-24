@@ -26,8 +26,8 @@ for (const pattern of patterns) {
         t.test('mocking the fs', async t => {
           const { glob } = (await t.mockImport(
             '../dist/esm/index.js',
-            mock
-        )) as typeof import('../dist/esm/index.js')
+            mock,
+          )) as typeof import('../dist/esm/index.js')
           t.strictSame(await glob(pattern, { nodir: true, cwd }), ['/x'])
         })
         t.test('passing in fs argument', async t => {

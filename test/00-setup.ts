@@ -6,7 +6,7 @@ import { createWriteStream, promises } from 'fs'
 import { mkdirp } from 'mkdirp'
 import { join, dirname, resolve } from 'path'
 import t from 'tap'
-import {fileURLToPath} from 'url'
+import { fileURLToPath } from 'url'
 
 const { writeFile, symlink } = promises
 //@ts-ignore
@@ -50,15 +50,15 @@ if (process.platform !== 'win32') {
   })
 }
 
-;['foo', 'bar', 'baz', 'asdf', 'quux', 'qwer', 'rewq'].forEach(function (
-  w
-) {
-  w = '/tmp/glob-test/' + w
-  t.test('create ' + w, async t => {
-    await mkdirp(w)
-    t.pass(w)
-  })
-})
+;['foo', 'bar', 'baz', 'asdf', 'quux', 'qwer', 'rewq'].forEach(
+  function (w) {
+    w = '/tmp/glob-test/' + w
+    t.test('create ' + w, async t => {
+      await mkdirp(w)
+      t.pass(w)
+    })
+  },
+)
 
 // generate the bash pattern test-fixtures if possible
 if (process.platform === 'win32' || !process.env.TEST_REGEN) {
@@ -154,7 +154,7 @@ export const bashResults:{ [path: string]: string[] } = ${
     const c = spawn(
       'prettier',
       ['--write', resolve(__dirname, 'bash-results.ts')],
-      { stdio: ['ignore', 2, 2] }
+      { stdio: ['ignore', 2, 2] },
     )
     c.on('close', (code, signal) => {
       t.equal(code, 0, 'code')
@@ -176,8 +176,8 @@ export const bashResults:{ [path: string]: string[] } = ${
       .sort(alphasort)
       .map(function (f) {
         // de-windows
-        return process.platform !== 'win32'
-          ? f
+        return process.platform !== 'win32' ?
+            f
           : f.replace(/^[a-zA-Z]:\\\\/, '/').replace(/\\/g, '/')
       })
   }

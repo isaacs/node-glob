@@ -28,8 +28,8 @@ const cleanResults = (m: string[]) => {
     }, [])
     .map(f => {
       // de-windows
-      return process.platform !== 'win32'
-        ? f
+      return process.platform !== 'win32' ?
+          f
         : f.replace(/^[a-zA-Z]:[\/\\]+/, '/').replace(/[\\\/]+/g, '/')
     })
     .sort(alphasort)

@@ -2,7 +2,7 @@ import t from 'tap'
 import { fileURLToPath } from 'url'
 import { Glob } from '../dist/esm/index.js'
 const cwd = fileURLToPath(
-  new URL('./fixtures/does-not-exist', import.meta.url)
+  new URL('./fixtures/does-not-exist', import.meta.url),
 )
 
 t.test('walk', async t => {

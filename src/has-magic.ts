@@ -14,7 +14,7 @@ import { GlobOptions } from './glob.js'
  */
 export const hasMagic = (
   pattern: string | string[],
-  options: GlobOptions = {}
+  options: GlobOptions = {},
 ): boolean => {
   if (!Array.isArray(pattern)) {
     pattern = [pattern]

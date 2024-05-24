@@ -43,7 +43,7 @@
     "presnap": "npm run prepare",
     "test": "tap",
     "snap": "tap",
-    "format": "prettier --write . --loglevel warn",
+    "format": "prettier --write . --log-level warn",
     "typedoc": "typedoc --tsconfig .tshy/esm.json ./src/*.ts",
     "prepublish": "npm run benchclean",
     "profclean": "rm -f v8.log profile.txt",
@@ -55,6 +55,7 @@
     "benchclean": "node benchclean.cjs"
   },
   "prettier": {
+    "experimentalTernaries": true,
     "semi": false,
     "printWidth": 75,
     "tabWidth": 2,
@@ -76,7 +77,7 @@
     "@types/node": "^20.11.30",
     "memfs": "^3.4.13",
     "mkdirp": "^3.0.1",
-    "prettier": "^2.8.3",
+    "prettier": "^3.2.5",
     "rimraf": "^5.0.7",
     "sync-content": "^1.0.2",
     "tap": "^19.0.0",

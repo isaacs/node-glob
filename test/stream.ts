@@ -1,6 +1,6 @@
 import { resolve, sep } from 'path'
 import t from 'tap'
-import {fileURLToPath} from 'url'
+import { fileURLToPath } from 'url'
 import {
   Glob,
   globIterate,
@@ -35,9 +35,9 @@ const expect = j([
   'abcfed/g/h',
   'abcdef/g',
   'abcdef/g/h',
-  ...(process.platform !== 'win32'
-    ? ['symlink', 'symlink/a', 'symlink/a/b', 'symlink/a/b/c']
-    : []),
+  ...(process.platform !== 'win32' ?
+    ['symlink', 'symlink/a', 'symlink/a/b', 'symlink/a/b/c']
+  : []),
 ])
 
 t.test('stream', t => {

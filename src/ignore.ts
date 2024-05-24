@@ -15,11 +15,13 @@ export interface IgnoreLike {
 }
 
 const defaultPlatform: NodeJS.Platform =
-  typeof process === 'object' &&
-  process &&
-  typeof process.platform === 'string'
-    ? process.platform
-    : 'linux'
+  (
+    typeof process === 'object' &&
+    process &&
+    typeof process.platform === 'string'
+  ) ?
+    process.platform
+  : 'linux'
 
 /**
  * Class used to process ignored patterns
@@ -40,7 +42,7 @@ export class Ignore implements IgnoreLike {
       noext,
       noglobstar,
       platform = defaultPlatform,
-    }: GlobWalkerOpts
+    }: GlobWalkerOpts,
   ) {
     this.relative = []
     this.absolute = []

@@ -17,7 +17,7 @@ const j = (a: string[]) =>
 t.test('set maxDepth', async t => {
   const maxDepth = 2
   const cwd = resolve(
-    fileURLToPath(new URL('./fixtures', import.meta.url))
+    fileURLToPath(new URL('./fixtures', import.meta.url)),
   )
   const startDepth = new PathScurry(cwd).cwd.depth()
   const pattern = '{*/*/*/**,*/*/**,**}'
@@ -41,7 +41,7 @@ t.test('set maxDepth', async t => {
   const expect = j(
     noMaxDepth
       .filter(p => p.depth() <= startDepth + maxDepth)
-      .map(p => p.relative() || '.')
+      .map(p => p.relative() || '.'),
   )
 
   const ssync = j(syncRes.map(p => p.relative() || '.'))
@@ -67,10 +67,10 @@ t.test('set maxDepth', async t => {
 
   t.same(
     j(
-      await globStream(pattern, { cwd, maxDepth, follow: true }).collect()
+      await globStream(pattern, { cwd, maxDepth, follow: true }).collect(),
     ),
     expect,
-    'maxDepth with stream'
+    'maxDepth with stream',
   )
   t.same(
     j(
@@ -78,32 +78,32 @@ t.test('set maxDepth', async t => {
         cwd,
         maxDepth,
         follow: true,
-      }).collect()
+      }).collect(),
     ),
     expect,
-    'maxDepth with streamSync'
+    'maxDepth with streamSync',
   )
 
   t.same(
     await glob(pattern, { cwd, maxDepth: -1, follow: true }),
     [],
-    'async maxDepth -1'
+    'async maxDepth -1',
   )
   t.same(
     globSync(pattern, { cwd, maxDepth: -1, follow: true }),
     [],
-    'sync maxDepth -1'
+    'sync maxDepth -1',
   )
 
   t.same(
     await glob(pattern, { cwd, maxDepth: 0, follow: true }),
     ['.'],
-    'async maxDepth 0'
+    'async maxDepth 0',
   )
   t.same(
     globSync(pattern, { cwd, maxDepth: 0, follow: true }),
     ['.'],
-    'async maxDepth 0'
+    'async maxDepth 0',
   )
 
   const g = new Glob(pattern, { cwd, follow: true, maxDepth })

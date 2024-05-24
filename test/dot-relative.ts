@@ -20,7 +20,7 @@ for (const mark of marks) {
       t.equal(
         results.length,
         bashResults[pattern]?.length,
-        'must match all files'
+        'must match all files',
       )
       for (const m of results) {
         t.ok(m.startsWith('.' + sep))
@@ -34,7 +34,7 @@ for (const mark of marks) {
       t.equal(
         results.length,
         bashResults[pattern]?.length,
-        'must match all files'
+        'must match all files',
       )
       for (const m of results) {
         t.ok(m.startsWith('.' + sep))
@@ -50,12 +50,12 @@ for (const mark of marks) {
         t.equal(
           results.length,
           bashResults[pattern]?.length,
-          'must match all files'
+          'must match all files',
         )
         for (const m of results) {
           t.ok((mark && m === '.' + sep) || !m.startsWith('.' + sep))
         }
-      }
+      },
     )
   })
 }

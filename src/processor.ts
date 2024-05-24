@@ -102,9 +102,8 @@ export class Processor {
     this.opts = opts
     this.follow = !!opts.follow
     this.dot = !!opts.dot
-    this.hasWalkedCache = hasWalkedCache
-      ? hasWalkedCache.copy()
-      : new HasWalkedCache()
+    this.hasWalkedCache =
+      hasWalkedCache ? hasWalkedCache.copy() : new HasWalkedCache()
   }
 
   processPatterns(target: Path, patterns: Pattern[]) {
@@ -123,9 +122,9 @@ export class Processor {
       // start absolute patterns at root
       if (root) {
         t = t.resolve(
-          root === '/' && this.opts.root !== undefined
-            ? this.opts.root
-            : root
+          root === '/' && this.opts.root !== undefined ?
+            this.opts.root
+          : root,
         )
         const rest = pattern.rest()
         if (!rest) {
@@ -243,7 +242,7 @@ export class Processor {
     e: Path,
     pattern: Pattern,
     rest: Pattern | null,
-    absolute: boolean
+    absolute: boolean,
   ) {
     if (this.dot || !e.name.startsWith('.')) {
       if (!pattern.hasMore()) {
@@ -293,7 +292,7 @@ export class Processor {
     e: Path,
     p: MMRegExp,
     rest: Pattern | null,
-    absolute: boolean
+    absolute: boolean,
   ) {
     if (!p.test(e.name)) return
     if (!rest) {

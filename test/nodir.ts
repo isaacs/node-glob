@@ -39,9 +39,9 @@ const cases: [string, GlobOptions, string[]][] = [
 for (const [pattern, options, expectRaw] of cases) {
   options.nodir = true
   const expect =
-    process.platform === 'win32'
-      ? expectRaw.filter(e => !/\bsymlink\b/.test(e))
-      : expectRaw
+    process.platform === 'win32' ?
+      expectRaw.filter(e => !/\bsymlink\b/.test(e))
+    : expectRaw
   expect.sort()
   if (process.platform !== 'win32') {
   }

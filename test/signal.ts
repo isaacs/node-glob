@@ -48,7 +48,7 @@ t.test('mid-abort sync walk', async t => {
   const ac = new AbortController()
   const { globSync } = await t.mockImport(
     '../dist/esm/index.js',
-    mocks(ac)
+    mocks(ac),
   )
   t.throws(() => globSync('./**', { cwd, signal: ac.signal }))
 })

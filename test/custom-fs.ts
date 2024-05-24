@@ -23,8 +23,8 @@ t.same(
         readdirSync: myReaddirSync,
       },
       cwd,
-    })
-  )
+    }),
+  ),
 )
 
 t.equal(readdirCalled, 2)

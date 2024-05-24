@@ -4,7 +4,7 @@ import { Glob } from '../dist/esm/index.js'
 const platforms = ['win32', 'posix']
 const originalPlatform = Object.getOwnPropertyDescriptor(
   process,
-  'platform'
+  'platform',
 ) as PropertyDescriptor
 t.teardown(() => {
   Object.defineProperty(process, 'platform', originalPlatform)
@@ -43,7 +43,7 @@ for (const p of platforms) {
         ['/a/b/c/x\\[a-b\\]y\\*'],
         ['/a/b/c/x/[a-b/]y/*'],
         ['/a/b/c/x/[a-b/]y/*'],
-      ]
+      ],
     )
     t.end()
   })

@@ -1,6 +1,6 @@
 import { resolve } from 'path'
 import t from 'tap'
-import {fileURLToPath} from 'url'
+import { fileURLToPath } from 'url'
 import { glob, globSync } from '../dist/esm/index.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))

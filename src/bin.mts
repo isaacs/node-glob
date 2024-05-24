@@ -11,13 +11,13 @@ import { globStream } from './index.js'
 const { version } = JSON.parse(
   await readFile(
     fileURLToPath(new URL('../../package.json', import.meta.url)),
-    'utf8'
+    'utf8',
   ).catch(() =>
     readFile(
       fileURLToPath(new URL('../../package.json', import.meta.url)),
-      'utf8'
-    )
-  )
+      'utf8',
+    ),
+  ),
 ) as { version: string }
 /* c8 ignore stop */
 
@@ -30,7 +30,7 @@ const j = jack({
 
     Expand the positional glob expression arguments into any matching file
     system paths found.
-  `
+  `,
   )
   .opt({
     cmd: {
@@ -202,18 +202,18 @@ const j = jack({
                     available, or 'linux' if not. Setting --platform=win32
                     on non-Windows systems may cause strange behavior!`,
       validOptions: [
-          'aix',
-          'android',
-          'darwin',
-          'freebsd',
-          'haiku',
-          'linux',
-          'openbsd',
-          'sunos',
-          'win32',
-          'cygwin',
-          'netbsd',
-        ]
+        'aix',
+        'android',
+        'darwin',
+        'freebsd',
+        'haiku',
+        'linux',
+        'openbsd',
+        'sunos',
+        'win32',
+        'cygwin',
+        'netbsd',
+      ],
     },
   })
   .optList({
@@ -246,11 +246,11 @@ try {
     throw 'No patterns provided'
   if (positionals.length === 0 && values.default)
     positionals.push(values.default)
-  const patterns = values.all
-    ? positionals
-    : positionals.filter(p => !existsSync(p))
-  const matches = values.all
-    ? []
+  const patterns =
+    values.all ? positionals : positionals.filter(p => !existsSync(p))
+  const matches =
+    values.all ?
+      []
     : positionals.filter(p => existsSync(p)).map(p => join(p))
   const stream = globStream(patterns, {
     absolute: values.absolute,

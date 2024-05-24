@@ -20,12 +20,12 @@ t.test('follow symlinks', async t => {
   t.same(
     new Set(follow),
     new Set(syncFollow),
-    'sync and async follow should match'
+    'sync and async follow should match',
   )
   t.same(
     new Set(noFollow),
     new Set(syncNoFollow),
-    'sync and async noFollow should match'
+    'sync and async noFollow should match',
   )
   var long = 'a/symlink/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c/a/b/c'
   t.ok(follow.includes(long), 'follow should have long entry')

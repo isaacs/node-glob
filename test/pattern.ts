@@ -15,7 +15,7 @@ t.same(
       'c:/x/*',
       'c:/',
     ],
-    { platform: 'win32' }
+    { platform: 'win32' },
   ).patterns.map(p => [p.globString(), p.root()]),
   [
     ['//host/share/x/*', '//host/share/'],
@@ -26,7 +26,7 @@ t.same(
     ['//?/z:/', '//?/z:/'],
     ['c:/x/*', 'c:/'],
     ['c:/', 'c:/'],
-  ]
+  ],
 )
 t.throws(() => {
   new Pattern([], ['x'], 0, process.platform)
@@ -53,7 +53,7 @@ const g = new Pattern(
   [GLOBSTAR as unknown as MMPattern],
   ['**'],
   0,
-  process.platform
+  process.platform,
 )
 const r = new Pattern([/./], ['?'], 0, process.platform)
 t.equal(s.isString(), true)

@@ -20,7 +20,7 @@ t.test('ignore files with long names', async t => {
   const expect = j(
     globSync('**', { cwd }).filter(p => {
       return basename(p).length === 1 && basename(p) !== '.'
-    })
+    }),
   )
   t.same(j(syncRes), expect)
   t.same(j(asyncRes), expect)
@@ -40,7 +40,7 @@ t.test('ignore symlink and abcdef directories', async t => {
   const expect = j(
     globSync('**', { nodir: true, cwd }).filter(p => {
       return !/\bsymlink\b|\babcdef\b/.test(p)
-    })
+    }),
   )
   t.same(j(syncRes), expect)
   t.same(j(asyncRes), expect)

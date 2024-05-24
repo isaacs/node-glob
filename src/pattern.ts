@@ -10,7 +10,7 @@ export type UNCPatternList = [
   p1: '',
   p2: string,
   p3: string,
-  ...rest: MMPattern[]
+  ...rest: MMPattern[],
 ]
 export type DrivePatternList = [p0: string, ...rest: MMPattern[]]
 export type AbsolutePatternList = [p0: '', ...rest: MMPattern[]]
@@ -41,7 +41,7 @@ export class Pattern {
     patternList: MMPattern[],
     globList: string[],
     index: number,
-    platform: NodeJS.Platform
+    platform: NodeJS.Platform,
   ) {
     if (!isPatternList(patternList)) {
       throw new TypeError('empty pattern list')
@@ -134,11 +134,11 @@ export class Pattern {
   globString(): string {
     return (this.#globString =
       this.#globString ||
-      (this.#index === 0
-        ? this.isAbsolute()
-          ? this.#globList[0] + this.#globList.slice(1).join('/')
-          : this.#globList.join('/')
-        : this.#globList.slice(this.#index).join('/')))
+      (this.#index === 0 ?
+        this.isAbsolute() ?
+          this.#globList[0] + this.#globList.slice(1).join('/')
+        : this.#globList.join('/')
+      : this.#globList.slice(this.#index).join('/')))
   }
 
   /**
@@ -158,7 +158,7 @@ export class Pattern {
       this.#patternList,
       this.#globList,
       this.#index + 1,
-      this.#platform
+      this.#platform,
     )
     this.#rest.#isAbsolute = this.#isAbsolute
     this.#rest.#isUNC = this.#isUNC
@@ -171,8 +171,8 @@ export class Pattern {
    */
   isUNC(): boolean {
     const pl = this.#patternList
-    return this.#isUNC !== undefined
-      ? this.#isUNC
+    return this.#isUNC !== undefined ?
+        this.#isUNC
       : (this.#isUNC =
           this.#platform === 'win32' &&
           this.#index === 0 &&
@@ -194,8 +194,8 @@ export class Pattern {
    */
   isDrive(): boolean {
     const pl = this.#patternList
-    return this.#isDrive !== undefined
-      ? this.#isDrive
+    return this.#isDrive !== undefined ?
+        this.#isDrive
       : (this.#isDrive =
           this.#platform === 'win32' &&
           this.#index === 0 &&
@@ -212,8 +212,8 @@ export class Pattern {
    */
   isAbsolute(): boolean {
     const pl = this.#patternList
-    return this.#isAbsolute !== undefined
-      ? this.#isAbsolute
+    return this.#isAbsolute !== undefined ?
+        this.#isAbsolute
       : (this.#isAbsolute =
           (pl[0] === '' && pl.length > 1) ||
           this.isDrive() ||
@@ -225,8 +225,10 @@ export class Pattern {
    */
   root(): string {
     const p = this.#patternList[0]
-    return typeof p === 'string' && this.isAbsolute() && this.#index === 0
-      ? p
+    return (
+        typeof p === 'string' && this.isAbsolute() && this.#index === 0
+      ) ?
+        p
       : ''
   }
 

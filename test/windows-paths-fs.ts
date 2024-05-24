@@ -33,14 +33,14 @@ t.test('treat backslash as escape', t => {
       t.strictSame(
         glob.globSync(pattern, { cwd: dir, posix: true }),
         expect,
-        'sync'
+        'sync',
       )
       t.strictSame(
         (await glob(pattern, { cwd: dir })).map(s =>
-          s.replace(/\\/g, '/')
+          s.replace(/\\/g, '/'),
         ),
         expect,
-        'async'
+        'async',
       )
     })
   }
@@ -63,14 +63,14 @@ t.test('treat backslash as separator', t => {
           .globSync(pattern, { cwd: dir, windowsPathsNoEscape: true })
           .map(s => s.replace(/\\/g, '/')),
         expect,
-        'sync'
+        'sync',
       )
       t.strictSame(
         (
           await glob(pattern, { cwd: dir, windowsPathsNoEscape: true })
         ).map(s => s.replace(/\\/g, '/')),
         expect,
-        'async'
+        'async',
       )
     })
   }

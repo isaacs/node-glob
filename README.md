@@ -77,7 +77,7 @@ g3.stream().on('data', path => {
     'got a path object',
     path.fullpath(),
     path.isDirectory(),
-    path.readdirSync().map(e => e.name)
+    path.readdirSync().map(e => e.name),
   )
 })
 
@@ -606,9 +606,9 @@ share the previously loaded cache.
   `false`, and a custom `Ignore` is provided that does not have
   an `add()` method, then it will throw an error.
 
-  **Caveat** It *only* ignores matches that would be a descendant
+  **Caveat** It _only_ ignores matches that would be a descendant
   of a previous match, and only if that descendant is matched
-  *after* the ancestor is encountered. Since the file system walk
+  _after_ the ancestor is encountered. Since the file system walk
   happens in indeterminate order, it's possible that a match will
   already be added before its ancestor, if multiple or braced
   patterns are used.
@@ -616,18 +616,21 @@ share the previously loaded cache.
   For example:
 
   ```js
-  const results = await glob([
-    // likely to match first, since it's just a stat
-    'a/b/c/d/e/f',
+  const results = await glob(
+    [
+      // likely to match first, since it's just a stat
+      'a/b/c/d/e/f',
 
-    // this pattern is more complicated! It must to various readdir()
-    // calls and test the results against a regular expression, and that
-    // is certainly going to take a little bit longer.
-    //
-    // So, later on, it encounters a match at 'a/b/c/d/e', but it's too
-    // late to ignore a/b/c/d/e/f, because it's already been emitted.
-    'a/[bdf]/?/[a-z]/*',
-  ], { includeChildMatches: false })
+      // this pattern is more complicated! It must to various readdir()
+      // calls and test the results against a regular expression, and that
+      // is certainly going to take a little bit longer.
+      //
+      // So, later on, it encounters a match at 'a/b/c/d/e', but it's too
+      // late to ignore a/b/c/d/e/f, because it's already been emitted.
+      'a/[bdf]/?/[a-z]/*',
+    ],
+    { includeChildMatches: false },
+  )
   ```
 
   It's best to only set this to `false` if you can be reasonably

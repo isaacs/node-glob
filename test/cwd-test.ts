@@ -29,15 +29,15 @@ t.test('changing cwd and searching for **/d', t => {
       t.same(new Set(await glob('**/d', { cwd: resolve(cwd) })), matches)
       t.same(
         new Set(await glob('**/d', { cwd: resolve(cwd) + '/' })),
-        matches
+        matches,
       )
       t.same(
         new Set(await glob('**/d', { cwd: resolve(cwd) + '/.' })),
-        matches
+        matches,
       )
       t.same(
         new Set(await glob('**/d', { cwd: resolve(cwd) + '/./' })),
-        matches
+        matches,
       )
     })
   }

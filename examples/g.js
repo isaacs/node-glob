@@ -5,7 +5,7 @@ console.log(pattern)
 
 var mg = new Glob(pattern, { mark: true, sync: true }, function (
   er,
-  matches
+  matches,
 ) {
   console.log('matches', matches)
 })

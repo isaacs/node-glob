@@ -19,11 +19,13 @@ export type GlobParts = Exclude<Minimatch['globParts'], undefined>
 // if no process global, just call it linux.
 // so we default to case-sensitive, / separators
 const defaultPlatform: NodeJS.Platform =
-  typeof process === 'object' &&
-  process &&
-  typeof process.platform === 'string'
-    ? process.platform
-    : 'linux'
+  (
+    typeof process === 'object' &&
+    process &&
+    typeof process.platform === 'string'
+  ) ?
+    process.platform
+  : 'linux'
 
 /**
  * A `GlobOptions` object may be provided to any of the exported methods, and
@@ -355,21 +357,17 @@ export type GlobOptionsWithFileTypesUnset = GlobOptions & {
   withFileTypes?: undefined
 }
 
-export type Result<Opts> = Opts extends GlobOptionsWithFileTypesTrue
-  ? Path
-  : Opts extends GlobOptionsWithFileTypesFalse
-  ? string
-  : Opts extends GlobOptionsWithFileTypesUnset
-  ? string
+export type Result<Opts> =
+  Opts extends GlobOptionsWithFileTypesTrue ? Path
+  : Opts extends GlobOptionsWithFileTypesFalse ? string
+  : Opts extends GlobOptionsWithFileTypesUnset ? string
   : string | Path
 export type Results<Opts> = Result<Opts>[]
 
-export type FileTypes<Opts> = Opts extends GlobOptionsWithFileTypesTrue
-  ? true
-  : Opts extends GlobOptionsWithFileTypesFalse
-  ? false
-  : Opts extends GlobOptionsWithFileTypesUnset
-  ? false
+export type FileTypes<Opts> =
+  Opts extends GlobOptionsWithFileTypesTrue ? true
+  : Opts extends GlobOptionsWithFileTypesFalse ? false
+  : Opts extends GlobOptionsWithFileTypesUnset ? false
   : boolean
 
 /**
@@ -494,13 +492,10 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
       }
     } else {
       const Scurry =
-        opts.platform === 'win32'
-          ? PathScurryWin32
-          : opts.platform === 'darwin'
-          ? PathScurryDarwin
-          : opts.platform
-          ? PathScurryPosix
-          : PathScurry
+        opts.platform === 'win32' ? PathScurryWin32
+        : opts.platform === 'darwin' ? PathScurryDarwin
+        : opts.platform ? PathScurryPosix
+        : PathScurry
       this.scurry = new Scurry(this.cwd, {
         nocase: opts.nocase,
         fs: opts.fs,
@@ -539,7 +534,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
         set[1].push(...m.globParts)
         return set
       },
-      [[], []]
+      [[], []],
     )
     this.patterns = matchSet.map((set, i) => {
       const g = globParts[i]
@@ -563,9 +558,9 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
       ...(await new GlobWalker(this.patterns, this.scurry.cwd, {
         ...this.opts,
         maxDepth:
-          this.maxDepth !== Infinity
-            ? this.maxDepth + this.scurry.cwd.depth()
-            : Infinity,
+          this.maxDepth !== Infinity ?
+            this.maxDepth + this.scurry.cwd.depth()
+          : Infinity,
         platform: this.platform,
         nocase: this.nocase,
         includeChildMatches: this.includeChildMatches,
@@ -582,9 +577,9 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
       ...new GlobWalker(this.patterns, this.scurry.cwd, {
         ...this.opts,
         maxDepth:
-          this.maxDepth !== Infinity
-            ? this.maxDepth + this.scurry.cwd.depth()
-            : Infinity,
+          this.maxDepth !== Infinity ?
+            this.maxDepth + this.scurry.cwd.depth()
+          : Infinity,
         platform: this.platform,
         nocase: this.nocase,
         includeChildMatches: this.includeChildMatches,
@@ -600,9 +595,9 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
     return new GlobStream(this.patterns, this.scurry.cwd, {
       ...this.opts,
       maxDepth:
-        this.maxDepth !== Infinity
-          ? this.maxDepth + this.scurry.cwd.depth()
-          : Infinity,
+        this.maxDepth !== Infinity ?
+          this.maxDepth + this.scurry.cwd.depth()
+        : Infinity,
       platform: this.platform,
       nocase: this.nocase,
       includeChildMatches: this.includeChildMatches,
@@ -617,9 +612,9 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
     return new GlobStream(this.patterns, this.scurry.cwd, {
       ...this.opts,
       maxDepth:
-        this.maxDepth !== Infinity
-          ? this.maxDepth + this.scurry.cwd.depth()
-          : Infinity,
+        this.maxDepth !== Infinity ?
+          this.maxDepth + this.scurry.cwd.depth()
+        : Infinity,
       platform: this.platform,
       nocase: this.nocase,
       includeChildMatches: this.includeChildMatches,

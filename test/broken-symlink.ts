@@ -16,7 +16,7 @@ const dir = relative(
         link: t.fixture('symlink', 'this-does-not-exist'),
       },
     },
-  })
+  }),
 )
 
 const link = `${dir}/a/broken-link/link`

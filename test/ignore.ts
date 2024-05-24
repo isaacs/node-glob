@@ -19,7 +19,7 @@ type Case = [
   pattern: string,
   ignore: null | string | string[],
   expect: string[],
-  optOrCwd?: GlobOptions | string | undefined
+  optOrCwd?: GlobOptions | string | undefined,
 ]
 
 const cases: Case[] = [
@@ -354,15 +354,14 @@ const cases: Case[] = [
 for (const c of cases) {
   const [pattern, ignore, ex, optCwd] = c
   const expect = (
-    process.platform === 'win32'
-      ? ex.filter(e => !/\bsymlink\b/.test(e))
-      : ex
-  ).sort()
+    process.platform === 'win32' ?
+      ex.filter(e => !/\bsymlink\b/.test(e))
+    : ex).sort()
   expect.sort()
   const opt: GlobOptions =
     (typeof optCwd === 'string' ? { cwd: optCwd } : optCwd) || {}
   const name = `p=${pattern} i=${JSON.stringify(ignore)} ${JSON.stringify(
-    opt
+    opt,
   )}`
 
   if (ignore) {

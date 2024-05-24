@@ -55,20 +55,16 @@ export type GWOFileTypesUnset = GlobWalkerOpts & {
   withFileTypes?: undefined
 }
 
-export type Result<O extends GlobWalkerOpts> = O extends GWOFileTypesTrue
-  ? Path
-  : O extends GWOFileTypesFalse
-  ? string
-  : O extends GWOFileTypesUnset
-  ? string
+export type Result<O extends GlobWalkerOpts> =
+  O extends GWOFileTypesTrue ? Path
+  : O extends GWOFileTypesFalse ? string
+  : O extends GWOFileTypesUnset ? string
   : Path | string
 
-export type Matches<O extends GlobWalkerOpts> = O extends GWOFileTypesTrue
-  ? Set<Path>
-  : O extends GWOFileTypesFalse
-  ? Set<string>
-  : O extends GWOFileTypesUnset
-  ? Set<string>
+export type Matches<O extends GlobWalkerOpts> =
+  O extends GWOFileTypesTrue ? Set<Path>
+  : O extends GWOFileTypesFalse ? Set<string>
+  : O extends GWOFileTypesUnset ? Set<string>
   : Set<Path | string>
 
 export type MatchStream<O extends GlobWalkerOpts> = Minipass<
@@ -78,13 +74,11 @@ export type MatchStream<O extends GlobWalkerOpts> = Minipass<
 
 const makeIgnore = (
   ignore: string | string[] | IgnoreLike,
-  opts: GlobWalkerOpts
+  opts: GlobWalkerOpts,
 ): IgnoreLike =>
-  typeof ignore === 'string'
-    ? new Ignore([ignore], opts)
-    : Array.isArray(ignore)
-    ? new Ignore(ignore, opts)
-    : ignore
+  typeof ignore === 'string' ? new Ignore([ignore], opts)
+  : Array.isArray(ignore) ? new Ignore(ignore, opts)
+  : ignore
 
 /**
  * basic walking utilities that all the glob walker types use
@@ -189,16 +183,18 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   matchCheckTest(e: Path | undefined, ifDir: boolean): Path | undefined {
-    return e &&
-      (this.maxDepth === Infinity || e.depth() <= this.maxDepth) &&
-      (!ifDir || e.canReaddir()) &&
-      (!this.opts.nodir || !e.isDirectory()) &&
-      (!this.opts.nodir ||
-        !this.opts.follow ||
-        !e.isSymbolicLink() ||
-        !e.realpathCached()?.isDirectory()) &&
-      !this.#ignored(e)
-      ? e
+    return (
+        e &&
+          (this.maxDepth === Infinity || e.depth() <= this.maxDepth) &&
+          (!ifDir || e.canReaddir()) &&
+          (!this.opts.nodir || !e.isDirectory()) &&
+          (!this.opts.nodir ||
+            !this.opts.follow ||
+            !e.isSymbolicLink() ||
+            !e.realpathCached()?.isDirectory()) &&
+          !this.#ignored(e)
+      ) ?
+        e
       : undefined
   }
 
@@ -244,9 +240,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     } else {
       const rel = this.opts.posix ? e.relativePosix() : e.relative()
       const pre =
-        this.opts.dotRelative && !rel.startsWith('..' + this.#sep)
-          ? '.' + this.#sep
-          : ''
+        this.opts.dotRelative && !rel.startsWith('..' + this.#sep) ?
+          '.' + this.#sep
+        : ''
       this.matchEmit(!rel ? '.' + mark : pre + rel + mark)
     }
   }
@@ -272,7 +268,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     target: Path,
     patterns: Pattern[],
     processor: Processor,
-    cb: () => any
+    cb: () => any,
   ) {
     if (this.#childrenIgnored(target)) return cb()
     if (this.signal?.aborted) cb()
@@ -307,7 +303,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       else {
         t.readdirCB(
           (_, entries) => this.walkCB3(t, entries, processor, next),
-          true
+          true,
         )
       }
     }
@@ -319,7 +315,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     target: Path,
     entries: Path[],
     processor: Processor,
-    cb: () => any
+    cb: () => any,
   ) {
     processor = processor.filterEntries(target, entries)
 
@@ -352,13 +348,13 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     target: Path,
     patterns: Pattern[],
     processor: Processor,
-    cb: () => any
+    cb: () => any,
   ) {
     if (this.#childrenIgnored(target)) return cb()
     if (this.signal?.aborted) cb()
     if (this.paused) {
       this.onResume(() =>
-        this.walkCB2Sync(target, patterns, processor, cb)
+        this.walkCB2Sync(target, patterns, processor, cb),
       )
       return
     }
@@ -393,7 +389,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     target: Path,
     entries: Path[],
     processor: Processor,
-    cb: () => any
+    cb: () => any,
   ) {
     processor = processor.filterEntries(target, entries)
 
@@ -416,7 +412,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
 }
 
 export class GlobWalker<
-  O extends GlobWalkerOpts = GlobWalkerOpts
+  O extends GlobWalkerOpts = GlobWalkerOpts,
 > extends GlobUtil<O> {
   matches = new Set<Result<O>>()
 
@@ -459,7 +455,7 @@ export class GlobWalker<
 }
 
 export class GlobStream<
-  O extends GlobWalkerOpts = GlobWalkerOpts
+  O extends GlobWalkerOpts = GlobWalkerOpts,
 > extends GlobUtil<O> {
   results: Minipass<Result<O>, Result<O>>
 

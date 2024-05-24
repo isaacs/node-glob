@@ -32,7 +32,7 @@ t.test('default linux when not found', async t => {
   })
   const { Glob } = (await t.mockImport(
     '../dist/esm/index.js',
-    {}
+    {},
   )) as typeof import('../dist/esm/index.js')
   const g = new Glob('.', {})
   t.equal(g.platform, 'linux')
@@ -42,15 +42,15 @@ t.test('default linux when not found', async t => {
 t.test('set platform, get appropriate scurry object', t => {
   t.equal(
     new Glob('.', { platform: 'darwin' }).scurry.constructor,
-    PathScurryDarwin
+    PathScurryDarwin,
   )
   t.equal(
     new Glob('.', { platform: 'linux' }).scurry.constructor,
-    PathScurryPosix
+    PathScurryPosix,
   )
   t.equal(
     new Glob('.', { platform: 'win32' }).scurry.constructor,
-    PathScurryWin32
+    PathScurryWin32,
   )
   t.equal(new Glob('.', {}).scurry.constructor, PathScurry)
   t.end()

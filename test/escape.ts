@@ -10,11 +10,11 @@ for (const pattern of Object.keys(bashResults)) {
   })
   t.notOk(
     hasMagic(pp, { platform: 'linux' }),
-    'no magic after posix escape'
+    'no magic after posix escape',
   )
   t.notOk(
     hasMagic(pw, { platform: 'win32', windowsPathsNoEscape: true }),
-    'no magic after windows escape'
+    'no magic after windows escape',
   )
   const up = unescape(pp)
   const uw = unescape(pw, { windowsPathsNoEscape: true })

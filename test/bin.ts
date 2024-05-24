@@ -20,7 +20,7 @@ const run = async (args: string[], options = {}) => {
   const proc = spawn(
     process.execPath,
     ['--enable-source-maps', bin, ...args],
-    options
+    options,
   )
   const out: Buffer[] = []
   const err: Buffer[] = []
@@ -73,8 +73,8 @@ t.test('finds matches for a pattern', async t => {
     cmd.stdout,
     `'a${sep.replace(/\\/g, '\\\\')}b${sep.replace(
       /\\/g,
-      '\\\\'
-    )}z.y'`.toUpperCase()
+      '\\\\',
+    )}z.y'`.toUpperCase(),
   )
 })
 
