@@ -42,6 +42,7 @@ export interface GlobWalkerOpts {
   signal?: AbortSignal
   windowsPathsNoEscape?: boolean
   withFileTypes?: boolean
+  includeChildMatches?: boolean
 }
 
 export type GWOFileTypesTrue = GlobWalkerOpts & {
@@ -70,14 +71,10 @@ export type Matches<O extends GlobWalkerOpts> = O extends GWOFileTypesTrue
   ? Set<string>
   : Set<Path | string>
 
-export type MatchStream<O extends GlobWalkerOpts> =
-  O extends GWOFileTypesTrue
-    ? Minipass<Path, Path>
-    : O extends GWOFileTypesFalse
-    ? Minipass<string, string>
-    : O extends GWOFileTypesUnset
-    ? Minipass<string, string>
-    : Minipass<Path | string, Path | string>
+export type MatchStream<O extends GlobWalkerOpts> = Minipass<
+  Result<O>,
+  Result<O>
+>
 
 const makeIgnore = (
   ignore: string | string[] | IgnoreLike,
@@ -104,6 +101,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   #sep: '\\' | '/'
   signal?: AbortSignal
   maxDepth: number
+  includeChildMatches: boolean
 
   constructor(patterns: Pattern[], path: Path, opts: O)
   constructor(patterns: Pattern[], path: Path, opts: O) {
@@ -111,8 +109,16 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     this.path = path
     this.opts = opts
     this.#sep = !opts.posix && opts.platform === 'win32' ? '\\' : '/'
-    if (opts.ignore) {
-      this.#ignore = makeIgnore(opts.ignore, opts)
+    this.includeChildMatches = opts.includeChildMatches !== false
+    if (opts.ignore || !this.includeChildMatches) {
+      this.#ignore = makeIgnore(opts.ignore ?? [], opts)
+      if (
+        !this.includeChildMatches &&
+        typeof this.#ignore.add !== 'function'
+      ) {
+        const m = 'cannot ignore child matches, ignore lacks add() method.'
+        throw new Error(m)
+      }
     }
     // ignore, always set with maxDepth, but it's optional on the
     // GlobOptions type
@@ -220,6 +226,11 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
 
   matchFinish(e: Path, absolute: boolean) {
     if (this.#ignored(e)) return
+    // we know we have an ignore if this is false, but TS doesn't
+    if (!this.includeChildMatches && this.#ignore?.add) {
+      const ign = `${e.relativePosix()}/**`
+      this.#ignore.add(ign)
+    }
     const abs =
       this.opts.absolute === undefined ? absolute : this.opts.absolute
     this.seen.add(e)
@@ -407,25 +418,17 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
 export class GlobWalker<
   O extends GlobWalkerOpts = GlobWalkerOpts
 > extends GlobUtil<O> {
-  matches: O extends GWOFileTypesTrue
-    ? Set<Path>
-    : O extends GWOFileTypesFalse
-    ? Set<string>
-    : O extends GWOFileTypesUnset
-    ? Set<string>
-    : Set<Path | string>
+  matches = new Set<Result<O>>()
 
   constructor(patterns: Pattern[], path: Path, opts: O) {
     super(patterns, path, opts)
-    this.matches = new Set() as Matches<O>
   }
 
-  matchEmit(e: Result<O>): void
-  matchEmit(e: Path | string): void {
+  matchEmit(e: Result<O>): void {
     this.matches.add(e)
   }
 
-  async walk(): Promise<Matches<O>> {
+  async walk(): Promise<Set<Result<O>>> {
     if (this.signal?.aborted) throw this.signal.reason
     if (this.path.isUnknown()) {
       await this.path.lstat()
@@ -442,7 +445,7 @@ export class GlobWalker<
     return this.matches
   }
 
-  walkSync(): Matches<O> {
+  walkSync(): Set<Result<O>> {
     if (this.signal?.aborted) throw this.signal.reason
     if (this.path.isUnknown()) {
       this.path.lstatSync()
@@ -458,26 +461,19 @@ export class GlobWalker<
 export class GlobStream<
   O extends GlobWalkerOpts = GlobWalkerOpts
 > extends GlobUtil<O> {
-  results: O extends GWOFileTypesTrue
-    ? Minipass<Path, Path>
-    : O extends GWOFileTypesFalse
-    ? Minipass<string, string>
-    : O extends GWOFileTypesUnset
-    ? Minipass<string, string>
-    : Minipass<Path | string, Path | string>
+  results: Minipass<Result<O>, Result<O>>
 
   constructor(patterns: Pattern[], path: Path, opts: O) {
     super(patterns, path, opts)
-    this.results = new Minipass({
+    this.results = new Minipass<Result<O>, Result<O>>({
       signal: this.signal,
       objectMode: true,
-    }) as MatchStream<O>
+    })
     this.results.on('drain', () => this.resume())
     this.results.on('resume', () => this.resume())
   }
 
-  matchEmit(e: Result<O>): void
-  matchEmit(e: Path | string): void {
+  matchEmit(e: Result<O>): void {
     this.results.write(e)
     if (!this.results.flowing) this.pause()
   }

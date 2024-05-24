@@ -3,7 +3,7 @@
 // Ignoring a path ignores its children if the pattern ends in /**
 // Ignores are always parsed in dot:true mode
 
-import { Minimatch } from 'minimatch'
+import { Minimatch, MinimatchOptions } from 'minimatch'
 import { Path } from 'path-scurry'
 import { Pattern } from './pattern.js'
 import { GlobWalkerOpts } from './walker.js'
@@ -11,6 +11,7 @@ import { GlobWalkerOpts } from './walker.js'
 export interface IgnoreLike {
   ignored?: (p: Path) => boolean
   childrenIgnored?: (p: Path) => boolean
+  add?: (ignore: string) => void
 }
 
 const defaultPlatform: NodeJS.Platform =
@@ -28,6 +29,8 @@ export class Ignore implements IgnoreLike {
   relativeChildren: Minimatch[]
   absolute: Minimatch[]
   absoluteChildren: Minimatch[]
+  platform: NodeJS.Platform
+  mmopts: MinimatchOptions
 
   constructor(
     ignored: string[],
@@ -43,7 +46,8 @@ export class Ignore implements IgnoreLike {
     this.absolute = []
     this.relativeChildren = []
     this.absoluteChildren = []
-    const mmopts = {
+    this.platform = platform
+    this.mmopts = {
       dot: true,
       nobrace,
       nocase,
@@ -54,7 +58,10 @@ export class Ignore implements IgnoreLike {
       nocomment: true,
       nonegate: true,
     }
+    for (const ign of ignored) this.add(ign)
+  }
 
+  add(ign: string) {
     // this is a little weird, but it gives us a clean set of optimized
     // minimatch matchers, without getting tripped up if one of them
     // ends in /** inside a brace section, and it's only inefficient at
@@ -67,32 +74,30 @@ export class Ignore implements IgnoreLike {
     // for absolute-ness.
     // Yet another way, Minimatch could take an array of glob strings, and
     // a cwd option, and do the right thing.
-    for (const ign of ignored) {
-      const mm = new Minimatch(ign, mmopts)
-      for (let i = 0; i < mm.set.length; i++) {
-        const parsed = mm.set[i]
-        const globParts = mm.globParts[i]
-        /* c8 ignore start */
-        if (!parsed || !globParts) {
-          throw new Error('invalid pattern object')
-        }
-        // strip off leading ./ portions
-        // https://github.com/isaacs/node-glob/issues/570
-        while (parsed[0] === '.' && globParts[0] === '.') {
-          parsed.shift()
-          globParts.shift()
-        }
-        /* c8 ignore stop */
-        const p = new Pattern(parsed, globParts, 0, platform)
-        const m = new Minimatch(p.globString(), mmopts)
-        const children = globParts[globParts.length - 1] === '**'
-        const absolute = p.isAbsolute()
-        if (absolute) this.absolute.push(m)
-        else this.relative.push(m)
-        if (children) {
-          if (absolute) this.absoluteChildren.push(m)
-          else this.relativeChildren.push(m)
-        }
+    const mm = new Minimatch(ign, this.mmopts)
+    for (let i = 0; i < mm.set.length; i++) {
+      const parsed = mm.set[i]
+      const globParts = mm.globParts[i]
+      /* c8 ignore start */
+      if (!parsed || !globParts) {
+        throw new Error('invalid pattern object')
+      }
+      // strip off leading ./ portions
+      // https://github.com/isaacs/node-glob/issues/570
+      while (parsed[0] === '.' && globParts[0] === '.') {
+        parsed.shift()
+        globParts.shift()
+      }
+      /* c8 ignore stop */
+      const p = new Pattern(parsed, globParts, 0, this.platform)
+      const m = new Minimatch(p.globString(), this.mmopts)
+      const children = globParts[globParts.length - 1] === '**'
+      const absolute = p.isAbsolute()
+      if (absolute) this.absolute.push(m)
+      else this.relative.push(m)
+      if (children) {
+        if (absolute) this.absoluteChildren.push(m)
+        else this.relativeChildren.push(m)
       }
     }
   }

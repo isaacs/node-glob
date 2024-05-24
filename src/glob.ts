@@ -1,5 +1,6 @@
 import { Minimatch, MinimatchOptions } from 'minimatch'
 import { Minipass } from 'minipass'
+import { fileURLToPath } from 'node:url'
 import {
   FSOption,
   Path,
@@ -8,7 +9,6 @@ import {
   PathScurryPosix,
   PathScurryWin32,
 } from 'path-scurry'
-import { fileURLToPath } from 'node:url'
 import { IgnoreLike } from './ignore.js'
 import { Pattern } from './pattern.js'
 import { GlobStream, GlobWalker } from './walker.js'
@@ -292,6 +292,51 @@ export interface GlobOptions {
    * `'//?/C:/foo/bar'`
    */
   posix?: boolean
+
+  /**
+   * Do not match any children of any matches. For example, the pattern
+   * `**\/foo` would match `a/foo`, but not `a/foo/b/foo` in this mode.
+   *
+   * This is especially useful for cases like "find all `node_modules`
+   * folders, but not the ones in `node_modules`".
+   *
+   * In order to support this, the `Ignore` implementation must support an
+   * `add(pattern: string)` method. If using the default `Ignore` class, then
+   * this is fine, but if this is set to `false`, and a custom `Ignore` is
+   * provided that does not have an `add()` method, then it will throw an
+   * error.
+   *
+   * **Caveat** It *only* ignores matches that would be a descendant of a
+   * previous match, and only if that descendant is matched *after* the
+   * ancestor is encountered. Since the file system walk happens in
+   * indeterminate order, it's possible that a match will already be added
+   * before its ancestor, if multiple or braced patterns are used.
+   *
+   * For example:
+   *
+   * ```ts
+   * const results = await glob([
+   *   // likely to match first, since it's just a stat
+   *   'a/b/c/d/e/f',
+   *
+   *   // this pattern is more complicated! It must to various readdir()
+   *   // calls and test the results against a regular expression, and that
+   *   // is certainly going to take a little bit longer.
+   *   //
+   *   // So, later on, it encounters a match at 'a/b/c/d/e', but it's too
+   *   // late to ignore a/b/c/d/e/f, because it's already been emitted.
+   *   'a/[bdf]/?/[a-z]/*',
+   * ], { includeChildMatches: false })
+   * ```
+   *
+   * It's best to only set this to `false` if you can be reasonably sure that
+   * no components of the pattern will potentially match one another's file
+   * system descendants, or if the occasional included child entry will not
+   * cause problems.
+   *
+   * @default true
+   */
+  includeChildMatches?: boolean
 }
 
 export type GlobOptionsWithFileTypesTrue = GlobOptions & {
@@ -355,6 +400,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
   signal?: AbortSignal
   windowsPathsNoEscape: boolean
   withFileTypes: FileTypes<Opts>
+  includeChildMatches: boolean
 
   /**
    * The options provided to the constructor.
@@ -401,6 +447,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
     this.noext = !!opts.noext
     this.realpath = !!opts.realpath
     this.absolute = opts.absolute
+    this.includeChildMatches = opts.includeChildMatches !== false
 
     this.noglobstar = !!opts.noglobstar
     this.matchBase = !!opts.matchBase
@@ -419,7 +466,8 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
 
     this.windowsPathsNoEscape =
       !!opts.windowsPathsNoEscape ||
-      (opts as GlobOptions).allowWindowsEscape === false
+      (opts as { allowWindowsEscape?: boolean }).allowWindowsEscape ===
+        false
 
     if (this.windowsPathsNoEscape) {
       pattern = pattern.map(p => p.replace(/\\/g, '/'))
@@ -520,6 +568,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
             : Infinity,
         platform: this.platform,
         nocase: this.nocase,
+        includeChildMatches: this.includeChildMatches,
       }).walk()),
     ]
   }
@@ -538,6 +587,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
             : Infinity,
         platform: this.platform,
         nocase: this.nocase,
+        includeChildMatches: this.includeChildMatches,
       }).walkSync(),
     ]
   }
@@ -555,6 +605,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
           : Infinity,
       platform: this.platform,
       nocase: this.nocase,
+      includeChildMatches: this.includeChildMatches,
     }).stream()
   }
 
@@ -571,6 +622,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
           : Infinity,
       platform: this.platform,
       nocase: this.nocase,
+      includeChildMatches: this.includeChildMatches,
     }).streamSync()
   }
 
