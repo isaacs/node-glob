@@ -10,6 +10,26 @@ import type {
 import { Glob } from './glob.js'
 import { hasMagic } from './has-magic.js'
 
+export { escape, unescape } from 'minimatch'
+export type {
+  FSOption,
+  Path,
+  WalkOptions,
+  WalkOptionsWithFileTypesTrue,
+  WalkOptionsWithFileTypesUnset,
+} from 'path-scurry'
+export { Glob } from './glob.js'
+export type {
+  GlobOptions,
+  GlobOptionsWithFileTypesFalse,
+  GlobOptionsWithFileTypesTrue,
+  GlobOptionsWithFileTypesUnset,
+} from './glob.js'
+export { hasMagic } from './has-magic.js'
+export { Ignore } from './ignore.js'
+export type { IgnoreLike } from './ignore.js'
+export type { MatchStream } from './walker.js'
+
 /**
  * Syncronous form of {@link globStream}. Will read all the matches as fast as
  * you consume them, even all in a single tick if you consume them immediately,
@@ -183,28 +203,6 @@ export const sync = Object.assign(globSync, {
   stream: globStreamSync,
   iterate: globIterateSync,
 })
-
-/* c8 ignore start */
-export { escape, unescape } from 'minimatch'
-export { Glob } from './glob.js'
-export type {
-  GlobOptions,
-  GlobOptionsWithFileTypesFalse,
-  GlobOptionsWithFileTypesTrue,
-  GlobOptionsWithFileTypesUnset,
-} from './glob.js'
-export { hasMagic } from './has-magic.js'
-export type { IgnoreLike } from './ignore.js'
-export type { MatchStream } from './walker.js'
-export type {
-  Path,
-  WalkOptionsWithFileTypesTrue,
-  WalkOptionsWithFileTypesUnset,
-  WalkOptions,
-  FSOption,
-} from 'path-scurry'
-
-/* c8 ignore stop */
 
 export const glob = Object.assign(glob_, {
   glob: glob_,
