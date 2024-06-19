@@ -1,9 +1,14 @@
 import { spawn, SpawnOptions } from 'child_process'
+import { readFileSync } from 'fs'
 import { sep } from 'path'
 import t from 'tap'
 import { fileURLToPath } from 'url'
-import pkg from '../package.json' assert { type: 'json' }
-const { version } = pkg
+const { version } = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL('../package.json', import.meta.url)),
+    'utf8',
+  ),
+)
 const bin = fileURLToPath(new URL('../dist/esm/bin.mjs', import.meta.url))
 
 t.cleanSnapshot = s => s.split(version).join('{VERSION}')
