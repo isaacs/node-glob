@@ -3,8 +3,9 @@
 Match files using the patterns the shell uses.
 
 The most correct and second fastest glob implementation in
-JavaScript. (See **Comparison to Other JavaScript Glob
-Implementations** at the bottom of this readme.)
+JavaScript. (See [**Comparison to Other JavaScript Glob
+Implementations**](#comparisons-to-other-fnmatchglob-implementations)
+at the bottom of this readme.)
 
 ![a fun cartoon logo made of glob
 characters](https://github.com/isaacs/node-glob/raw/main/logo/glob.png)
@@ -17,8 +18,9 @@ Install with npm
 npm i glob
 ```
 
-**Note** the npm package name is _not_ `node-glob` that's a
-different thing that was abandoned years ago. Just `glob`.
+> [!NOTE]
+> The npm package name is _not_ `node-glob` that's a
+> different thing that was abandoned years ago. Just `glob`.
 
 ```js
 // load using import
@@ -90,8 +92,9 @@ g3.stream().on('data', path => {
 // For example:
 const results = await glob('**', { stat: true, withFileTypes: true })
 
-const timeSortedFiles = results .sort((a, b) => a.mtimeMs -
-b.mtimeMs) .map(path => path.fullpath())
+const timeSortedFiles = results
+  .sort((a, b) => a.mtimeMs - b.mtimeMs)
+  .map(path => path.fullpath())
 
 const groupReadableFiles = results
   .filter(path => path.mode & 0o040)
@@ -136,13 +139,14 @@ const newFiles = await glob('**', {
 })
 ```
 
-**Note** Glob patterns should always use `/` as a path separator,
-even on Windows systems, as `\` is used to escape glob
-characters. If you wish to use `\` as a path separator _instead
-of_ using it as an escape character on Windows platforms, you may
-set `windowsPathsNoEscape:true` in the options. In this mode,
-special glob characters cannot be escaped, making it impossible
-to match a literal `*` `?` and so on in filenames.
+> [!NOTE]
+> Glob patterns should always use `/` as a path separator,
+> even on Windows systems, as `\` is used to escape glob
+> characters. If you wish to use `\` as a path separator _instead
+> of_ using it as an escape character on Windows platforms, you may
+> set `windowsPathsNoEscape:true` in the options. In this mode,
+> special glob characters cannot be escaped, making it impossible
+> to match a literal `*` `?` and so on in filenames.
 
 ## Command Line Interface
 
@@ -363,9 +367,10 @@ Options object is required.
 
 See full options descriptions below.
 
-Note that a previous `Glob` object can be passed as the
-`GlobOptions` to another `Glob` instantiation to re-use settings
-and caches with a new pattern.
+> [!NOTE]
+> A previous `Glob` object can be passed as the
+> `GlobOptions` to another `Glob` instantiation to re-use settings
+> and caches with a new pattern.
 
 Traversal functions can be called multiple times to run the walk
 again.
@@ -430,35 +435,37 @@ share the previously loaded cache.
   is used as the starting point for absolute patterns that start
   with `/`, (but not drive letters or UNC paths on Windows).
 
-  Note that this _doesn't_ necessarily limit the walk to the
-  `root` directory, and doesn't affect the cwd starting point for
-  non-absolute patterns. A pattern containing `..` will still be
-  able to traverse out of the root directory, if it is not an
-  actual root directory on the filesystem, and any non-absolute
-  patterns will be matched in the `cwd`. For example, the
-  pattern `/../*` with `{root:'/some/path'}` will return all
-  files in `/some`, not all files in `/some/path`. The pattern
-  `*` with `{root:'/some/path'}` will return all the entries in
-  the cwd, not the entries in `/some/path`.
+  > [!NOTE] This _doesn't_ necessarily limit the walk to the
+  > `root` directory, and doesn't affect the cwd starting point
+  > for non-absolute patterns. A pattern containing `..` will
+  > still be able to traverse out of the root directory, if it
+  > is not an actual root directory on the filesystem, and any
+  > non-absolute patterns will be matched in the `cwd`. For
+  > example, the pattern `/../*` with `{root:'/some/path'}`
+  > will return all files in `/some`, not all files in
+  > `/some/path`. The pattern `*` with `{root:'/some/path'}`
+  > will return all the entries in the cwd, not the entries in
+  > `/some/path`.
 
-  To start absolute and non-absolute patterns in the same
-  path, you can use `{root:''}`. However, be aware that on
-  Windows systems, a pattern like `x:/*` or `//host/share/*` will
-  _always_ start in the `x:/` or `//host/share` directory,
-  regardless of the `root` setting.
+  To start absolute and non-absolute patterns in the same path,
+you can use `{root:''}`. However, be aware that on Windows
+systems, a pattern like `x:/*` or `//host/share/*` will
+_always_ start in the `x:/` or `//host/share` directory,
+regardless of the `root` setting.
 
 - `windowsPathsNoEscape` Use `\\` as a path separator _only_, and
   _never_ as an escape character. If set, all `\\` characters are
   replaced with `/` in the pattern.
 
-  Note that this makes it **impossible** to match against paths
-  containing literal glob pattern characters, but allows matching
-  with patterns constructed using `path.join()` and
-  `path.resolve()` on Windows platforms, mimicking the (buggy!)
-  behavior of Glob v7 and before on Windows. Please use with
-  caution, and be mindful of [the caveat below about Windows
-  paths](#windows). (For legacy reasons, this is also set if
-  `allowWindowsEscape` is set to the exact value `false`.)
+  > [!NOTE]
+  > This makes it **impossible** to match against paths
+  > containing literal glob pattern characters, but allows matching
+  > with patterns constructed using `path.join()` and
+  > `path.resolve()` on Windows platforms, mimicking the (buggy!)
+  > behavior of Glob v7 and before on Windows. Please use with
+  > caution, and be mindful of [the caveat below about Windows
+  > paths](#windows). (For legacy reasons, this is also set if
+  > `allowWindowsEscape` is set to the exact value `false`.)
 
 - `dot` Include `.dot` files in normal matches and `globstar`
   matches. Note that an explicit dot in a portion of the pattern
@@ -493,11 +500,12 @@ share the previously loaded cache.
 - `nocase` Perform a case-insensitive match. This defaults to
   `true` on macOS and Windows systems, and `false` on all others.
 
-  **Note** `nocase` should only be explicitly set when it is
-  known that the filesystem's case sensitivity differs from the
-  platform default. If set `true` on case-sensitive file
-  systems, or `false` on case-insensitive file systems, then the
-  walk may return more or less results than expected.
+  > [!NOTE]
+  > `nocase` should only be explicitly set when it is
+  > known that the filesystem's case sensitivity differs from the
+  > platform default. If set `true` on case-sensitive file
+  > systems, or `false` on case-insensitive file systems, then the
+  > walk may return more or less results than expected.
 
 - `maxDepth` Specify a number to limit the depth of the directory
   traversal to this many levels below the `cwd`.
@@ -510,8 +518,9 @@ share the previously loaded cache.
 - `nodir` Do not match directories, only files. (Note: to match
   _only_ directories, put a `/` at the end of the pattern.)
 
-  Note: when `follow` and `nodir` are both set, then symbolic
-  links to directories are also omitted.
+  > [!NOTE]
+  > When `follow` and `nodir` are both set, then symbolic
+  > links to directories are also omitted.
 
 - `stat` Call `lstat()` on all entries, whether required or not
   to determine whether it's a valid match. When used with
@@ -522,17 +531,18 @@ share the previously loaded cache.
 - `ignore` string or string[], or an object with `ignored` and
   `childrenIgnored` methods.
 
-  If a string or string[] is provided, then this is treated as a
-  glob pattern or array of glob patterns to exclude from matches.
-  To ignore all children within a directory, as well as the entry
-  itself, append `'/**'` to the ignore pattern.
+  If a string or string[] is provided, then this is treated as
+  a glob pattern or array of glob patterns to exclude from
+  matches. To ignore all children within a directory, as well
+  as the entry itself, append `'/**'` to the ignore pattern.
 
-  **Note** `ignore` patterns are _always_ in `dot:true` mode,
-  regardless of any other settings.
+  > [!NOTE]
+  > `ignore` patterns are _always_ in `dot:true` mode,
+  > regardless of any other settings.
 
   If an object is provided that has `ignored(path)` and/or
   `childrenIgnored(path)` methods, then these methods will be
-  called to determine whether any Path is a match or if its
+  called to determine whether any Path is a match or if its
   children should be traversed, respectively.
 
   The `path` argument to the methods will be a
@@ -553,8 +563,9 @@ share the previously loaded cache.
   it is not the first item in the pattern, or none if it is the
   first item in the pattern, following the same behavior as Bash.
 
-  Note: when `follow` and `nodir` are both set, then symbolic
-  links to directories are also omitted.
+  > [!NOTE]
+  > When `follow` and `nodir` are both set, then symbolic
+  > links to directories are also omitted.
 
 - `realpath` Set to true to call `fs.realpath` on all of the
   results. In the case of an entry that cannot be resolved, the
@@ -620,12 +631,13 @@ share the previously loaded cache.
   `false`, and a custom `Ignore` is provided that does not have
   an `add()` method, then it will throw an error.
 
-  **Caveat** It _only_ ignores matches that would be a descendant
-  of a previous match, and only if that descendant is matched
-  _after_ the ancestor is encountered. Since the file system walk
-  happens in indeterminate order, it's possible that a match will
-  already be added before its ancestor, if multiple or braced
-  patterns are used.
+  > [!NOTE]
+  > It _only_ ignores matches that would be a descendant
+  > of a previous match, and only if that descendant is matched
+  > _after_ the ancestor is encountered. Since the file system walk
+  > happens in indeterminate order, it's possible that a match will
+  > already be added before its ancestor, if multiple or braced
+  > patterns are used.
 
   For example:
 
@@ -751,11 +763,12 @@ bsdglob and bash 5, where `**` only has special significance if
 it is the only thing in a path part. That is, `a/**/b` will match
 `a/x/y/b`, but `a/**b` will not.
 
-Note that symlinked directories are not traversed as part of a
-`**`, though their contents may match against subsequent portions
-of the pattern. This prevents infinite loops and duplicates and
-the like. You can force glob to traverse symlinks with `**` by
-setting `{follow:true}` in the options.
+> [!NOTE]
+> Symlinked directories are not traversed as part of a
+> `**`, though their contents may match against subsequent portions
+> of the pattern. This prevents infinite loops and duplicates and
+> the like. You can force glob to traverse symlinks with `**` by
+> setting `{follow:true}` in the options.
 
 There is no equivalent of the `nonull` option. A pattern that
 does not find any matches simply resolves to nothing. (An empty
@@ -969,10 +982,11 @@ performing a glob pattern expansion as faithfully as possible to
 the behavior of Bash and other sh-like shells, with as much speed
 as possible.
 
-Note that prior versions of `node-glob` are _not_ on this list.
-Former versions of this module are far too slow for any cases
-where performance matters at all, and were designed with APIs
-that are extremely dated by current JavaScript standards.
+> [!NOTE]
+> Prior versions of `node-glob` are _not_ on this list.
+> Former versions of this module are far too slow for any cases
+> where performance matters at all, and were designed with APIs
+> that are extremely dated by current JavaScript standards.
 
 ---
 
