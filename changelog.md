@@ -1,5 +1,9 @@
 # changeglob
 
+## 11.0
+
+- Drop support for node before v20
+
 ## 10.4
 
 - Add `includeChildMatches: false` option

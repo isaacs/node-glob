@@ -18,12 +18,10 @@
     "./package.json": "./package.json",
     ".": {
       "import": {
-        "source": "./src/index.ts",
         "types": "./dist/esm/index.d.ts",
         "default": "./dist/esm/index.js"
       },
       "require": {
-        "source": "./src/index.ts",
         "types": "./dist/commonjs/index.d.ts",
         "default": "./dist/commonjs/index.js"
       }
@@ -70,22 +68,22 @@
   },
   "dependencies": {
     "foreground-child": "^3.1.0",
-    "jackspeak": "^3.1.2",
-    "minimatch": "^9.0.4",
+    "jackspeak": "^4.0.1",
+    "minimatch": "^10.0.0",
     "minipass": "^7.1.2",
     "package-json-from-dist": "^1.0.0",
-    "path-scurry": "^1.11.1"
+    "path-scurry": "^2.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
-    "memfs": "^3.4.13",
+    "memfs": "^4.9.3",
     "mkdirp": "^3.0.1",
     "prettier": "^3.2.5",
     "rimraf": "^5.0.7",
     "sync-content": "^1.0.2",
-    "tap": "^19.0.0",
-    "tshy": "^1.14.0",
-    "typedoc": "^0.25.12"
+    "tap": "^20.0.3",
+    "tshy": "^2.0.1",
+    "typedoc": "^0.26.3"
   },
   "tap": {
     "before": "test/00-setup.ts"
@@ -95,7 +93,7 @@
     "url": "https://github.com/sponsors/isaacs"
   },
   "engines": {
-    "node": "14 >=14.21 || 16 >=16.20 || 18 || 20 || >=22"
+    "node": "20 || >=22"
   },
   "module": "./dist/esm/index.js"
 }
