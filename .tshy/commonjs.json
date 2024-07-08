@@ -3,10 +3,12 @@
   "include": [
     "../src/**/*.ts",
     "../src/**/*.cts",
-    "../src/**/*.tsx"
+    "../src/**/*.tsx",
+    "../src/**/*.json"
   ],
   "exclude": [
-    "../src/**/*.mts"
+    "../src/**/*.mts",
+    "../src/package.json"
   ],
   "compilerOptions": {
     "outDir": "../.tshy-build/commonjs"

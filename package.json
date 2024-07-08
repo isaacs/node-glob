@@ -18,10 +18,12 @@
     "./package.json": "./package.json",
     ".": {
       "import": {
+        "source": "./src/index.ts",
         "types": "./dist/esm/index.d.ts",
         "default": "./dist/esm/index.js"
       },
       "require": {
+        "source": "./src/index.ts",
         "types": "./dist/commonjs/index.d.ts",
         "default": "./dist/commonjs/index.js"
       }
@@ -93,6 +95,7 @@
     "url": "https://github.com/sponsors/isaacs"
   },
   "engines": {
-    "node": ">=18"
-  }
+    "node": "14 >=14.21 || 16 >=16.20 || 18 || 20 || >=22"
+  },
+  "module": "./dist/esm/index.js"
 }

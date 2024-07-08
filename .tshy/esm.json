@@ -3,9 +3,12 @@
   "include": [
     "../src/**/*.ts",
     "../src/**/*.mts",
-    "../src/**/*.tsx"
+    "../src/**/*.tsx",
+    "../src/**/*.json"
   ],
-  "exclude": [],
+  "exclude": [
+    "../src/package.json"
+  ],
   "compilerOptions": {
     "outDir": "../.tshy-build/esm"
   }
