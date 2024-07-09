@@ -1,5 +1,8 @@
 {
   "author": "Isaac Z. Schlueter <i@izs.me> (https://blog.izs.me/)",
+  "publishConfig": {
+    "tag": "legacy-v10"
+  },
   "name": "glob",
   "description": "the most correct and second fastest glob implementation in JavaScript",
   "version": "10.4.4",
@@ -93,9 +96,6 @@
   "license": "ISC",
   "funding": {
     "url": "https://github.com/sponsors/isaacs"
-  },
-  "engines": {
-    "node": "14 >=14.21 || 16 >=16.20 || 18 || 20 || >=22"
   },
   "module": "./dist/esm/index.js"
 }
