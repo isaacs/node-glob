@@ -564,13 +564,13 @@ share the previously loaded cache.
   `absolute` may not be used along with `withFileTypes`.
 
 - `posix` Set to true to use `/` as the path separator in
-  returned results. On posix systems, this has no effect. On
+  returned results. On POSIX systems, this has no effect. On
   Windows systems, this will return `/` delimited path results,
-  and absolute paths will be returned in their full resolved UNC
-  path form, eg insted of `'C:\\foo\\bar'`, it will return
+  and absolute paths will be returned in their fully resolved UNC
+  path form, e.g. instead of `'C:\\foo\\bar'`, it will return
   `//?/C:/foo/bar`.
 
-- `platform` Defaults to value of `process.platform` if
+- `platform` Defaults to the value of `process.platform` if
   available, or `'linux'` if not. Setting `platform:'win32'` on
   non-Windows systems may cause strange behavior.
 
@@ -754,8 +754,8 @@ expanded **first** into the set of `+(a|b)` and `+(a|c)`, and
 those patterns are checked for validity. Since those two are
 valid, matching proceeds.
 
-The character class patterns `[:class:]` (posix standard named
-classes) style class patterns are supported and unicode-aware,
+The character class patterns `[:class:]` (POSIX standard named
+classes) style class patterns are supported and Unicode-aware,
 but `[=c=]` (locale-specific character collation weight), and
 `[.symbol.]` (collating symbol), are not.
 
@@ -779,13 +779,13 @@ To specify things that should not match, use the `ignore` option.
 
 **Please only use forward-slashes in glob expressions.**
 
-Though windows uses either `/` or `\` as its path separator, only
+Though Windows uses either `/` or `\` as its path separator, only
 `/` characters are used by this glob implementation. You must use
 forward-slashes **only** in glob expressions. Back-slashes will
 always be interpreted as escape characters, not path separators.
 
 Results from absolute patterns such as `/foo/*` are mounted onto
-the root setting using `path.join`. On windows, this will by
+the root setting using `path.join`. On Windows, this will by
 default result in `/foo/*` matching `C:\foo\bar.txt`.
 
 To automatically coerce all `\` characters to `/` in pattern
@@ -795,7 +795,7 @@ characters**, you may set the `windowsPathsNoEscape` option to
 
 ### Windows, CWDs, Drive Letters, and UNC Paths
 
-On posix systems, when a pattern starts with `/`, any `cwd`
+On POSIX systems, when a pattern starts with `/`, any `cwd`
 option is ignored, and the traversal starts at `/`, plus any
 non-magic path portions specified in the pattern.
 
@@ -970,9 +970,9 @@ course.</small>
 
 ### Benchmark Results
 
-First number is time, smaller is better.
+The first number is time, smaller is better.
 
-Second number is the count of results returned.
+The second number is the count of results returned.
 
 ```
 --- pattern: '**' ---
