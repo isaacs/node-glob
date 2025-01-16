@@ -69,8 +69,8 @@ for (const file of g2) {
 }
 
 // you can also pass withFileTypes: true to get Path objects
-// these are like a Dirent, but with some more added powers
-// check out http://npm.im/path-scurry for more info on their API
+// these are like a fs.Dirent, but with some more added powers
+// check out https://isaacs.github.io/path-scurry/classes/PathBase.html for more info on their API
 const g3 = new Glob('**/baz/**', { withFileTypes: true })
 g3.stream().on('data', path => {
   console.log(
@@ -534,6 +534,12 @@ share the previously loaded cache.
   called to determine whether any Path is a match or if its
   children should be traversed, respectively.
 
+  The `path` argument to the methods will be a [`path-scurry`](https://isaacs.github.io/path-scurry/index.html)
+  [`Path`](https://isaacs.github.io/path-scurry/classes/PathBase)
+  object, which extends [`fs.Dirent`](https://nodejs.org/docs/latest/api/fs.html#class-fsdirent)
+  with additional useful methods like [`.fullpath()`](https://isaacs.github.io/path-scurry/classes/PathBase.html#fullpath),
+  [`.relative()`](https://isaacs.github.io/path-scurry/classes/PathBase.html#relative), and more.
+
 - `follow` Follow symlinked directories when expanding `**`
   patterns. This can result in a lot of duplicate references in
   the presence of cyclic links, and make performance quite bad.
@@ -574,9 +580,9 @@ share the previously loaded cache.
   available, or `'linux'` if not. Setting `platform:'win32'` on
   non-Windows systems may cause strange behavior.
 
-- `withFileTypes` Return [PathScurry](http://npm.im/path-scurry)
-  `Path` objects instead of strings. These are similar to a
-  NodeJS `Dirent` object, but with additional methods and
+- `withFileTypes` Return [`path-scurry`](http://npm.im/path-scurry)
+  [`Path`](https://isaacs.github.io/path-scurry/classes/PathBase.html) objects instead of strings.
+  These are similar to a NodeJS `fs.Dirent` object, but with additional methods and
   properties.
 
   `withFileTypes` may not be used along with `absolute`.
@@ -585,10 +591,10 @@ share the previously loaded cache.
   triggered.
 
 - `fs` An override object to pass in custom filesystem methods.
-  See [PathScurry docs](http://npm.im/path-scurry) for what can
+  See [`path-scurry` docs](https://isaacs.github.io/path-scurry/interfaces/FSOption.html) for what can
   be overridden.
 
-- `scurry` A [PathScurry](http://npm.im/path-scurry) object used
+- `scurry` A [`PathScurry`](https://isaacs.github.io/path-scurry/classes/PathScurryBase.html) object used
   to traverse the file system. If the `nocase` option is set
   explicitly, then any provided `scurry` object must match this
   setting.
