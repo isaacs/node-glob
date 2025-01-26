@@ -371,7 +371,7 @@ again.
 
 ### `g.stream()`
 
-Stream results asynchronously,
+Stream results asynchronously.
 
 ### `g.streamSync()`
 
