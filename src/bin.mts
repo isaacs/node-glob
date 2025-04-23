@@ -215,8 +215,10 @@ const j = jack({
       description: `Output a huge amount of noisy debug information about
                     patterns as they are parsed and used to match files.`,
     },
-  })
-  .flag({
+    version: {
+      short: 'V',
+      description: `Output the version (${version})`,
+    },
     help: {
       short: 'h',
       description: 'Show this usage information',
@@ -225,6 +227,10 @@ const j = jack({
 
 try {
   const { positionals, values } = j.parse()
+  if (values.version) {
+    console.log(version)
+    process.exit(0)
+  }
   if (values.help) {
     console.log(j.usage())
     process.exit(0)

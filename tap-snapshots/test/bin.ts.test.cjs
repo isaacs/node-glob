@@ -143,8 +143,35 @@ Object {
       -v --debug             Output a huge amount of noisy debug information about
                              patterns as they are parsed and used to match files.
     
+      -V --version           Output the version ({VERSION})
       -h --help              Show this usage information
     
   ),
+}
+`
+
+exports[`test/bin.ts > TAP > version > --version shows version 1`] = `
+Object {
+  "args": Array [
+    "--version",
+  ],
+  "code": 0,
+  "options": Object {},
+  "signal": null,
+  "stderr": "",
+  "stdout": "{VERSION}\\n",
+}
+`
+
+exports[`test/bin.ts > TAP > version > -V shows version 1`] = `
+Object {
+  "args": Array [
+    "-V",
+  ],
+  "code": 0,
+  "options": Object {},
+  "signal": null,
+  "stderr": "",
+  "stdout": "{VERSION}\\n",
 }
 `

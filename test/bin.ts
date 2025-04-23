@@ -56,6 +56,11 @@ t.test('usage', async t => {
   t.match(badp.stderr, 'Invalid value provided for --platform: "glorb"\n')
 })
 
+t.test('version', async t => {
+  t.matchSnapshot(await run(['-V']), '-V shows version')
+  t.matchSnapshot(await run(['--version']), '--version shows version')
+})
+
 t.test('finds matches for a pattern', async t => {
   const cwd = t.testdir({
     a: {
