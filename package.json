@@ -66,23 +66,22 @@
     "endOfLine": "lf"
   },
   "dependencies": {
-    "foreground-child": "^3.1.0",
-    "jackspeak": "^4.0.1",
-    "minimatch": "^10.0.0",
+    "foreground-child": "^3.3.1",
+    "jackspeak": "^4.1.1",
+    "minimatch": "^10.0.3",
     "minipass": "^7.1.2",
     "package-json-from-dist": "^1.0.0",
     "path-scurry": "^2.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.11.30",
-    "memfs": "^4.9.3",
+    "@types/node": "^24.0.1",
+    "memfs": "^4.17.2",
     "mkdirp": "^3.0.1",
-    "prettier": "^3.2.5",
-    "rimraf": "^5.0.7",
-    "sync-content": "^1.0.2",
-    "tap": "^20.0.3",
-    "tshy": "^2.0.1",
-    "typedoc": "^0.26.3"
+    "prettier": "^3.5.3",
+    "rimraf": "^6.0.1",
+    "tap": "^21.1.0",
+    "tshy": "^3.0.2",
+    "typedoc": "^0.28.5"
   },
   "tap": {
     "before": "test/00-setup.ts"
