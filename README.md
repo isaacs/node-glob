@@ -187,7 +187,7 @@ paths found.
   -x --posix             Always resolve to posix style paths, using '/' as the
                          directory separator, even on Windows. Drive letter
                          absolute matches on Windows will be expanded to their
-                         full resolved UNC maths, eg instead of 'C:\foo\bar', it
+                         full resolved UNC paths, eg instead of 'C:\foo\bar', it
                          will expand to '//?/C:/foo/bar'.
 
   -f --follow            Follow symlinked directories when expanding '**'
