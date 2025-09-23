@@ -74,14 +74,14 @@
     "path-scurry": "^2.0.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.1",
-    "memfs": "^4.17.2",
+    "@types/node": "^24.5.2",
+    "memfs": "^4.43.0",
     "mkdirp": "^3.0.1",
-    "prettier": "^3.5.3",
+    "prettier": "^3.6.2",
     "rimraf": "^6.0.1",
     "tap": "^21.1.0",
     "tshy": "^3.0.2",
-    "typedoc": "^0.28.5"
+    "typedoc": "^0.28.13"
   },
   "tap": {
     "before": "test/00-setup.ts"
