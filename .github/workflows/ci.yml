@@ -1,6 +1,11 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  pull_request_target:
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - '*.json'
 
 jobs:
   build:
