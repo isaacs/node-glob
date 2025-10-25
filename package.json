@@ -86,7 +86,7 @@
   "tap": {
     "before": "test/00-setup.ts"
   },
-  "license": "ISC",
+  "license": "BlueOak-1.0.0",
   "funding": {
     "url": "https://github.com/sponsors/isaacs"
   },
