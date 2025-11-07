@@ -1,11 +1,18 @@
 name: CI
 
 on:
+  push:
+    branches: ["main"]
   pull_request_target:
     paths:
       - 'src/**'
       - 'test/**'
       - '*.json'
+      - '*.js'
+      - '*.ts'
+      - 'lib/**'
+      - 'scripts/**'
+  workflow_dispatch:
 
 jobs:
   build:
