@@ -435,37 +435,37 @@ share the previously loaded cache.
   is used as the starting point for absolute patterns that start
   with `/`, (but not drive letters or UNC paths on Windows).
 
-  > [!NOTE] This _doesn't_ necessarily limit the walk to the
-  > `root` directory, and doesn't affect the cwd starting point
-  > for non-absolute patterns. A pattern containing `..` will
-  > still be able to traverse out of the root directory, if it
-  > is not an actual root directory on the filesystem, and any
-  > non-absolute patterns will be matched in the `cwd`. For
-  > example, the pattern `/../*` with `{root:'/some/path'}`
-  > will return all files in `/some`, not all files in
-  > `/some/path`. The pattern `*` with `{root:'/some/path'}`
-  > will return all the entries in the cwd, not the entries in
-  > `/some/path`.
+    To start absolute and non-absolute patterns in the same path,
+    you can use `{root:''}`. However, be aware that on Windows
+    systems, a pattern like `x:/*` or `//host/share/*` will
+    _always_ start in the `x:/` or `//host/share` directory,
+    regardless of the `root` setting.
 
-  To start absolute and non-absolute patterns in the same path,
-you can use `{root:''}`. However, be aware that on Windows
-systems, a pattern like `x:/*` or `//host/share/*` will
-_always_ start in the `x:/` or `//host/share` directory,
-regardless of the `root` setting.
+> [!NOTE] This _doesn't_ necessarily limit the walk to the
+> `root` directory, and doesn't affect the cwd starting point
+> for non-absolute patterns. A pattern containing `..` will
+> still be able to traverse out of the root directory, if it
+> is not an actual root directory on the filesystem, and any
+> non-absolute patterns will be matched in the `cwd`. For
+> example, the pattern `/../*` with `{root:'/some/path'}`
+> will return all files in `/some`, not all files in
+> `/some/path`. The pattern `*` with `{root:'/some/path'}`
+> will return all the entries in the cwd, not the entries in
+> `/some/path`.
 
 - `windowsPathsNoEscape` Use `\\` as a path separator _only_, and
   _never_ as an escape character. If set, all `\\` characters are
   replaced with `/` in the pattern.
 
-  > [!NOTE]
-  > This makes it **impossible** to match against paths
-  > containing literal glob pattern characters, but allows matching
-  > with patterns constructed using `path.join()` and
-  > `path.resolve()` on Windows platforms, mimicking the (buggy!)
-  > behavior of Glob v7 and before on Windows. Please use with
-  > caution, and be mindful of [the caveat below about Windows
-  > paths](#windows). (For legacy reasons, this is also set if
-  > `allowWindowsEscape` is set to the exact value `false`.)
+> [!NOTE]
+> This makes it **impossible** to match against paths
+> containing literal glob pattern characters, but allows matching
+> with patterns constructed using `path.join()` and
+> `path.resolve()` on Windows platforms, mimicking the (buggy!)
+> behavior of Glob v7 and before on Windows. Please use with
+> caution, and be mindful of [the caveat below about Windows
+> paths](#windows). (For legacy reasons, this is also set if
+> `allowWindowsEscape` is set to the exact value `false`.)
 
 - `dot` Include `.dot` files in normal matches and `globstar`
   matches. Note that an explicit dot in a portion of the pattern
@@ -500,12 +500,12 @@ regardless of the `root` setting.
 - `nocase` Perform a case-insensitive match. This defaults to
   `true` on macOS and Windows systems, and `false` on all others.
 
-  > [!NOTE]
-  > `nocase` should only be explicitly set when it is
-  > known that the filesystem's case sensitivity differs from the
-  > platform default. If set `true` on case-sensitive file
-  > systems, or `false` on case-insensitive file systems, then the
-  > walk may return more or less results than expected.
+> [!NOTE]
+> `nocase` should only be explicitly set when it is
+> known that the filesystem's case sensitivity differs from the
+> platform default. If set `true` on case-sensitive file
+> systems, or `false` on case-insensitive file systems, then the
+> walk may return more or less results than expected.
 
 - `maxDepth` Specify a number to limit the depth of the directory
   traversal to this many levels below the `cwd`.
@@ -518,9 +518,9 @@ regardless of the `root` setting.
 - `nodir` Do not match directories, only files. (Note: to match
   _only_ directories, put a `/` at the end of the pattern.)
 
-  > [!NOTE]
-  > When `follow` and `nodir` are both set, then symbolic
-  > links to directories are also omitted.
+> [!NOTE]
+> When `follow` and `nodir` are both set, then symbolic
+> links to directories are also omitted.
 
 - `stat` Call `lstat()` on all entries, whether required or not
   to determine whether it's a valid match. When used with
@@ -535,10 +535,6 @@ regardless of the `root` setting.
   a glob pattern or array of glob patterns to exclude from
   matches. To ignore all children within a directory, as well
   as the entry itself, append `'/**'` to the ignore pattern.
-
-  > [!NOTE]
-  > `ignore` patterns are _always_ in `dot:true` mode,
-  > regardless of any other settings.
 
   If an object is provided that has `ignored(path)` and/or
   `childrenIgnored(path)` methods, then these methods will be
@@ -555,6 +551,10 @@ regardless of the `root` setting.
   [`.relative()`](https://isaacs.github.io/path-scurry/classes/PathBase.html#relative),
   and more.
 
+> [!NOTE]
+> `ignore` patterns are _always_ in `dot:true` mode,
+> regardless of any other settings.
+
 - `follow` Follow symlinked directories when expanding `**`
   patterns. This can result in a lot of duplicate references in
   the presence of cyclic links, and make performance quite bad.
@@ -563,9 +563,9 @@ regardless of the `root` setting.
   it is not the first item in the pattern, or none if it is the
   first item in the pattern, following the same behavior as Bash.
 
-  > [!NOTE]
-  > When `follow` and `nodir` are both set, then symbolic
-  > links to directories are also omitted.
+> [!NOTE]
+> When `follow` and `nodir` are both set, then symbolic
+> links to directories are also omitted.
 
 - `realpath` Set to true to call `fs.realpath` on all of the
   results. In the case of an entry that cannot be resolved, the
@@ -631,14 +631,6 @@ regardless of the `root` setting.
   `false`, and a custom `Ignore` is provided that does not have
   an `add()` method, then it will throw an error.
 
-  > [!NOTE]
-  > It _only_ ignores matches that would be a descendant
-  > of a previous match, and only if that descendant is matched
-  > _after_ the ancestor is encountered. Since the file system walk
-  > happens in indeterminate order, it's possible that a match will
-  > already be added before its ancestor, if multiple or braced
-  > patterns are used.
-
   For example:
 
   ```js
@@ -663,6 +655,15 @@ regardless of the `root` setting.
   sure that no components of the pattern will potentially match
   one another's file system descendants, or if the occasional
   included child entry will not cause problems.
+
+> [!NOTE]
+> It _only_ ignores matches that would be a descendant
+> of a previous match, and only if that descendant is matched
+> _after_ the ancestor is encountered. Since the file system walk
+> happens in indeterminate order, it's possible that a match will
+> already be added before its ancestor, if multiple or braced
+> patterns are used.
+
 
 ## Glob Primer
 
