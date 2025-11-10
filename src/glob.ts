@@ -128,6 +128,18 @@ export interface GlobOptions {
   magicalBraces?: boolean
 
   /**
+   * Treat square brackets `[` and `]` literally instead of as character 
+   * classes. When set to true, patterns containing literal square brackets
+   * in filenames will be automatically escaped.
+   * 
+   * For example, with `literalBrackets: true`, the pattern 
+   * `'src/app/api/[id]/route.js'` will match the literal folder named `[id]`
+   * instead of treating `[id]` as a character class matching any single 
+   * character 'i' or 'd'.
+   */
+  literalBrackets?: boolean
+
+  /**
    * Add a `/` character to directory matches. Note that this requires
    * additional stat calls in some cases.
    */
@@ -382,6 +394,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
   follow: boolean
   ignore?: string | string[] | IgnoreLike
   magicalBraces: boolean
+  literalBrackets: boolean
   mark?: boolean
   matchBase: boolean
   maxDepth: number
@@ -441,6 +454,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
     this.cwd = opts.cwd || ''
     this.root = opts.root
     this.magicalBraces = !!opts.magicalBraces
+    this.literalBrackets = !!opts.literalBrackets
     this.nobrace = !!opts.nobrace
     this.noext = !!opts.noext
     this.realpath = !!opts.realpath
@@ -469,6 +483,10 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
 
     if (this.windowsPathsNoEscape) {
       pattern = pattern.map(p => p.replace(/\\/g, '/'))
+    }
+
+    if (this.literalBrackets) {
+      pattern = pattern.map(p => p.replace(/\[/g, '\\[').replace(/\]/g, '\\]'))
     }
 
     if (this.matchBase) {

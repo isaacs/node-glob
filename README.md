@@ -435,11 +435,11 @@ share the previously loaded cache.
   is used as the starting point for absolute patterns that start
   with `/`, (but not drive letters or UNC paths on Windows).
 
-    To start absolute and non-absolute patterns in the same path,
-    you can use `{root:''}`. However, be aware that on Windows
-    systems, a pattern like `x:/*` or `//host/share/*` will
-    _always_ start in the `x:/` or `//host/share` directory,
-    regardless of the `root` setting.
+  To start absolute and non-absolute patterns in the same path,
+  you can use `{root:''}`. However, be aware that on Windows
+  systems, a pattern like `x:/*` or `//host/share/*` will
+  _always_ start in the `x:/` or `//host/share` directory,
+  regardless of the `root` setting.
 
 > [!NOTE] This _doesn't_ necessarily limit the walk to the
 > `root` directory, and doesn't affect the cwd starting point
@@ -476,6 +476,15 @@ share the previously loaded cache.
 
   Only has effect on the {@link hasMagic} function, no effect on
   glob pattern matching itself.
+
+- `literalBrackets` Treat square brackets `[` and `]` literally instead
+  of as character classes. When set to true, patterns containing literal
+  square brackets in filenames will be automatically escaped.
+
+  For example, with `literalBrackets: true`, the pattern
+  `'src/app/api/[id]/route.js'` will match the literal folder named `[id]`
+  instead of treating `[id]` as a character class matching any single
+  character 'i' or 'd'.
 
 - `dotRelative` Prepend all relative path strings with `./` (or
   `.\` on Windows).
@@ -663,7 +672,6 @@ share the previously loaded cache.
 > happens in indeterminate order, it's possible that a match will
 > already be added before its ancestor, if multiple or braced
 > patterns are used.
-
 
 ## Glob Primer
 
