@@ -31,6 +31,45 @@ Object {
                              If no positional arguments are provided, glob will use
                              this pattern
     
+      --shell                Interpret the command as a shell command by passing it
+                             to the shell, with all matched filesystem paths
+                             appended,
+                             **even if this cannot be done safely**.
+    
+                             This is **not** unsafe (and usually unnecessary) when
+                             using the known Unix shells sh, bash, zsh, and fish, as
+                             these can all be executed in such a way as to pass
+                             positional arguments safely.
+    
+                             **Note**: THIS IS UNSAFE IF THE FILE PATHS ARE
+                             UNTRUSTED, because a path like \`'some/path/\\\\$\\\\(cmd)'\`
+                             will be executed by the shell.
+    
+                             If you do have positional arguments that you wish to
+                             pass to the command ahead of the glob pattern matches,
+                             use the \`--cmd-arg\`/\`-g\` option instead.
+    
+                             The next major release of glob will fully remove the
+                             ability to use this option unsafely.
+    
+      -g<arg> --cmd-arg=<arg>
+                             Pass the provided values to the supplied command, ahead
+                             of the glob matches.
+    
+                             For example, the command:
+    
+                             glob -c echo -g"hello" -g"world" *.txt
+    
+                             might output:
+    
+                             hello world a.txt b.txt
+    
+                             This is a safer (and future-proof) alternative than
+                             putting positional arguments in the \`-c\`/\`--cmd\`
+                             option.
+    
+                             Can be set multiple times
+    
       -A --all               By default, the glob cli command will not expand any
                              arguments that are an exact match to a file on disk.
     
@@ -60,7 +99,7 @@ Object {
       -x --posix             Always resolve to posix style paths, using '/' as the
                              directory separator, even on Windows. Drive letter
                              absolute matches on Windows will be expanded to their
-                             full resolved UNC maths, eg instead of 'C:\\\\foo\\\\bar', it
+                             full resolved UNC paths, eg instead of 'C:\\\\foo\\\\bar', it
                              will expand to '//?/C:/foo/bar'.
     
       -f --follow            Follow symlinked directories when expanding '**'
@@ -143,8 +182,35 @@ Object {
       -v --debug             Output a huge amount of noisy debug information about
                              patterns as they are parsed and used to match files.
     
+      -V --version           Output the version ({VERSION})
       -h --help              Show this usage information
     
   ),
+}
+`
+
+exports[`test/bin.ts > TAP > version > --version shows version 1`] = `
+Object {
+  "args": Array [
+    "--version",
+  ],
+  "code": 0,
+  "options": Object {},
+  "signal": null,
+  "stderr": "",
+  "stdout": "{VERSION}\\n",
+}
+`
+
+exports[`test/bin.ts > TAP > version > -V shows version 1`] = `
+Object {
+  "args": Array [
+    "-V",
+  ],
+  "code": 0,
+  "options": Object {},
+  "signal": null,
+  "stderr": "",
+  "stdout": "{VERSION}\\n",
 }
 `

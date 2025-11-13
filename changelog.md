@@ -1,5 +1,19 @@
 # changeglob
 
+## 10.5
+
+Backport fix for
+[GHSA-5j98-mcp5-4vw2](https://github.com/isaacs/node-glob/security/advisories/GHSA-5j98-mcp5-4vw2)
+to v10 branch.
+
+- Add the `--shell` option for the command line, with a warning
+  that this is unsafe. (It will be removed in v12.)
+- Add the `--cmd-arg`/`-g` as a way to _safely_ add positional
+  arguments to the command provided to the CLI tool.
+- Detect commands with space or quote characters on known shells,
+  and pass positional arguments to them safely, avoiding
+  `shell:true` execution.
+
 ## 10.4
 
 - Add `includeChildMatches: false` option

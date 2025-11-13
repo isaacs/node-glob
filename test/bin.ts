@@ -1,4 +1,4 @@
-import { spawn, SpawnOptions } from 'child_process'
+import { spawn, type SpawnOptions } from 'child_process'
 import { readFileSync } from 'fs'
 import { sep } from 'path'
 import t from 'tap'
@@ -10,6 +10,30 @@ const { version } = JSON.parse(
   ),
 )
 const bin = fileURLToPath(new URL('../dist/esm/bin.mjs', import.meta.url))
+
+const foregroundChildCalls: [
+  string,
+  string[],
+  undefined | SpawnOptions,
+][] = []
+let mockForegroundChildAwaiting: undefined | Promise<void> = undefined
+let resolveMockForegroundChildAwaiting: undefined | (() => void) =
+  undefined
+const expectForegroundChild = () =>
+  new Promise<void>(res => (resolveMockForegroundChildAwaiting = res))
+const mockForegroundChild = {
+  foregroundChild: async (
+    cmd: string,
+    args: string[],
+    options?: SpawnOptions,
+  ) => {
+    resolveMockForegroundChildAwaiting?.()
+    resolveMockForegroundChildAwaiting = undefined
+    mockForegroundChildAwaiting = undefined
+    foregroundChildCalls.push([cmd, args, options])
+  },
+}
+t.beforeEach(() => (foregroundChildCalls.length = 0))
 
 t.cleanSnapshot = s => s.split(version).join('{VERSION}')
 
@@ -56,6 +80,13 @@ t.test('usage', async t => {
   t.match(badp.stderr, 'Invalid value provided for --platform: "glorb"\n')
 })
 
+t.test('version', async t => {
+  t.matchSnapshot(await run(['-V']), '-V shows version')
+  t.matchSnapshot(await run(['--version']), '--version shows version')
+})
+
+// Note: this test works without --shell because we only run it on bash.
+// exercises the "safely add cmd args to shell cmd" path.
 t.test('finds matches for a pattern', async t => {
   const cwd = t.testdir({
     a: {
@@ -81,6 +112,136 @@ t.test('finds matches for a pattern', async t => {
       '\\\\',
     )}z.y'`.toUpperCase(),
   )
+})
+
+t.test('append positional args safely to shell in fish', async t => {
+  const cwd = t.testdir({
+    a: {
+      'x.y': '',
+      'x.a': '',
+      b: {
+        'z.y': '',
+        'z.a': '',
+      },
+    },
+  })
+  const { SHELL } = process.env
+  t.teardown(() => (process.env.SHELL = SHELL))
+  process.env.SHELL = '/usr/local/bin/fish'
+  const p = expectForegroundChild()
+  t.chdir(cwd)
+  const c = `node -p "process.argv.map(s=>s.toUpperCase())"`
+  t.intercept(process, 'argv', {
+    value: [process.argv[0], 'glob', '**/*.y', '-c', c],
+  })
+
+  await t.mockImport('../dist/esm/bin.mjs', {
+    'foreground-child': mockForegroundChild,
+  })
+  await p
+  t.strictSame(foregroundChildCalls, [
+    [
+      '/usr/local/bin/fish',
+      [
+        '-c',
+        'node -p "process.argv.map(s=>s.toUpperCase())" "$argv"',
+        'a/x.y',
+        'a/b/z.y',
+      ],
+      undefined,
+    ],
+  ])
+})
+
+t.test('UNSAFE positional args with --shell', async t => {
+  const cwd = t.testdir({
+    a: {
+      'x.y': '',
+      'x.a': '',
+      b: {
+        'z.y': '',
+        'z.a': '',
+      },
+    },
+  })
+  const { SHELL } = process.env
+  t.teardown(() => (process.env.SHELL = SHELL))
+  process.env.SHELL = '/some/unknown/thing'
+
+  const p = expectForegroundChild()
+  t.chdir(cwd)
+  const c = `node -p "process.argv.map(s=>s.toUpperCase())"`
+  t.intercept(process, 'argv', {
+    value: [process.argv[0], 'glob', '--shell', '**/*.y', '-c', c],
+  })
+  const warnings: [string, string, string][] = []
+  t.intercept(process, 'emitWarning', {
+    value: (a: string, b: string, c: string) => warnings.push([a, b, c]),
+  })
+
+  await t.mockImport('../dist/esm/bin.mjs', {
+    'foreground-child': mockForegroundChild,
+  })
+  await p
+  t.strictSame(foregroundChildCalls, [
+    [c, ['a/x.y', 'a/b/z.y'], { shell: true }],
+  ])
+  t.strictSame(warnings, [
+    [
+      'The --shell option is unsafe, and will be removed. To pass positional arguments to the subprocess, use -g/--cmd-arg instead.',
+      'DeprecationWarning',
+      'GLOB_SHELL',
+    ],
+  ])
+})
+
+t.test('safe positional args with --cmd-arg/-g', async t => {
+  const cwd = t.testdir({
+    a: {
+      'x.y': '',
+      'x.a': '',
+      b: {
+        'z.y': '',
+        'z.a': '',
+      },
+    },
+  })
+  const { SHELL } = process.env
+  t.teardown(() => (process.env.SHELL = SHELL))
+  process.env.SHELL = '/some/unknown/thing'
+
+  const p = expectForegroundChild()
+  t.chdir(cwd)
+  const c = 'node'
+  t.intercept(process, 'argv', {
+    value: [
+      process.argv[0],
+      'glob',
+      '**/*.y',
+      '-c',
+      c,
+      '-g-p',
+      '--cmd-arg',
+      'process.argv.map(s=>s.toUpperCase())',
+    ],
+  })
+  const warnings: [string, string, string][] = []
+  t.intercept(process, 'emitWarning', {
+    value: (a: string, b: string, c: string) => warnings.push([a, b, c]),
+  })
+
+  await t.mockImport('../dist/esm/bin.mjs', {
+    'foreground-child': mockForegroundChild,
+  })
+  await p
+  t.strictSame(foregroundChildCalls, [
+    [
+      c,
+      ['-p', 'process.argv.map(s=>s.toUpperCase())', 'a/x.y', 'a/b/z.y'],
+      { shell: false },
+    ],
+  ])
+  t.strictSame(warnings, [])
 })
 
 t.test('prioritizes exact match if exists, unless --all', async t => {
