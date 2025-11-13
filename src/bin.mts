@@ -357,10 +357,7 @@ try {
     const { SHELL = 'unknown' } = process.env
     const shellBase = basename(SHELL)
     const knownShells = ['sh', 'ksh', 'zsh', 'bash', 'fish']
-    if (
-      (shell || /[ "']/.test(cmd)) &&
-      knownShells.includes(shellBase)
-    ) {
+    if ((shell || /[ "']/.test(cmd)) && knownShells.includes(shellBase)) {
       const cmdWithArgs = `${cmd} "\$${shellBase === 'fish' ? 'argv' : '@'}"`
       if (shellBase !== 'fish') {
         cmdArg.unshift(SHELL)
@@ -370,13 +367,13 @@ try {
     } else {
       if (shell) {
         process.emitWarning(
-          'The --shell option is unsafe, and will be removed. To pass ' +
+          'The --shell option is not supported on this system. To pass ' +
             'positional arguments to the subprocess, use -g/--cmd-arg instead.',
-          'DeprecationWarning',
+          'UnsupportedWarning',
           'GLOB_SHELL',
         )
       }
-      stream.on('end', () => foregroundChild(cmd, cmdArg, { shell }))
+      stream.on('end', () => foregroundChild(cmd, cmdArg))
     }
   }
 } catch (e) {

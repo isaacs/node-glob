@@ -11,11 +11,7 @@ const { version } = JSON.parse(
 )
 const bin = fileURLToPath(new URL('../dist/esm/bin.mjs', import.meta.url))
 
-const foregroundChildCalls: [
-  string,
-  string[],
-  undefined | SpawnOptions,
-][] = []
+const foregroundChildCalls: [string, string[]][] = []
 let mockForegroundChildAwaiting: undefined | Promise<void> = undefined
 let resolveMockForegroundChildAwaiting: undefined | (() => void) =
   undefined
@@ -30,7 +26,10 @@ const mockForegroundChild = {
     resolveMockForegroundChildAwaiting?.()
     resolveMockForegroundChildAwaiting = undefined
     mockForegroundChildAwaiting = undefined
-    foregroundChildCalls.push([cmd, args, options])
+    if (options !== undefined) {
+      throw new Error('should not pass in spawn opts')
+    }
+    foregroundChildCalls.push([cmd, args])
   },
 }
 t.beforeEach(() => (foregroundChildCalls.length = 0))
@@ -148,7 +147,6 @@ t.test('append positional args safely to shell in fish', async t => {
         'a/x.y',
         'a/b/z.y',
       ],
-      undefined,
     ],
   ])
 })
@@ -183,13 +181,12 @@ t.test('UNSAFE positional args with --shell', async t => {
     'foreground-child': mockForegroundChild,
   })
   await p
-  t.strictSame(foregroundChildCalls, [
-    [c, ['a/x.y', 'a/b/z.y'], { shell: true }],
-  ])
+  t.strictSame(foregroundChildCalls, [[c, ['a/x.y', 'a/b/z.y']]])
   t.strictSame(warnings, [
     [
-      'The --shell option is unsafe, and will be removed. To pass positional arguments to the subprocess, use -g/--cmd-arg instead.',
-      'DeprecationWarning',
+      'The --shell option is not supported on this system. To pass ' +
+        'positional arguments to the subprocess, use -g/--cmd-arg instead.',
+      'UnsupportedWarning',
       'GLOB_SHELL',
     ],
   ])
@@ -238,7 +235,6 @@ t.test('safe positional args with --cmd-arg/-g', async t => {
     [
       c,
       ['-p', 'process.argv.map(s=>s.toUpperCase())', 'a/x.y', 'a/b/z.y'],
-      { shell: false },
     ],
   ])
   t.strictSame(warnings, [])
