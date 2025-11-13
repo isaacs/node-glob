@@ -2,11 +2,7 @@
 import t from 'tap'
 
 import { globSync } from '../dist/esm/index.js'
-
-if (process.platform !== 'win32') {
-  t.pass('no need to test this except on windows')
-  process.exit(0)
-}
+import { statSync } from 'node:fs'
 
 const dir = t.testdir({
   'program files': {
@@ -15,6 +11,25 @@ const dir = t.testdir({
     c: '',
   },
 })
+
+// gut check that we're on a system that does tilde expansion
+// this can be disabled on some Windows systems for security,
+// which of course breaks this test.
+try {
+  const programFiles = statSync(`${dir}/program files`)
+  const prograTilde = statSync(`${dir}/progra~1`)
+  if (
+    !programFiles.isDirectory() ||
+    !prograTilde.isDirectory() ||
+    programFiles.dev !== prograTilde.dev ||
+    programFiles.ino !== prograTilde.ino
+  ) {
+    throw 'nope'
+  }
+} catch {
+  t.pass('n/a', { skip: 'this system does not do tilde expansion' })
+  process.exit(0)
+}
 
 t.strictSame(
   globSync('progra~1\\*', { cwd: dir, windowsPathsNoEscape: true }).sort(
