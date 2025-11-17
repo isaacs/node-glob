@@ -29,7 +29,7 @@ const mockForegroundChild = {
     if (options !== undefined) {
       throw new Error('should not pass in spawn opts')
     }
-    foregroundChildCalls.push([cmd, args])
+    foregroundChildCalls.push([cmd, args.map(a => a.replace(/\\/g, '/'))])
   },
 }
 t.beforeEach(() => (foregroundChildCalls.length = 0))
