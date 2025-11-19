@@ -1,5 +1,11 @@
 # changeglob
 
+## 13
+
+- Move the CLI program out to a separate package, `glob-bin`.
+  Install that if you'd like to continue using glob from the
+  command line.
+
 ## 12
 
 - Remove the unsafe `--shell` option. The `--shell` option is now

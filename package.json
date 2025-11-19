@@ -11,7 +11,6 @@
       ".": "./src/index.ts"
     }
   },
-  "bin": "./dist/esm/bin.mjs",
   "main": "./dist/commonjs/index.js",
   "types": "./dist/commonjs/index.d.ts",
   "exports": {
@@ -66,11 +65,8 @@
     "endOfLine": "lf"
   },
   "dependencies": {
-    "foreground-child": "^3.3.1",
-    "jackspeak": "^4.1.1",
     "minimatch": "^10.1.1",
     "minipass": "^7.1.2",
-    "package-json-from-dist": "^1.0.0",
     "path-scurry": "^2.0.0"
   },
   "devDependencies": {
