@@ -10,6 +10,14 @@ at the bottom of this readme.)
 ![a fun cartoon logo made of glob
 characters](https://github.com/isaacs/node-glob/raw/main/logo/glob.png)
 
+##Quick Start
+```js
+import { glob } from 'glob'
+
+// Find all JavaScript files
+const jsFiles = await glob("**/*.js")
+console.log(jsFiles)
+```
 ## Usage
 
 Install with npm
