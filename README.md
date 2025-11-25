@@ -17,7 +17,7 @@ import { glob } from 'glob'
 // Find all JavaScript files
 const jsFiles = await glob("**/*.js")
 console.log(jsFiles)
-
+```
 ## Usage
 
 Install with npm
