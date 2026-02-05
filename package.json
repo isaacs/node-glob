@@ -5,7 +5,6 @@
   "version": "13.0.1",
   "type": "module",
   "tshy": {
-    "main": true,
     "exports": {
       "./package.json": "./package.json",
       ".": "./src/index.ts"
