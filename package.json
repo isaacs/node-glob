@@ -78,7 +78,7 @@
     "path-scurry": "^2.0.0"
   },
   "devDependencies": {
-    "@types/node": "^24.10.0",
+    "@types/node": "^25.2.3",
     "esbuild": "^0.27.3",
     "memfs": "^4.50.0",
     "mkdirp": "^3.0.1",
