@@ -385,11 +385,32 @@ share the previously loaded cache.
   `true` on macOS and Windows systems, and `false` on all others.
 
 > [!NOTE]
-> `nocase` should only be explicitly set when it is
-> known that the filesystem's case sensitivity differs from the
-> platform default. If set `true` on case-sensitive file
-> systems, or `false` on case-insensitive file systems, then the
-> walk may return more or less results than expected.
+> `nocase` should only be explicitly set when it is known that
+> the filesystem's case sensitivity differs from the platform
+> default. If set `true` on case-sensitive file systems, or
+> `false` on case-insensitive file systems, then the walk may
+> return more or less results than expected.
+>
+> As a shortcut to avoid excessive `RegExp` creations, `Glob`
+> will use string portions as-is to `readdir()` calls while doing
+> its traversal. If you are setting a `nocase: true` match on a
+> file system that is in fact case sensitive, then this will
+> result in matches not being found that you might expect,
+> because for example the pattern `Foo/*` will fail to read the
+> `FOO/` or `foo/` directories.
+>
+> On the other hand, if you set `nocase: false` on a
+> case-_insensitive_ system, then the opposite problem occurs:
+> `Foo/*` will match `foo/bar`, but because we only detect the
+> existence of the `foo/` folder by successfully performing a
+> `readdir`, there's no way to know what the "real" case is, and
+> the match will be reported as `Foo/bar`, using the case of the
+> string portion of the glob pattern.
+>
+> The default is usually correct, however it _is_ possible to
+> mount file systems with a different case-sensitivity from the
+> host system. If you know this is the case, set this flag
+> appropriately to the file system you are searching.
 
 - `maxDepth` Specify a number to limit the depth of the directory
   traversal to this many levels below the `cwd`.
@@ -547,6 +568,11 @@ share the previously loaded cache.
 > happens in indeterminate order, it's possible that a match will
 > already be added before its ancestor, if multiple or braced
 > patterns are used.
+
+- `braceExpandMax` number, defaults to `10_000`. This is the
+  maximum number of `{x,y,...}` patterns to expand. It is very
+  unlikely that you'll need more than this, and setting it higher
+  exposes the system to out-of-memory errors.
 
 ## Glob Primer
 
