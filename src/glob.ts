@@ -339,6 +339,15 @@ export interface GlobOptions {
    * @default true
    */
   includeChildMatches?: boolean
+
+  /**
+   * max number of `{...}` patterns to expand. Default `1_000`.
+   *
+   * Note: this is much less than minimatch's default of `100_000`,
+   * because Glob has higher memory requirements due to walking
+   * the file system tree.
+   */
+  braceExpandMax?: number
 }
 
 export type GlobOptionsWithFileTypesTrue = GlobOptions & {
@@ -511,11 +520,12 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
       this.platform === 'darwin' || this.platform === 'win32'
 
     const mmo: MinimatchOptions = {
-      // default nocase based on platform
+      braceExpandMax: 10_000,
       ...opts,
       dot: this.dot,
       matchBase: this.matchBase,
       nobrace: this.nobrace,
+      // default nocase based on platform
       nocase: this.nocase,
       nocaseMagicOnly,
       nocomment: true,

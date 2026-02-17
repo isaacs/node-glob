@@ -20,6 +20,8 @@ const isPatternList = (pl: MMPattern[]): pl is PatternList =>
   pl.length >= 1
 const isGlobList = (gl: string[]): gl is GlobList => gl.length >= 1
 
+const customInspect = Symbol.for('nodejs.util.inspect.custom')
+
 /**
  * An immutable-ish view on an array of glob parts and their parsed
  * results
@@ -100,6 +102,10 @@ export class Pattern {
         this.length = this.#patternList.length
       }
     }
+  }
+
+  [customInspect]() {
+    return 'Pattern <' + this.#globList.slice(this.#index).join('/') + '>'
   }
 
   /**

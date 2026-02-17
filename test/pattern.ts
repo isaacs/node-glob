@@ -2,6 +2,7 @@ import { GLOBSTAR } from 'minimatch'
 import t from 'tap'
 import { MMPattern, Pattern } from '../dist/esm/pattern.js'
 import { Glob } from '../dist/esm/index.js'
+import { inspect } from 'node:util'
 
 t.same(
   new Glob(
@@ -32,6 +33,14 @@ t.throws(() => {
   new Pattern([], ['x'], 0, process.platform)
 })
 
+const p = new Pattern(
+  ['A', 'B', 'C', 'D'],
+  ['a', 'b', 'c', 'd'],
+  1,
+  process.platform,
+)
+t.equal(inspect(p), 'Pattern <b/c/d>')
+
 t.throws(() => {
   new Pattern(['x'], [], 0, process.platform)
 })
@@ -56,6 +65,9 @@ const g = new Pattern(
   process.platform,
 )
 const r = new Pattern([/./], ['?'], 0, process.platform)
+t.matchSnapshot(inspect(s), 's')
+t.matchSnapshot(inspect(r), 'r')
+t.matchSnapshot(inspect(g), 'g')
 t.equal(s.isString(), true)
 t.equal(g.isString(), false)
 t.equal(r.isString(), false)
