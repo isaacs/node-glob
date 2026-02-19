@@ -5,6 +5,7 @@
   "version": "13.0.5",
   "type": "module",
   "tshy": {
+    "compiler": "tsgo",
     "exports": {
       "./package.json": "./package.json",
       "./raw": "./src/index.ts",
