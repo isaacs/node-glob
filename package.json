@@ -88,9 +88,6 @@
     "tshy": "^3.0.3",
     "typedoc": "^0.28.14"
   },
-  "tap": {
-    "before": "test/00-setup.ts"
-  },
   "license": "BlueOak-1.0.0",
   "funding": {
     "url": "https://github.com/sponsors/isaacs"

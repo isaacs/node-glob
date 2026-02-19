@@ -12,13 +12,18 @@ on:
       - '*.ts'
       - 'lib/**'
       - 'scripts/**'
+      - '.github/workflows/ci.yml'
+      - 'package.json'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     strategy:
       matrix:
-        node-version: [22.x, 24.x]
+        node-version: [22.x, 24.x, 25.x]
         platform:
         - os: ubuntu-latest
           shell: bash
@@ -26,6 +31,8 @@ jobs:
           shell: bash
         - os: windows-latest
           shell: bash
+        - os: windows-latest
+          shell: powershell
       fail-fast: false
 
     runs-on: ${{ matrix.platform.os }}
@@ -35,7 +42,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Use Nodejs ${{ matrix.node-version }}
         uses: actions/setup-node@v6
