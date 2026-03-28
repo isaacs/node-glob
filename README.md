@@ -1,5 +1,7 @@
 # Glob
 
+[![gitcgr](https://gitcgr.com/badge/isaacs/node-glob.svg)](https://gitcgr.com/isaacs/node-glob)
+
 Match files using the patterns the shell uses.
 
 The most correct and second fastest glob implementation in
