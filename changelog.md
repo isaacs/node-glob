@@ -1,5 +1,15 @@
 # changeglob
 
+## [Unreleased]
+
+### Added
+
+- Add a `concurrency` option to async glob APIs so callers can cap
+  simultaneous directory reads without changing match results.
+  Values below `8` reject with `RangeError`, and sync variants
+  throw `TypeError` if `concurrency` is provided. Implements
+  US-006.
+
 ## 13
 
 - Move the CLI program out to a separate package, `glob-bin`.

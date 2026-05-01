@@ -27,6 +27,46 @@ const defaultPlatform: NodeJS.Platform =
     process.platform
   : 'linux'
 
+export const MIN_ASYNC_READDIR_CONCURRENCY = 8
+
+const concurrencyMinimumMessage = () =>
+  `concurrency must be a positive integer greater than or equal to ${MIN_ASYNC_READDIR_CONCURRENCY}`
+
+const concurrencyReason =
+  'async glob walks need enough concurrent directory reads to avoid starvation in the walker fan-out'
+
+const invalidConcurrencyMessage = () =>
+  `invalid concurrency option: ${concurrencyMinimumMessage()} because ${concurrencyReason}`
+
+const syncConcurrencyMessage =
+  'concurrency option is not supported for synchronous glob variants'
+
+export const validateAsyncConcurrency = (
+  concurrency: number | undefined,
+): number | undefined => {
+  if (concurrency === undefined) {
+    return undefined
+  }
+
+  if (
+    !Number.isInteger(concurrency) ||
+    concurrency <= 0 ||
+    concurrency < MIN_ASYNC_READDIR_CONCURRENCY
+  ) {
+    throw new RangeError(invalidConcurrencyMessage())
+  }
+
+  return concurrency
+}
+
+export const assertNoSyncConcurrency = (
+  concurrency: number | undefined,
+): void => {
+  if (concurrency !== undefined) {
+    throw new TypeError(syncConcurrencyMessage)
+  }
+}
+
 /**
  * A `GlobOptions` object may be provided to any of the exported methods, and
  * must be provided to the `Glob` constructor.
@@ -70,6 +110,17 @@ export interface GlobOptions {
    * May be eiher a string path or a `file://` URL object or string.
    */
   cwd?: string | URL
+
+  /**
+   * Limit simultaneous async directory reads to a positive integer greater
+   * than or equal to `8`. Values below `8` are rejected because the async
+   * walker fan-out needs enough in-flight `readdir()` work to avoid
+   * starvation.
+   *
+   * Has no effect when omitted, and is not supported by synchronous glob
+   * methods.
+   */
+  concurrency?: number
 
   /**
    * Include `.dot` files in normal matches and `globstar`
@@ -408,6 +459,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
   windowsPathsNoEscape: boolean
   withFileTypes: FileTypes<Opts>
   includeChildMatches: boolean
+  concurrency?: number
 
   /**
    * The options provided to the constructor.
@@ -455,6 +507,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
     this.realpath = !!opts.realpath
     this.absolute = opts.absolute
     this.includeChildMatches = opts.includeChildMatches !== false
+    this.concurrency = opts.concurrency
 
     this.noglobstar = !!opts.noglobstar
     this.matchBase = !!opts.matchBase
@@ -558,21 +611,28 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
    */
   async walk(): Promise<Results<Opts>>
   async walk(): Promise<(string | Path)[]> {
+    const concurrency = validateAsyncConcurrency(this.concurrency)
+    const walker = new GlobWalker(this.patterns, this.scurry.cwd, {
+      ...this.opts,
+      maxDepth:
+        this.maxDepth !== Infinity ?
+          this.maxDepth + this.scurry.cwd.depth()
+        : Infinity,
+      platform: this.platform,
+      nocase: this.nocase,
+      includeChildMatches: this.includeChildMatches,
+    })
+
     // Walkers always return array of Path objects, so we just have to
     // coerce them into the right shape.  It will have already called
     // realpath() if the option was set to do so, so we know that's cached.
     // start out knowing the cwd, at least
     return [
-      ...(await new GlobWalker(this.patterns, this.scurry.cwd, {
-        ...this.opts,
-        maxDepth:
-          this.maxDepth !== Infinity ?
-            this.maxDepth + this.scurry.cwd.depth()
-          : Infinity,
-        platform: this.platform,
-        nocase: this.nocase,
-        includeChildMatches: this.includeChildMatches,
-      }).walk()),
+      ...(await (
+        concurrency === undefined ?
+          walker.walk()
+        : walker.walkWithConcurrency(concurrency)
+      )),
     ]
   }
 
@@ -581,6 +641,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
    */
   walkSync(): Results<Opts>
   walkSync(): (string | Path)[] {
+    assertNoSyncConcurrency(this.concurrency)
     return [
       ...new GlobWalker(this.patterns, this.scurry.cwd, {
         ...this.opts,
@@ -600,7 +661,8 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
    */
   stream(): Minipass<Result<Opts>, Result<Opts>>
   stream(): Minipass<string | Path, string | Path> {
-    return new GlobStream(this.patterns, this.scurry.cwd, {
+    const concurrency = validateAsyncConcurrency(this.concurrency)
+    const stream = new GlobStream(this.patterns, this.scurry.cwd, {
       ...this.opts,
       maxDepth:
         this.maxDepth !== Infinity ?
@@ -609,7 +671,10 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
       platform: this.platform,
       nocase: this.nocase,
       includeChildMatches: this.includeChildMatches,
-    }).stream()
+    })
+    return concurrency === undefined ?
+        stream.stream()
+      : stream.streamWithConcurrency(concurrency)
   }
 
   /**
@@ -617,6 +682,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
    */
   streamSync(): Minipass<Result<Opts>, Result<Opts>>
   streamSync(): Minipass<string | Path, string | Path> {
+    assertNoSyncConcurrency(this.concurrency)
     return new GlobStream(this.patterns, this.scurry.cwd, {
       ...this.opts,
       maxDepth:

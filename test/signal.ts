@@ -21,6 +21,7 @@ const mocks = (ac: AbortController) => ({
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const cwd = resolve(__dirname, 'fixtures/a')
+const concurrency = 8
 
 const yeet = new Error('yeet')
 
@@ -66,6 +67,50 @@ t.test('pre abort stream', t => {
 t.test('mid-abort stream', t => {
   const ac = new AbortController()
   const s = globStream('./**', { cwd, signal: ac.signal })
+  s.on('error', er => {
+    t.equal(er, yeet)
+    t.end()
+  })
+  s.once('data', () => ac.abort(yeet))
+})
+
+t.test('pre abort walk with concurrency', async t => {
+  const ac = new AbortController()
+  ac.abort(yeet)
+  await t.rejects(
+    glob('./**', { cwd, signal: ac.signal, concurrency }),
+    yeet,
+  )
+})
+
+t.test('mid-abort walk with concurrency', async t => {
+  const ac = new AbortController()
+  const res = glob('./**', { cwd, signal: ac.signal, concurrency })
+  ac.abort(yeet)
+  await t.rejects(res, yeet)
+})
+
+t.test('pre abort stream with concurrency', t => {
+  const ac = new AbortController()
+  ac.abort(yeet)
+  const s = globStream('./**', {
+    cwd,
+    signal: ac.signal,
+    concurrency,
+  })
+  s.on('error', er => {
+    t.equal(er, yeet)
+    t.end()
+  })
+})
+
+t.test('mid-abort stream with concurrency', t => {
+  const ac = new AbortController()
+  const s = globStream('./**', {
+    cwd,
+    signal: ac.signal,
+    concurrency,
+  })
   s.on('error', er => {
     t.equal(er, yeet)
     t.end()

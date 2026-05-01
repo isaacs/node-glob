@@ -44,6 +44,12 @@ const stopAfter100ms = await glob('**/*.css', {
   signal: AbortSignal.timeout(100),
 })
 
+// cap concurrent async directory reads when traversing a large tree
+const jsfilesThrottled = await glob('**/*.js', { concurrency: 8 })
+
+// sync variants do not support concurrency and throw a TypeError
+// globSync('**/*.js', { concurrency: 8 })
+
 // multiple patterns supported as well
 const images = await glob(['css/*.{png,jpeg}', 'public/*.{png,jpeg}'])
 
@@ -314,6 +320,18 @@ share the previously loaded cache.
 
   This option may be either a string path or a `file://` URL
   object or string.
+
+- `concurrency` Limit simultaneous async directory reads to a
+  positive integer greater than or equal to `8`.
+
+  When omitted, async walks use the same unconstrained traversal
+  as before. When set, it only changes traversal rate, not the
+  result set, and it works alongside `signal`. Values below `8`,
+  `0`, negative numbers, and non-integers throw a `RangeError`
+  because the walker's fan-out needs enough in-flight `readdir()`
+  work to avoid starvation. Synchronous variants (`globSync()`,
+  `globStreamSync()`, and `globIterateSync()`) throw a `TypeError`
+  if `concurrency` is provided.
 
 - `root` A string path resolved against the `cwd` option, which
   is used as the starting point for absolute patterns that start

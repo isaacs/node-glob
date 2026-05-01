@@ -178,6 +178,20 @@ CJS
 MJS
   t node "$wd/bench-working-dir/async.mjs" "$p"
 
+  echo -n $'current glob async c=8   \t'
+  cat > "$wd/bench-working-dir/async-c8.mjs" <<MJS
+  import { glob } from '$wd/dist/esm/index.js'
+  glob(process.argv[2], { concurrency: 8 }).then(files => console.log(files.length))
+MJS
+  t node "$wd/bench-working-dir/async-c8.mjs" "$p"
+
+  echo -n $'current glob async c=16  \t'
+  cat > "$wd/bench-working-dir/async-c16.mjs" <<MJS
+  import { glob } from '$wd/dist/esm/index.js'
+  glob(process.argv[2], { concurrency: 16 }).then(files => console.log(files.length))
+MJS
+  t node "$wd/bench-working-dir/async-c16.mjs" "$p"
+
   echo -n $'current glob stream      \t'
   cat > "$wd/bench-working-dir/stream.mjs" <<MJS
   import {globStream} from '$wd/dist/esm/index.js'
@@ -187,6 +201,26 @@ MJS
     .on('end', () => console.log(c))
 MJS
   t node "$wd/bench-working-dir/stream.mjs" "$p"
+
+  echo -n $'current stream c=8       \t'
+  cat > "$wd/bench-working-dir/stream-c8.mjs" <<MJS
+  import {globStream} from '$wd/dist/esm/index.js'
+  let c = 0
+  globStream(process.argv[2], { concurrency: 8 })
+    .on('data', () => c++)
+    .on('end', () => console.log(c))
+MJS
+  t node "$wd/bench-working-dir/stream-c8.mjs" "$p"
+
+  echo -n $'current stream c=16      \t'
+  cat > "$wd/bench-working-dir/stream-c16.mjs" <<MJS
+  import {globStream} from '$wd/dist/esm/index.js'
+  let c = 0
+  globStream(process.argv[2], { concurrency: 16 })
+    .on('data', () => c++)
+    .on('end', () => console.log(c))
+MJS
+  t node "$wd/bench-working-dir/stream-c16.mjs" "$p"
 
   # echo -n $'current glob sync cjs -e \t'
   # t node -e '

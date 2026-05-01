@@ -7,7 +7,7 @@ import type {
   GlobOptionsWithFileTypesTrue,
   GlobOptionsWithFileTypesUnset,
 } from './glob.js'
-import { Glob } from './glob.js'
+import { assertNoSyncConcurrency, Glob } from './glob.js'
 import { hasMagic } from './has-magic.js'
 
 export { escape, unescape } from 'minimatch'
@@ -55,6 +55,7 @@ export function globStreamSync(
   pattern: string | string[],
   options: GlobOptions = {},
 ) {
+  assertNoSyncConcurrency(options.concurrency)
   return new Glob(pattern, options).streamSync()
 }
 
@@ -108,6 +109,7 @@ export function globSync(
   pattern: string | string[],
   options: GlobOptions = {},
 ) {
+  assertNoSyncConcurrency(options.concurrency)
   return new Glob(pattern, options).walkSync()
 }
 
@@ -163,6 +165,7 @@ export function globIterateSync(
   pattern: string | string[],
   options: GlobOptions = {},
 ) {
+  assertNoSyncConcurrency(options.concurrency)
   return new Glob(pattern, options).iterateSync()
 }
 

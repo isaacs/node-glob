@@ -199,6 +199,16 @@ t.test('iterate on main', async t => {
   t.equal(e.size, 0, 'saw all entries')
 })
 
+t.test('bounded iterate on main', async t => {
+  const s = globIterate('./**', { cwd, concurrency: 8 })
+  const e = new Set(expect)
+  for await (const c of s) {
+    t.equal(e.has(c), true, JSON.stringify(c))
+    e.delete(c)
+  }
+  t.equal(e.size, 0, 'saw all entries')
+})
+
 t.test('iterateSync on main', t => {
   const s = globIterateSync('./**', { cwd })
   const e = new Set(expect)
@@ -224,6 +234,56 @@ t.test('stream on main', t => {
     t.end()
   })
   sync = false
+})
+
+t.test('bounded stream on main', t => {
+  let sync: boolean = true
+  const stream = globStream('./**', { cwd, concurrency: 8 })
+  const e = new Set(expect)
+  stream.on('data', c => {
+    t.equal(e.has(c), true, JSON.stringify(c))
+    e.delete(c)
+  })
+  stream.on('end', () => {
+    t.equal(e.size, 0, 'saw all entries')
+    t.equal(sync, false, 'did not finish in one tick')
+    t.end()
+  })
+  sync = false
+})
+
+t.test('bounded stream reuses a warmed glob cache', t => {
+  const s = new Glob('./**', { cwd, concurrency: 8 })
+  void s.walk().then(() => {
+    let sync: boolean = true
+    const stream = new Glob('./**', s).stream()
+    const e = new Set(expect)
+    stream.on('data', c => {
+      t.equal(e.has(c), true, JSON.stringify(c))
+      e.delete(c)
+    })
+    stream.on('end', () => {
+      t.equal(e.size, 0, 'saw all entries')
+      t.equal(sync, false, 'did not finish in one tick')
+      t.end()
+    })
+    sync = false
+  })
+})
+
+t.test('bounded stream handles paused consumers', t => {
+  const stream = globStream('./**', { cwd, concurrency: 8 })
+  const e = new Set(expect)
+  stream.pause()
+  stream.on('data', c => {
+    t.equal(e.has(c), true, JSON.stringify(c))
+    e.delete(c)
+  })
+  stream.on('end', () => {
+    t.equal(e.size, 0, 'saw all entries')
+    t.end()
+  })
+  setTimeout(() => stream.resume(), 10)
 })
 
 t.test('streamSync on main', t => {

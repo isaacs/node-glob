@@ -24,6 +24,7 @@ export interface GlobWalkerOpts {
   dot?: boolean
   dotRelative?: boolean
   follow?: boolean
+  concurrency?: number
   ignore?: string | string[] | IgnoreLike
   mark?: boolean
   matchBase?: boolean
@@ -81,6 +82,68 @@ const makeIgnore = (
   : Array.isArray(ignore) ? new Ignore(ignore, opts)
   : ignore
 
+type PendingRead = {
+  run: () => void
+  skip: () => void
+}
+
+class AsyncReadLimiter {
+  readonly concurrency: number
+  #inFlight: number = 0
+  #pending: PendingRead[] = []
+  #signal?: AbortSignal
+
+  constructor(concurrency: number, signal?: AbortSignal) {
+    this.concurrency = concurrency
+    this.#signal = signal
+    /* c8 ignore start */
+    this.#signal?.addEventListener('abort', () => {
+      const pending = this.#pending.splice(0)
+      for (const item of pending) {
+        item.skip()
+      }
+    })
+    /* c8 ignore stop */
+  }
+
+  schedule(run: () => void, skip: () => void) {
+    /* c8 ignore start */
+    if (this.#signal?.aborted) {
+      skip()
+      return
+    }
+    /* c8 ignore stop */
+
+    if (this.#inFlight < this.concurrency) {
+      this.#inFlight++
+      run()
+      return
+    }
+
+    this.#pending.push({ run, skip })
+  }
+
+  done() {
+    this.#inFlight--
+    while (this.#inFlight < this.concurrency) {
+      const next = this.#pending.shift()
+      if (!next) {
+        return
+      }
+
+      /* c8 ignore start */
+      if (this.#signal?.aborted) {
+        next.skip()
+        continue
+      }
+      /* c8 ignore stop */
+
+      this.#inFlight++
+      next.run()
+    }
+  }
+}
+
 /**
  * basic walking utilities that all the glob walker types use
  */
@@ -94,6 +157,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   #onResume: (() => unknown)[] = []
   #ignore?: IgnoreLike
   #sep: '\\' | '/'
+  #readdirLimiter?: AsyncReadLimiter
   signal?: AbortSignal
   maxDepth: number
   includeChildMatches: boolean
@@ -274,6 +338,124 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     this.walkCB2(target, patterns, new Processor(this.opts), cb)
   }
 
+  walkCBWithConcurrency(
+    target: Path,
+    patterns: Pattern[],
+    concurrency: number,
+    cb: () => unknown,
+  ) {
+    if (this.signal?.aborted) return cb()
+    this.#readdirLimiter = new AsyncReadLimiter(concurrency, this.signal)
+    this.walkCB2WithConcurrency(
+      target,
+      patterns,
+      new Processor(this.opts),
+      cb,
+    )
+  }
+
+  #queueReaddir(
+    target: Path,
+    processor: Processor,
+    cb: () => unknown,
+  ) {
+    const limiter = this.#readdirLimiter
+    /* c8 ignore start */
+    if (!limiter) {
+      throw new Error('bounded readdir limiter not initialized')
+    }
+    /* c8 ignore stop */
+
+    limiter.schedule(
+      () => {
+        target.readdirCB(
+          (_, entries) => {
+            limiter.done()
+            this.walkCB3WithConcurrency(target, entries, processor, cb)
+          },
+          true,
+        )
+      },
+      cb,
+    )
+  }
+
+  walkCB2WithConcurrency(
+    target: Path,
+    patterns: Pattern[],
+    processor: Processor,
+    cb: () => unknown,
+  ) {
+    if (this.#childrenIgnored(target)) return cb()
+    /* c8 ignore next */
+    if (this.signal?.aborted) return cb()
+    /* c8 ignore start */
+    if (this.paused) {
+      this.onResume(() =>
+        this.walkCB2WithConcurrency(target, patterns, processor, cb),
+      )
+      /* c8 ignore next */
+      return
+    }
+    /* c8 ignore stop */
+    processor.processPatterns(target, patterns)
+
+    let tasks = 1
+    const next = () => {
+      if (--tasks === 0) cb()
+    }
+
+    for (const [m, absolute, ifDir] of processor.matches.entries()) {
+      /* c8 ignore next */
+      if (this.#ignored(m)) continue
+      tasks++
+      void this.match(m, absolute, ifDir).then(() => next())
+    }
+
+    for (const t of processor.subwalkTargets()) {
+      if (this.maxDepth !== Infinity && t.depth() >= this.maxDepth) {
+        /* c8 ignore next */
+        continue
+      }
+      tasks++
+      const childrenCached = t.readdirCached()
+      if (t.calledReaddir()) {
+        this.walkCB3WithConcurrency(t, childrenCached, processor, next)
+      } else {
+        this.#queueReaddir(t, processor, next)
+      }
+    }
+
+    next()
+  }
+
+  walkCB3WithConcurrency(
+    target: Path,
+    entries: Path[],
+    processorx: Processor,
+    cb: () => unknown,
+  ) {
+    if (this.signal?.aborted) return cb()
+    const proc = processorx.filterEntries(target, entries)
+
+    let tasks = 1
+    const next = () => {
+      if (--tasks === 0) cb()
+    }
+
+    for (const [m, absolute, ifDir] of proc.matches.entries()) {
+      if (this.#ignored(m)) continue
+      tasks++
+      void this.match(m, absolute, ifDir).then(() => next())
+    }
+    for (const [target, patterns] of proc.subwalks.entries()) {
+      tasks++
+      this.walkCB2WithConcurrency(target, patterns, proc.child(), next)
+    }
+
+    next()
+  }
+
   walkCB2(
     target: Path,
     patterns: Pattern[],
@@ -451,6 +633,30 @@ export class GlobWalker<
     return this.matches
   }
 
+  async walkWithConcurrency(
+    concurrency: number,
+  ): Promise<Set<Result<O>>> {
+    if (this.signal?.aborted) throw this.signal.reason
+    if (this.path.isUnknown()) {
+      await this.path.lstat()
+    }
+    await new Promise((res, rej) => {
+      this.walkCBWithConcurrency(
+        this.path,
+        this.patterns,
+        concurrency,
+        () => {
+          if (this.signal?.aborted) {
+            rej(this.signal.reason)
+          } else {
+            res(this.matches)
+          }
+        },
+      )
+    })
+    return this.matches
+  }
+
   walkSync(): Set<Result<O>> {
     if (this.signal?.aborted) throw this.signal.reason
     if (this.path.isUnknown()) {
@@ -492,6 +698,28 @@ export class GlobStream<
       })
     } else {
       this.walkCB(target, this.patterns, () => this.results.end())
+    }
+    return this.results
+  }
+
+  streamWithConcurrency(concurrency: number): MatchStream<O> {
+    const target = this.path
+    if (target.isUnknown()) {
+      void target.lstat().then(() => {
+        this.walkCBWithConcurrency(
+          target,
+          this.patterns,
+          concurrency,
+          () => this.results.end(),
+        )
+      })
+    } else {
+      this.walkCBWithConcurrency(
+        target,
+        this.patterns,
+        concurrency,
+        () => this.results.end(),
+      )
     }
     return this.results
   }
