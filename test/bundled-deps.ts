@@ -8,10 +8,11 @@ const repoRoot = resolve(
   '..',
 )
 
-// Floors from #657 and the advisories it cites. A lockfile/bundle that
-// still freezes pre-fix copies must fail this test.
+// Floors from the advisories cited by #657, plus later
+// brace-expansion DoS fixes that still apply through 5.0.8.
+// A lockfile/bundle that freezes pre-fix copies must fail this test.
 const MIN_MINIMATCH = '10.2.3'
-const MIN_BRACE_EXPANSION = '5.0.6'
+const MIN_BRACE_EXPANSION = '5.0.9'
 
 type SourceMap = {
   sources: string[]
