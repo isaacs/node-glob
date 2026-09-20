@@ -2,6 +2,10 @@
 
 ## 13
 
+- Rebuild the default CommonJS and ESM bundles so they include
+  patched `minimatch` and `brace-expansion` copies. The default
+  `glob` entry freezes those packages inside `index.min.js`;
+  updating a consumer lockfile does not replace them.
 - Move the CLI program out to a separate package, `glob-bin`.
   Install that if you'd like to continue using glob from the
   command line.
