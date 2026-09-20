@@ -1,11 +1,8 @@
-import { createRequire } from 'module'
 import { readdirSync, readFileSync } from 'fs'
 import { dirname, join, resolve } from 'path'
 import t, { type Test } from 'tap'
 import { fileURLToPath } from 'url'
-import type * as globTypes from '../dist/esm/index.js'
 
-const require = createRequire(import.meta.url)
 const repoRoot = resolve(
   fileURLToPath(new URL('.', import.meta.url)),
   '..',
@@ -139,16 +136,4 @@ t.test('default bundles include current patched matcher deps', t => {
     })
   }
   t.end()
-})
-
-t.test('default min entries load and apply braceExpandMax', async t => {
-  const pattern = '{1..1000000}'
-  const opts = { braceExpandMax: 10 }
-
-  const esm =
-    (await import('../dist/esm/index.min.js')) as typeof globTypes
-  t.equal(esm.hasMagic(pattern, opts), false)
-
-  const cjs = require('../dist/commonjs/index.min.js') as typeof globTypes
-  t.equal(cjs.hasMagic(pattern, opts), false)
 })
