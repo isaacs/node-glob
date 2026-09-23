@@ -67,7 +67,7 @@ export interface GlobOptions {
    * The current working directory in which to search. Defaults to
    * `process.cwd()`.
    *
-   * May be eiher a string path or a `file://` URL object or string.
+   * May be either a string path or a `file://` URL object or string.
    */
   cwd?: string | URL
 
