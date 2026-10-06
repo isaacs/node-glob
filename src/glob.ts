@@ -101,10 +101,10 @@ export interface GlobOptions {
   follow?: boolean
 
   /**
-   * string or string[], or an object with `ignored` and `childrenIgnored`
+   * string or readonly string[], or an object with `ignored` and `childrenIgnored`
    * methods.
    *
-   * If a string or string[] is provided, then this is treated as a glob
+   * If a string or readonly string[] is provided, then this is treated as a glob
    * pattern or array of glob patterns to exclude from matches. To ignore all
    * children within a directory, as well as the entry itself, append `'/**'`
    * to the ignore pattern.
@@ -117,7 +117,7 @@ export interface GlobOptions {
    * determine whether any Path is a match or if its children should be
    * traversed, respectively.
    */
-  ignore?: string | string[] | IgnoreLike
+  ignore?: string | readonly string[] | IgnoreLike
 
   /**
    * Treat brace expansion like `{a,b}` as a "magic" pattern. Has no
@@ -389,7 +389,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
   dot: boolean
   dotRelative: boolean
   follow: boolean
-  ignore?: string | string[] | IgnoreLike
+  ignore?: string | readonly string[] | IgnoreLike
   magicalBraces: boolean
   mark?: boolean
   matchBase: boolean

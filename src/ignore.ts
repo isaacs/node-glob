@@ -36,7 +36,7 @@ export class Ignore implements IgnoreLike {
   mmopts: MinimatchOptions
 
   constructor(
-    ignored: string[],
+    ignored: readonly string[],
     {
       nobrace,
       nocase,

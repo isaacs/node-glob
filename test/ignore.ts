@@ -376,6 +376,24 @@ for (const c of cases) {
   })
 }
 
+t.test('readonly ignore patterns', async t => {
+  const ignore = ['b'] as const
+  const options: GlobOptions = { cwd: 'a', ignore }
+  const expect = j([
+    'abcdef',
+    'abcfed',
+    'bc',
+    'c',
+    'cb',
+    'symlink',
+    'x',
+    'z',
+  ])
+
+  t.same((await glob('*', options)).sort(), expect)
+  t.same(glob.globSync('*', options).sort(), expect)
+})
+
 t.test('race condition', async t => {
   process.chdir(__dirname)
   var pattern = 'fixtures/*'
