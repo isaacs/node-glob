@@ -30,6 +30,8 @@
 - Faster `ignore` patterns (about 1.2 to 3 times faster), and
   less work for each entry in a walk (about 10% faster sync, and
   15% to 30% faster async, for large trees).
+- Allow `const string[]` or `readonly string[]` as `ignore`
+  option or `pattern` argument.
 
 ## 13
 

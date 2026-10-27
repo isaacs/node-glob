@@ -27,7 +27,7 @@ export interface GlobWalkerOpts {
   dot?: boolean
   dotRelative?: boolean
   follow?: boolean
-  ignore?: string | string[] | IgnoreLike
+  ignore?: string | string[] | IgnoreLike | ReadonlyArray<string>
   mark?: boolean
   matchBase?: boolean
   // Note: maxDepth here means "maximum actual Path.depth()",
@@ -78,13 +78,13 @@ export type MatchStream<O extends GlobWalkerOpts> = Minipass<
 >
 
 const makeIgnore = (
-  ignore: string | string[] | IgnoreLike,
+  ignore: string | string[] | IgnoreLike | ReadonlyArray<string>,
   opts: GlobWalkerOpts,
   cwd: Path,
 ): IgnoreLike =>
   typeof ignore === 'string' ? new Ignore([ignore], opts, cwd)
   : Array.isArray(ignore) ? new Ignore(ignore, opts, cwd)
-  : ignore
+  : (ignore as IgnoreLike)
 
 /**
  * basic walking utilities that all the glob walker types use

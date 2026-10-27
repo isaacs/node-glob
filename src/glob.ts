@@ -117,7 +117,7 @@ export interface GlobOptions {
    * determine whether any Path is a match or if its children should be
    * traversed, respectively.
    */
-  ignore?: string | string[] | IgnoreLike
+  readonly ignore?: string | string[] | IgnoreLike | ReadonlyArray<string>
 
   /**
    * Treat brace expansion like `{a,b}` as a "magic" pattern. Has no
@@ -396,7 +396,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
   dot: boolean
   dotRelative: boolean
   follow: boolean
-  ignore?: string | string[] | IgnoreLike
+  ignore?: string | string[] | IgnoreLike | ReadonlyArray<string>
   magicalBraces: boolean
   mark?: boolean
   matchBase: boolean
@@ -406,7 +406,7 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
   nodir: boolean
   noext: boolean
   noglobstar: boolean
-  pattern: string[]
+  pattern: string[] | ReadonlyArray<string>
   platform: NodeJS.Platform
   realpath: boolean
   scurry: PathScurry
