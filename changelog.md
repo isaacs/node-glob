@@ -24,6 +24,9 @@
   Windows.
 - `ignore` patterns follow the `windowsPathsNoEscape` option,
   the same as other patterns.
+- On Windows, patterns that start with a long UNC root like
+  `//?/UNC/host/share/` walk that share, the same as
+  `//host/share/`.
 - Faster `ignore` patterns (about 1.2 to 3 times faster), and
   less work for each entry in a walk (about 10% faster sync, and
   15% to 30% faster async, for large trees).

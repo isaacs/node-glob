@@ -80,19 +80,24 @@ export class Pattern {
       // //host/share => ['//host/share/']
       // //host/share/ => ['//host/share/']
       // //host/share/x => ['//host/share/', 'x']
+      // //?/UNC/host/share/x => ['//?/UNC/host/share/', 'x']
       // /etc => ['/', 'etc']
       // / => ['/']
       if (this.isUNC()) {
-        // '' / '' / 'host' / 'share'
-        const [p0, p1, p2, p3, ...prest] = this.#patternList
-        const [g0, g1, g2, g3, ...grest] = this.#globList
+        // '' / '' / 'host' / 'share', or
+        // '' / '' / '?' / 'UNC' / 'host' / 'share'
+        const n = this.#isLongUNC() ? 6 : 4
+        const proot = this.#patternList.slice(0, n)
+        const groot = this.#globList.slice(0, n)
+        const prest = this.#patternList.slice(n)
+        const grest = this.#globList.slice(n)
         if (prest[0] === '') {
           // ends in /
           prest.shift()
           grest.shift()
         }
-        const p = [p0, p1, p2, p3, ''].join('/')
-        const g = [g0, g1, g2, g3, ''].join('/')
+        const p = [...proot, ''].join('/')
+        const g = [...groot, ''].join('/')
         this.#patternList = [p, ...prest]
         this.#globList = [g, ...grest]
         this.length = this.#patternList.length
@@ -181,11 +186,21 @@ export class Pattern {
     return this.#rest
   }
 
+  // the root is //?/UNC/host/share, the same as //host/share
+  #isLongUNC(): boolean {
+    const pl = this.#patternList
+    return (
+      pl[2] === '?' && typeof pl[3] === 'string' && /^unc$/i.test(pl[3])
+    )
+  }
+
   /**
    * true if the pattern represents a //unc/path/ on windows
    */
   isUNC(): boolean {
     const pl = this.#patternList
+    // the host and share, after //?/UNC/ in a long UNC path
+    const h = this.#isLongUNC() ? 4 : 2
     return this.#isUNC !== undefined ?
         this.#isUNC
       : (this.#isUNC =
@@ -193,10 +208,10 @@ export class Pattern {
           this.#index === 0 &&
           pl[0] === '' &&
           pl[1] === '' &&
-          typeof pl[2] === 'string' &&
-          !!pl[2] &&
-          typeof pl[3] === 'string' &&
-          !!pl[3])
+          typeof pl[h] === 'string' &&
+          !!pl[h] &&
+          typeof pl[h + 1] === 'string' &&
+          !!pl[h + 1])
   }
 
   // pattern like C:/...

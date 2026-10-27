@@ -16,6 +16,9 @@ t.same(
       '//?/z:',
       'c:/x/*',
       'c:/',
+      '//?/UNC/host/share/x/*',
+      '//?/unc/host/share/',
+      '//?/UNC/host/share',
     ],
     { platform: 'win32' },
   ).patterns.map(p => [p.globString(), p.root()]),
@@ -28,6 +31,9 @@ t.same(
     ['//?/z:/', '//?/z:/'],
     ['c:/x/*', 'c:/'],
     ['c:/', 'c:/'],
+    ['//?/UNC/host/share/x/*', '//?/UNC/host/share/'],
+    ['//?/unc/host/share/', '//?/UNC/host/share/'],
+    ['//?/UNC/host/share/', '//?/UNC/host/share/'],
   ],
 )
 t.throws(() => {
