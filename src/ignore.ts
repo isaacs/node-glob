@@ -42,6 +42,7 @@ export class Ignore implements IgnoreLike {
       nocase,
       noext,
       noglobstar,
+      normalize,
       platform = defaultPlatform,
     }: GlobWalkerOpts,
   ) {
@@ -56,6 +57,7 @@ export class Ignore implements IgnoreLike {
       nocase,
       noext,
       noglobstar,
+      normalize,
       optimizationLevel: 2,
       platform,
       nocomment: true,

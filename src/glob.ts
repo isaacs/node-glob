@@ -1,4 +1,4 @@
-import type { MinimatchOptions } from 'minimatch'
+import type { Form, MinimatchOptions } from 'minimatch'
 import { Minimatch } from 'minimatch'
 import type { Minipass } from 'minipass'
 import { fileURLToPath } from 'node:url'
@@ -175,6 +175,19 @@ export interface GlobOptions {
    * Do not match "extglob" patterns such as `+(a|b)`.
    */
   noext?: boolean
+
+  /**
+   * Normalize unicode in the pattern, and in the file names that it is
+   * matched against, with this form: `'NFC'`, `'NFD'`, `'NFKC'`, or
+   * `'NFKD'`. `true` means `'NFC'`. This is passed to minimatch, so it
+   * applies to the portions of the pattern with magic, and to the
+   * `ignore` patterns.
+   *
+   * The portions of the pattern without magic are looked up with
+   * path-scurry, which already compares the names of the entries
+   * that it knows in their `'NFKD'` form.
+   */
+  normalize?: boolean | Form
 
   /**
    * Do not match `**` against multiple filenames. (Ie, treat it as a normal

@@ -5,6 +5,7 @@
  * @module
  */
 import { Minipass } from 'minipass'
+import type { Form } from 'minimatch'
 import type { Path } from 'path-scurry'
 import type { IgnoreLike } from './ignore.js'
 import { Ignore } from './ignore.js'
@@ -37,6 +38,7 @@ export interface GlobWalkerOpts {
   nodir?: boolean
   noext?: boolean
   noglobstar?: boolean
+  normalize?: boolean | Form
   platform?: NodeJS.Platform
   posix?: boolean
   realpath?: boolean

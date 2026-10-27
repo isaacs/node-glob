@@ -11,6 +11,7 @@ import { Glob } from './glob.js'
 import { hasMagic } from './has-magic.js'
 
 export { escape, unescape } from 'minimatch'
+export type { Form } from 'minimatch'
 export type {
   FSOption,
   Path,

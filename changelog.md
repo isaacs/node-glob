@@ -1,5 +1,27 @@
 # changeglob
 
+## 14
+
+- Use minimatch 11. Each portion of a pattern with magic is now
+  matched with a `Matcher` from `@isaacs/nonrecursive-glob-match`
+  in place of a `RegExp`, so patterns can no longer cause ReDoS.
+  Matching follows the minimatch 11 changes, which are closer to
+  Bash in some edge cases.
+- `Pattern#pattern()` returns a `Matcher` for a portion with
+  magic. The `MMPattern` type is now minimatch's
+  `ParseReturnFiltered`, and the new `MMMatcher` type is the
+  `Matcher` part of it.
+- Rename `Pattern#isRegExp()` to `isMatcher()`, and
+  `Processor#testRegExp()` to `testMatcher()`.
+- Remove the `debug` option, which minimatch no longer has.
+- Add the `normalize` option, to normalize unicode in the pattern
+  and in the file names that it is matched against.
+- `GlobWalker#walk()` and `walkSync()` return arrays in place of
+  sets, and `MatchRecord#entries()` is removed.
+- Faster `ignore` patterns (about 1.2 to 3 times faster), and
+  less work for each entry in a walk (about 10% faster sync, and
+  15% to 30% faster async, for large trees).
+
 ## 13
 
 - Move the CLI program out to a separate package, `glob-bin`.

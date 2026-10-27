@@ -381,6 +381,17 @@ share the previously loaded cache.
 
 - `noext` Do not match "extglob" patterns such as `+(a|b)`.
 
+- `normalize` Normalize unicode in the pattern, and in the file
+  names that it is matched against, with this form: `'NFC'`,
+  `'NFD'`, `'NFKC'`, or `'NFKD'`. `true` means `'NFC'`. A char
+  such as `é` can be one code point, or `e` followed by a
+  combining accent, and some file systems (such as on macOS) can
+  give names in either form. This is passed to minimatch, so it
+  applies to the portions of the pattern with magic, and to the
+  `ignore` patterns. The portions of the pattern without magic
+  are looked up with path-scurry, which already compares the
+  names of the entries that it knows in their `'NFKD'` form.
+
 - `nocase` Perform a case-insensitive match. This defaults to
   `true` on macOS and Windows systems, and `false` on all others.
 
@@ -391,9 +402,9 @@ share the previously loaded cache.
 > `false` on case-insensitive file systems, then the walk may
 > return more or less results than expected.
 >
-> As a shortcut to avoid excessive `RegExp` creations, `Glob`
-> will use string portions as-is to `readdir()` calls while doing
-> its traversal. If you are setting a `nocase: true` match on a
+> As a shortcut, `Glob` will use string portions as-is to
+> `readdir()` calls while doing its traversal, in place of making
+> a case-insensitive matcher for each of them. If you are setting a `nocase: true` match on a
 > file system that is in fact case sensitive, then this will
 > result in matches not being found that you might expect,
 > because for example the pattern `Foo/*` will fail to read the
@@ -545,8 +556,8 @@ share the previously loaded cache.
       'a/b/c/d/e/f',
 
       // this pattern is more complicated! It must to various readdir()
-      // calls and test the results against a regular expression, and that
-      // is certainly going to take a little bit longer.
+      // calls and test the results against the pattern, and that is
+      // certainly going to take a little bit longer.
       //
       // So, later on, it encounters a match at 'a/b/c/d/e', but it's too
       // late to ignore a/b/c/d/e/f, because it's already been emitted.
@@ -632,9 +643,8 @@ path separators (ie, `/` on all platforms, and `\` on Windows).
 ### Dots
 
 If a file or directory path portion has a `.` as the first
-character, then it will not match any glob pattern unless that
-pattern's corresponding path part also has a `.` as its first
-character.
+character, then it will only match a portion of the pattern if a
+literal `.` in the pattern matches that first character.
 
 For example, the pattern `a/.*/c` would match the file at
 `a/.b/c`. However the pattern `a/*/c` would not, because `*` does
@@ -695,6 +705,23 @@ The character class patterns `[:class:]` (POSIX standard named
 classes) style class patterns are supported and Unicode-aware,
 but `[=c=]` (locale-specific character collation weight), and
 `[.symbol.]` (collating symbol), are not.
+
+Each portion of a pattern is matched by
+[minimatch](https://github.com/isaacs/minimatch), with Bash 5 as
+the reference, and patterns are never compiled to regular
+expressions. These are the known differences from Bash:
+
+- If `dot` is not set, a portion of a pattern can match a file
+  name that starts with `.` when extglobs before a literal `.`
+  match the empty string. For example, `@(|x).*` matches `.a`.
+  Bash does not match these dotfiles.
+- If an extglob such as `?(a` is not closed, Bash matches the
+  whole pattern as a literal string. In this module, only the
+  `?(` is literal, and the rest of the pattern is still matched
+  as a glob.
+- With `nocase`, case is folded with Unicode simple case folding,
+  one code point at a time. Bash uses the case functions of the C
+  library for the current locale.
 
 ### Repeated Slashes
 
