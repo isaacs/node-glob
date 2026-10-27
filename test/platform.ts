@@ -8,6 +8,7 @@ import {
   PathScurryWin32,
 } from 'path-scurry'
 import { fileURLToPath } from 'url'
+import { Minimatch } from 'minimatch'
 import { Glob } from '../dist/esm/index.js'
 import { Pattern } from '../dist/esm/pattern.js'
 import { GlobWalker } from '../dist/esm/walker.js'
@@ -67,7 +68,8 @@ t.test('set scurry, sets nocase and scurry', t => {
 
 t.test('instantiate to hit a coverage line', async t => {
   const s = new PathScurry(resolve(__dirname, 'fixtures/a/b'))
-  const p = new Pattern([/./, /./], ['?', '?'], 0, process.platform)
+  const [row] = new Minimatch('?/?').set
+  const p = new Pattern(row!, ['?', '?'], 0, process.platform)
   new GlobWalker([p], s.cwd, {
     platform: 'win32',
   })

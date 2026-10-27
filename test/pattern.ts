@@ -1,4 +1,4 @@
-import { GLOBSTAR } from 'minimatch'
+import { GLOBSTAR, Minimatch } from 'minimatch'
 import t from 'tap'
 import type { MMPattern } from '../dist/esm/pattern.js'
 import { Pattern } from '../dist/esm/pattern.js'
@@ -65,7 +65,9 @@ const g = new Pattern(
   0,
   process.platform,
 )
-const r = new Pattern([/./], ['?'], 0, process.platform)
+// the Matcher that minimatch makes for a portion with magic
+const matcher = new Minimatch('?').set[0]![0]!
+const r = new Pattern([matcher], ['?'], 0, process.platform)
 t.matchSnapshot(inspect(s), 's')
 t.matchSnapshot(inspect(r), 'r')
 t.matchSnapshot(inspect(g), 'g')
@@ -77,6 +79,6 @@ t.equal(s.isGlobstar(), false)
 t.equal(g.isGlobstar(), true)
 t.equal(r.isGlobstar(), false)
 
-t.equal(s.isRegExp(), false)
-t.equal(g.isRegExp(), false)
-t.equal(r.isRegExp(), true)
+t.equal(s.isMatcher(), false)
+t.equal(g.isMatcher(), false)
+t.equal(r.isMatcher(), true)

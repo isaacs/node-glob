@@ -280,12 +280,6 @@ export interface GlobOptions {
   fs?: FSOption
 
   /**
-   * Just passed along to Minimatch.  Note that this makes all pattern
-   * matching operations slower and *extremely* noisy.
-   */
-  debug?: boolean
-
-  /**
    * Return `/` delimited paths, even on Windows.
    *
    * On posix systems, this has no effect.  But, on Windows, it means that
@@ -532,7 +526,6 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
       optimizationLevel: 2,
       platform: this.platform,
       windowsPathsNoEscape: this.windowsPathsNoEscape,
-      debug: !!this.opts.debug,
     }
 
     const mms = this.pattern.map(p => new Minimatch(p, mmo))

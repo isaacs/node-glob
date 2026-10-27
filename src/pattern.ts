@@ -1,7 +1,16 @@
 // this is just a very light wrapper around 2 arrays with an offset index
 
+import type { ParseReturnFiltered } from 'minimatch'
 import { GLOBSTAR } from 'minimatch'
-export type MMPattern = string | RegExp | typeof GLOBSTAR
+
+/**
+ * One portion of a parsed minimatch pattern: a string, a Matcher for
+ * a portion with magic, or GLOBSTAR for `**`.
+ */
+export type MMPattern = ParseReturnFiltered
+
+/** The Matcher that minimatch makes for a portion with magic. */
+export type MMMatcher = Exclude<MMPattern, string | typeof GLOBSTAR>
 
 // an array of length >= 1
 export type PatternList = [p: MMPattern, ...rest: MMPattern[]]
@@ -128,10 +137,10 @@ export class Pattern {
     return this.#patternList[this.#index] === GLOBSTAR
   }
   /**
-   * true if pattern() returns a regexp
+   * true if pattern() returns a Matcher, for a portion with magic
    */
-  isRegExp(): boolean {
-    return this.#patternList[this.#index] instanceof RegExp
+  isMatcher(): boolean {
+    return typeof this.#patternList[this.#index] === 'object'
   }
 
   /**

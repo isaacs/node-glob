@@ -1,9 +1,8 @@
 // synchronous utility for filtering entries and calculating subwalks
 
-import type { MMRegExp } from 'minimatch'
 import { GLOBSTAR } from 'minimatch'
 import type { Path } from 'path-scurry'
-import type { MMPattern, Pattern } from './pattern.js'
+import type { MMMatcher, MMPattern, Pattern } from './pattern.js'
 import type { GlobWalkerOpts } from './walker.js'
 
 /**
@@ -198,7 +197,7 @@ export class Processor {
             }
           }
         }
-      } else if (p instanceof RegExp) {
+      } else if (typeof p === 'object') {
         this.subwalks.add(t, pattern)
       }
     }
@@ -229,8 +228,8 @@ export class Processor {
         const rest = pattern.rest()
         if (p === GLOBSTAR) {
           results.testGlobstar(e, pattern, rest, absolute)
-        } else if (p instanceof RegExp) {
-          results.testRegExp(e, p, rest, absolute)
+        } else if (typeof p === 'object') {
+          results.testMatcher(e, p, rest, absolute)
         } else {
           results.testString(e, p, rest, absolute)
         }
@@ -283,19 +282,20 @@ export class Processor {
         const ep = e.parent || e
         /* c8 ignore stop */
         this.subwalks.add(ep, rest)
-      } else if (rp instanceof RegExp) {
-        this.testRegExp(e, rp, rest.rest(), absolute)
+      } else if (typeof rp === 'object') {
+        this.testMatcher(e, rp, rest.rest(), absolute)
       }
     }
   }
 
-  testRegExp(
+  testMatcher(
     e: Path,
-    p: MMRegExp,
+    p: MMMatcher,
     rest: Pattern | null,
     absolute: boolean,
   ) {
-    if (!p.test(e.name)) return
+    // an entry name is one path portion, with no `/`
+    if (!p.testUnchecked(e.name)) return
     if (!rest) {
       this.matches.add(e, absolute, false)
     } else {
