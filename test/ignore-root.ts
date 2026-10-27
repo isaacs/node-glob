@@ -3,7 +3,7 @@
 // non-ignored patterns starting with /
 
 import { resolve } from 'path'
-import { PathScurryPosix, PathScurryWin32 } from 'path-scurry'
+import { PathScurry, PathScurryPosix, PathScurryWin32 } from 'path-scurry'
 import t from 'tap'
 import { glob, globSync, Ignore } from '../dist/esm/index.js'
 
@@ -72,7 +72,8 @@ t.test('walk with the root option', async t => {
   })
   const root = resolve(cwd, 'r')
   const opts = { cwd, root, posix: true, ignore: '/x/**' }
-  const expect = ['/y/a'].map(p => `${root}${p}`.replace(/\\/g, '/'))
+  // on windows, posix absolute paths are //?/C:/...
+  const expect = [new PathScurry(root).cwd.resolve('y/a').fullpathPosix()]
   t.strictSame(await glob('/*/a', opts), expect)
   t.strictSame(globSync('/*/a', opts), expect)
 })
