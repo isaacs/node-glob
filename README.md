@@ -722,6 +722,11 @@ expressions. These are the known differences from Bash:
   whole pattern as a literal string. In this module, only the
   `?(` is literal, and the rest of the pattern is still matched
   as a glob.
+- A pattern is split into portions on every `/`, including a `/`
+  inside an extglob, so `@(a|b/c)/*` has an extglob that is not
+  closed. Bash keeps the extglob whole, and drops each alternative
+  with a `/` in it, as no file name can contain a `/`. So in Bash,
+  `@(a|b/c)/*` is the same as `@(a)/*`.
 - With `nocase`, case is folded with Unicode simple case folding,
   one code point at a time. Bash uses the case functions of the C
   library for the current locale.
