@@ -34,6 +34,10 @@
   **IMPORTANT** This should _only_ be run on systems with a
   recent `Bash 5.3` build as the default `bash` binary.
 - Benchmarking: `npm run bench`
+- Benchmarking in a Docker container that is limited to 4 CPUs
+  and 8GB of memory, with the median of 3 runs:
+  `npm run bench:docker` (set `BENCH_RUNS`, `BENCH_CPUS`, and
+  `BENCH_MEMORY` to change these)
 - Profiling: `npm run prof`
 - Generating docs: `npm run typedoc`
 

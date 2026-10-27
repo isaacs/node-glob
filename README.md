@@ -2,9 +2,10 @@
 
 Match files using the patterns the shell uses.
 
-The most correct and second fastest glob implementation in
-JavaScript. (See [**Comparison to Other JavaScript Glob
-Implementations**](#comparisons-to-other-fnmatchglob-implementations)
+The safest ([no ReDoS](#redos-protection)), most correct, and
+second fastest glob implementation in JavaScript. (See
+[**Comparison to Other JavaScript Glob
+Implementations**](#comparison-to-other-javascript-glob-implementations)
 at the bottom of this readme.)
 
 ![a fun cartoon logo made of glob
@@ -794,6 +795,56 @@ starts with `/`, then the traversal will run on the root of the
 drive provided as the `cwd` option. (That is, it is the result of
 `path.resolve('/')`.)
 
+## ReDoS Protection
+
+Many glob implementations make a regular expression from each
+pattern. A pattern such as `a*a*a*a*a*a*a*a*a*a*a`, tested against
+a name such as `aaaaaaaaaaaaaaaaaaaaaaaaaaaaab` that does not
+match, can make a backtracking regular expression engine try each
+way that the `*` characters can split the name. The time that
+this takes grows exponentially with the length of the name, so a
+pattern from an untrusted source can stop a process for minutes
+or more. This is a Regular Expression Denial of Service (ReDoS).
+
+This module never makes a regular expression from a pattern.
+Each portion of a pattern between `/` characters that has magic
+is matched by a `Matcher` from
+[@isaacs/nonrecursive-glob-match](http://npm.im/@isaacs/nonrecursive-glob-match).
+A `Matcher` is not a `RegExp`, and it does not backtrack. It tests
+all of the ways that the pattern can match at the same time, in
+one pass over the name, so no pattern can make it try the ways one
+after another. The time to match a name grows no faster than its
+length times the size of the portion of the pattern, for each
+kind of pattern, including nested and negated extglobs such as
+`+(a|*(b|!(c)))`. The pattern above matches or fails in about a
+millisecond.
+
+The only regular expressions that a `Matcher` uses are for `[...]`
+classes and case folding, and each of them only tests one
+character at a time, so they can not backtrack over a name.
+
+These limits also apply:
+
+- The states that a `Matcher` reaches are cached, so that names
+  are matched faster, but the cache has a fixed size. When it is
+  full, it is cleared.
+- Brace expansion makes no more than `braceExpandMax` patterns
+  (10,000 by default), so a pattern such as `{1..1000000}` can not
+  use an unbounded amount of memory.
+- A pattern can have at most 65,536 characters. A longer pattern
+  throws an error.
+- An `ignore` pattern with many `**` portions that are not next to
+  each other is matched with a limit on how deeply minimatch
+  recurses (200 by default). Past that limit, a path is not
+  treated as a match, so that path is not ignored.
+
+The time that a walk takes still depends on the file system. A
+pattern such as `**` walks every directory under the `cwd`, so if
+the patterns come from an untrusted source, set the `cwd` to the
+folder that they can search, and use `maxDepth` and an abort
+`signal` to limit the walk. Symbolic links to directories are not
+followed by `**` unless the `follow` option is set.
+
 ## Race Conditions
 
 Glob searching, by its very nature, is susceptible to race
@@ -848,6 +899,10 @@ npm run test-regen
 # run the benchmarks
 npm run bench
 
+# run the benchmarks in a Docker container that is limited to 4
+# CPUs and 8GB of memory, a few times, and print the medians
+npm run bench:docker
+
 # to profile javascript
 npm run prof
 ```
@@ -860,8 +915,8 @@ npm run prof
   Bash pattern expansion semantics, and as fast as possible
   within that constraint, _use this module_.
 - If you are reasonably sure that the patterns you will encounter
-  are relatively simple, and want the absolutely fastest glob
-  matcher out there, _use [fast-glob](http://npm.im/fast-glob)_.
+  are relatively simple, and want the fastest sync glob matcher
+  out there, _use [fast-glob](http://npm.im/fast-glob)_.
 - If you are reasonably sure that the patterns you will encounter
   are relatively simple, and want the convenience of
   automatically respecting `.gitignore` files, _use
@@ -882,15 +937,17 @@ benefits and drawbacks.
 
 Both have very nice APIs and are reasonably fast.
 
-`fast-glob` is, as far as I am aware, the fastest glob
+`fast-glob` is, as far as I am aware, the fastest sync glob
 implementation in JavaScript today. However, there are many
 cases where the choices that `fast-glob` makes in pursuit of
 speed mean that its results differ from the results returned by
 Bash and other sh-like shells, which may be surprising.
 
-In my testing, `fast-glob` is around 10-20% faster than this
-module when walking over 200k files nested 4 directories
-deep[1](#fn-webscale). However, there are some inconsistencies
+In the [benchmarks below](#benchmark-results), which walk over
+200k files nested 4 directories deep, the sync `fast-glob` takes
+about 25% less time than this module, and the async `fast-glob`
+takes about 5% more, for the patterns where they return the same
+results[1](#fn-webscale). However, there are some inconsistencies
 with Bash matching behavior that this module does not suffer
 from:
 
@@ -905,10 +962,12 @@ from:
 - Extglob patterns are allowed to contain `/` characters.
 
 Globby exhibits all of the same pattern semantics as fast-glob,
-(as it is a wrapper around fast-glob) and is slightly slower than
-node-glob (by about 10-20% in the benchmark test set, or in other
-words, anywhere from 20-50% slower than fast-glob). However, it
-adds some API conveniences that may be worth the costs.
+(as it is a wrapper around fast-glob). In the benchmarks below,
+the sync `globby` takes about 10% less time than this module, and
+the async `globby` takes about 15% more, for the patterns where
+they return the same results. It takes about 10-20% more time
+than `fast-glob`. However, it adds some API conveniences that may
+be worth the costs.
 
 - Support for `.gitignore` and other ignore files.
 - Support for negated globs (ie, patterns starting with `!`
@@ -935,296 +994,377 @@ course.</small>
 
 ### Benchmark Results
 
+These are from `npm run bench:docker`, which runs the benchmarks
+in a Linux Docker container that is limited to 4 CPUs and 8GB of
+memory, with the test files in memory. Each time is the median of
+3 runs, and includes starting node.
+
 The first number is time, smaller is better.
 
-The second number is the count of results returned.
+The second number is the count of results returned. The totals at
+the end are over all of the patterns, including the ones where the
+implementations return different results.
 
 ```
+--- pattern: '{0000,0,1111,1}/{0000,0,1111,1}/{0000,0,1111,1}/**' ---
+~~ sync ~~
+fast-glob sync           	0m0.046s  1600
+globby sync              	0m0.050s  1600
+fs.globSync              	0m0.040s  1776
+current globSync mjs     	0m0.048s  1776
+current glob syncStream  	0m0.046s  1776
+~~ async ~~
+fast-glob async          	0m0.047s  1600
+globby async             	0m0.053s  1600
+fs.glob                  	0m0.054s  1776
+current glob async mjs   	0m0.050s  1776
+current glob stream      	0m0.051s  1776
+
 --- pattern: '**' ---
 ~~ sync ~~
-node fast-glob sync             0m0.598s  200364
-node globby sync                0m0.765s  200364
-node current globSync mjs       0m0.683s  222656
-node current glob syncStream    0m0.649s  222656
+fast-glob sync           	0m0.340s  200002
+globby sync              	0m0.423s  200002
+fs.globSync              	0m0.692s  222223
+current globSync mjs     	0m0.437s  222223
+current glob syncStream  	0m0.408s  222223
 ~~ async ~~
-node fast-glob async            0m0.350s  200364
-node globby async               0m0.509s  200364
-node current glob async mjs     0m0.463s  222656
-node current glob stream        0m0.411s  222656
+fast-glob async          	0m0.491s  200002
+globby async             	0m0.569s  200002
+fs.glob                  	0m1.889s  222223
+current glob async mjs   	0m0.464s  222223
+current glob stream      	0m0.442s  222223
 
 --- pattern: '**/..' ---
 ~~ sync ~~
-node fast-glob sync             0m0.486s  0
-node globby sync                0m0.769s  200364
-node current globSync mjs       0m0.564s  2242
-node current glob syncStream    0m0.583s  2242
+fast-glob sync           	0m0.260s  0
+globby sync              	0m0.432s  200002
+fs.globSync              	0m0.531s  2222
+current globSync mjs     	0m0.351s  2222
+current glob syncStream  	0m0.347s  2222
 ~~ async ~~
-node fast-glob async            0m0.283s  0
-node globby async               0m0.512s  200364
-node current glob async mjs     0m0.299s  2242
-node current glob stream        0m0.312s  2242
+fast-glob async          	0m0.381s  0
+globby async             	0m0.569s  200002
+fs.glob                  	0m1.632s  2222
+current glob async mjs   	0m0.373s  2222
+current glob stream      	0m0.366s  2222
 
 --- pattern: './**/0/**/0/**/0/**/0/**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.490s  10
-node globby sync                0m0.517s  10
-node current globSync mjs       0m0.540s  10
-node current glob syncStream    0m0.550s  10
+fast-glob sync           	0m0.263s  10
+globby sync              	0m0.267s  10
+fs.globSync              	0m0.547s  10
+current globSync mjs     	0m0.335s  10
+current glob syncStream  	0m0.334s  10
 ~~ async ~~
-node fast-glob async            0m0.290s  10
-node globby async               0m0.296s  10
-node current glob async mjs     0m0.278s  10
-node current glob stream        0m0.302s  10
+fast-glob async          	0m0.374s  10
+globby async             	0m0.388s  10
+fs.glob                  	0m1.676s  10
+current glob async mjs   	0m0.342s  10
+current glob stream      	0m0.340s  10
 
 --- pattern: './**/[01]/**/[12]/**/[23]/**/[45]/**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.500s  160
-node globby sync                0m0.528s  160
-node current globSync mjs       0m0.556s  160
-node current glob syncStream    0m0.573s  160
+fast-glob sync           	0m0.270s  160
+globby sync              	0m0.269s  160
+fs.globSync              	0m0.588s  160
+current globSync mjs     	0m0.344s  160
+current glob syncStream  	0m0.348s  160
 ~~ async ~~
-node fast-glob async            0m0.283s  160
-node globby async               0m0.301s  160
-node current glob async mjs     0m0.306s  160
-node current glob stream        0m0.322s  160
+fast-glob async          	0m0.380s  160
+globby async             	0m0.401s  160
+fs.glob                  	0m1.715s  160
+current glob async mjs   	0m0.346s  160
+current glob stream      	0m0.345s  160
 
 --- pattern: './**/0/**/0/**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.502s  5230
-node globby sync                0m0.527s  5230
-node current globSync mjs       0m0.544s  5230
-node current glob syncStream    0m0.557s  5230
+fast-glob sync           	0m0.269s  5230
+globby sync              	0m0.276s  5230
+fs.globSync              	0m0.555s  5230
+current globSync mjs     	0m0.343s  5230
+current glob syncStream  	0m0.340s  5230
 ~~ async ~~
-node fast-glob async            0m0.285s  5230
-node globby async               0m0.305s  5230
-node current glob async mjs     0m0.304s  5230
-node current glob stream        0m0.310s  5230
+fast-glob async          	0m0.381s  5230
+globby async             	0m0.399s  5230
+fs.glob                  	0m1.662s  5230
+current glob async mjs   	0m0.345s  5230
+current glob stream      	0m0.344s  5230
 
 --- pattern: '**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.580s  200023
-node globby sync                0m0.771s  200023
-node current globSync mjs       0m0.685s  200023
-node current glob syncStream    0m0.649s  200023
+fast-glob sync           	0m0.336s  200000
+globby sync              	0m0.425s  200000
+fs.globSync              	0m0.697s  200000
+current globSync mjs     	0m0.438s  200000
+current glob syncStream  	0m0.411s  200000
 ~~ async ~~
-node fast-glob async            0m0.349s  200023
-node globby async               0m0.509s  200023
-node current glob async mjs     0m0.427s  200023
-node current glob stream        0m0.388s  200023
+fast-glob async          	0m0.489s  200000
+globby async             	0m0.563s  200000
+fs.glob                  	0m1.866s  200000
+current glob async mjs   	0m0.467s  200000
+current glob stream      	0m0.429s  200000
 
 --- pattern: '{**/*.txt,**/?/**/*.txt,**/?/**/?/**/*.txt,**/?/**/?/**/?/**/*.txt,**/?/**/?/**/?/**/?/**/*.txt}' ---
 ~~ sync ~~
-node fast-glob sync             0m0.589s  200023
-node globby sync                0m0.771s  200023
-node current globSync mjs       0m0.716s  200023
-node current glob syncStream    0m0.684s  200023
+fast-glob sync           	0m0.339s  200000
+globby sync              	0m0.428s  200000
+fs.globSync              	0m1.093s  200000
+current globSync mjs     	0m0.463s  200000
+current glob syncStream  	0m0.436s  200000
 ~~ async ~~
-node fast-glob async            0m0.351s  200023
-node globby async               0m0.518s  200023
-node current glob async mjs     0m0.462s  200023
-node current glob stream        0m0.468s  200023
+fast-glob async          	0m0.485s  200000
+globby async             	0m0.570s  200000
+fs.glob                  	0m2.303s  200000
+current glob async mjs   	0m0.499s  200000
+current glob stream      	0m0.480s  200000
 
 --- pattern: '**/5555/0000/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.496s  1000
-node globby sync                0m0.519s  1000
-node current globSync mjs       0m0.539s  1000
-node current glob syncStream    0m0.567s  1000
+fast-glob sync           	0m0.265s  1000
+globby sync              	0m0.269s  1000
+fs.globSync              	0m0.525s  1000
+current globSync mjs     	0m0.356s  1000
+current glob syncStream  	0m0.360s  1000
 ~~ async ~~
-node fast-glob async            0m0.285s  1000
-node globby async               0m0.299s  1000
-node current glob async mjs     0m0.305s  1000
-node current glob stream        0m0.301s  1000
+fast-glob async          	0m0.375s  1000
+globby async             	0m0.383s  1000
+fs.glob                  	0m1.592s  1000
+current glob async mjs   	0m0.361s  1000
+current glob stream      	0m0.366s  1000
 
 --- pattern: './**/0/**/../[01]/**/0/../**/0/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.484s  0
-node globby sync                0m0.507s  0
-node current globSync mjs       0m0.577s  4880
-node current glob syncStream    0m0.586s  4880
+fast-glob sync           	0m0.261s  0
+globby sync              	0m0.263s  0
+fs.globSync              	0m0.754s  4880
+current globSync mjs     	0m0.351s  4880
+current glob syncStream  	0m0.350s  4880
 ~~ async ~~
-node fast-glob async            0m0.280s  0
-node globby async               0m0.298s  0
-node current glob async mjs     0m0.327s  4880
-node current glob stream        0m0.324s  4880
+fast-glob async          	0m0.363s  0
+globby async             	0m0.382s  0
+fs.glob                  	0m1.869s  4880
+current glob async mjs   	0m0.370s  4880
+current glob stream      	0m0.367s  4880
 
 --- pattern: '**/????/????/????/????/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.547s  100000
-node globby sync                0m0.673s  100000
-node current globSync mjs       0m0.626s  100000
-node current glob syncStream    0m0.618s  100000
+fast-glob sync           	0m0.297s  100000
+globby sync              	0m0.349s  100000
+fs.globSync              	0m0.681s  100000
+current globSync mjs     	0m0.404s  100000
+current glob syncStream  	0m0.399s  100000
 ~~ async ~~
-node fast-glob async            0m0.315s  100000
-node globby async               0m0.414s  100000
-node current glob async mjs     0m0.366s  100000
-node current glob stream        0m0.345s  100000
+fast-glob async          	0m0.440s  100000
+globby async             	0m0.484s  100000
+fs.glob                  	0m1.805s  100000
+current glob async mjs   	0m0.418s  100000
+current glob stream      	0m0.413s  100000
 
 --- pattern: './{**/?{/**/?{/**/?{/**/?,,,,},,,,},,,,},,,}/**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.588s  100000
-node globby sync                0m0.670s  100000
-node current globSync mjs       0m0.717s  200023
-node current glob syncStream    0m0.687s  200023
+fast-glob sync           	0m0.337s  200000
+globby sync              	0m0.427s  200000
+fs.globSync              	0m1.264s  200000
+current globSync mjs     	0m0.465s  200000
+current glob syncStream  	0m0.446s  200000
 ~~ async ~~
-node fast-glob async            0m0.343s  100000
-node globby async               0m0.418s  100000
-node current glob async mjs     0m0.519s  200023
-node current glob stream        0m0.451s  200023
+fast-glob async          	0m0.491s  200000
+globby async             	0m0.562s  200000
+fs.glob                  	0m2.508s  200000
+current glob async mjs   	0m0.494s  200000
+current glob stream      	0m0.473s  200000
 
 --- pattern: '**/!(0|9).txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.573s  160023
-node globby sync                0m0.731s  160023
-node current globSync mjs       0m0.680s  180023
-node current glob syncStream    0m0.659s  180023
+fast-glob sync           	0m0.327s  160000
+globby sync              	0m0.404s  160000
+fs.globSync              	0m0.687s  180000
+current globSync mjs     	0m0.462s  180000
+current glob syncStream  	0m0.418s  180000
 ~~ async ~~
-node fast-glob async            0m0.345s  160023
-node globby async               0m0.476s  160023
-node current glob async mjs     0m0.427s  180023
-node current glob stream        0m0.388s  180023
+fast-glob async          	0m0.474s  160000
+globby async             	0m0.552s  160000
+fs.glob                  	0m1.876s  180000
+current glob async mjs   	0m0.465s  180000
+current glob stream      	0m0.436s  180000
 
 --- pattern: './{*/**/../{*/**/../{*/**/../{*/**/../{*/**,,,,},,,,},,,,},,,,},,,,}/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.483s  0
-node globby sync                0m0.512s  0
-node current globSync mjs       0m0.811s  200023
-node current glob syncStream    0m0.773s  200023
+fast-glob sync           	0m0.262s  0
+globby sync              	0m0.264s  0
+fs.globSync              	0m0.933s  200000
+current globSync mjs     	0m0.557s  200000
+current glob syncStream  	0m0.541s  200000
 ~~ async ~~
-node fast-glob async            0m0.280s  0
-node globby async               0m0.299s  0
-node current glob async mjs     0m0.617s  200023
-node current glob stream        0m0.568s  200023
+fast-glob async          	0m0.377s  0
+globby async             	0m0.414s  0
+fs.glob                  	0m2.135s  200000
+current glob async mjs   	0m0.662s  200000
+current glob stream      	0m0.639s  200000
 
 --- pattern: './*/**/../*/**/../*/**/../*/**/../*/**/../*/**/../*/**/../*/**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.485s  0
-node globby sync                0m0.507s  0
-node current globSync mjs       0m0.759s  200023
-node current glob syncStream    0m0.740s  200023
+fast-glob sync           	0m0.256s  0
+globby sync              	0m0.262s  0
+fs.globSync              	0m0.716s  200000
+current globSync mjs     	0m0.519s  200000
+current glob syncStream  	0m0.494s  200000
 ~~ async ~~
-node fast-glob async            0m0.281s  0
-node globby async               0m0.297s  0
-node current glob async mjs     0m0.544s  200023
-node current glob stream        0m0.464s  200023
+fast-glob async          	0m0.363s  0
+globby async             	0m0.374s  0
+fs.glob                  	0m1.870s  200000
+current glob async mjs   	0m0.565s  200000
+current glob stream      	0m0.542s  200000
 
 --- pattern: './*/**/../*/**/../*/**/../*/**/../*/**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.486s  0
-node globby sync                0m0.513s  0
-node current globSync mjs       0m0.734s  200023
-node current glob syncStream    0m0.696s  200023
+fast-glob sync           	0m0.259s  0
+globby sync              	0m0.262s  0
+fs.globSync              	0m0.725s  200000
+current globSync mjs     	0m0.488s  200000
+current glob syncStream  	0m0.459s  200000
 ~~ async ~~
-node fast-glob async            0m0.286s  0
-node globby async               0m0.296s  0
-node current glob async mjs     0m0.506s  200023
-node current glob stream        0m0.483s  200023
+fast-glob async          	0m0.366s  0
+globby async             	0m0.379s  0
+fs.glob                  	0m1.878s  200000
+current glob async mjs   	0m0.522s  200000
+current glob stream      	0m0.495s  200000
 
 --- pattern: './0/**/../1/**/../2/**/../3/**/../4/**/../5/**/../6/**/../7/**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.060s  0
-node globby sync                0m0.074s  0
-node current globSync mjs       0m0.067s  0
-node current glob syncStream    0m0.066s  0
+fast-glob sync           	0m0.050s  0
+globby sync              	0m0.055s  0
+fs.globSync              	0m1.134s  28970
+current globSync mjs     	0m0.290s  28970
+current glob syncStream  	0m0.287s  28970
 ~~ async ~~
-node fast-glob async            0m0.060s  0
-node globby async               0m0.075s  0
-node current glob async mjs     0m0.066s  0
-node current glob stream        0m0.067s  0
+fast-glob async          	0m0.055s  0
+globby async             	0m0.064s  0
+fs.glob                  	0m1.745s  28970
+current glob async mjs   	0m0.307s  28970
+current glob stream      	0m0.301s  28970
 
 --- pattern: './**/?/**/?/**/?/**/?/**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.568s  100000
-node globby sync                0m0.651s  100000
-node current globSync mjs       0m0.619s  100000
-node current glob syncStream    0m0.617s  100000
+fast-glob sync           	0m0.305s  100000
+globby sync              	0m0.353s  100000
+fs.globSync              	0m0.750s  100000
+current globSync mjs     	0m0.400s  100000
+current glob syncStream  	0m0.403s  100000
 ~~ async ~~
-node fast-glob async            0m0.332s  100000
-node globby async               0m0.409s  100000
-node current glob async mjs     0m0.372s  100000
-node current glob stream        0m0.351s  100000
+fast-glob async          	0m0.466s  100000
+globby async             	0m0.513s  100000
+fs.glob                  	0m1.900s  100000
+current glob async mjs   	0m0.415s  100000
+current glob stream      	0m0.412s  100000
 
 --- pattern: '**/*/**/*/**/*/**/*/**' ---
 ~~ sync ~~
-node fast-glob sync             0m0.603s  200113
-node globby sync                0m0.798s  200113
-node current globSync mjs       0m0.730s  222137
-node current glob syncStream    0m0.693s  222137
+fast-glob sync           	0m0.371s  200000
+globby sync              	0m0.470s  200000
+fs.globSync              	0m0.907s  220000
+current globSync mjs     	0m0.476s  220000
+current glob syncStream  	0m0.452s  220000
 ~~ async ~~
-node fast-glob async            0m0.356s  200113
-node globby async               0m0.525s  200113
-node current glob async mjs     0m0.508s  222137
-node current glob stream        0m0.455s  222137
+fast-glob async          	0m0.526s  200000
+globby async             	0m0.611s  200000
+fs.glob                  	0m2.094s  220000
+current glob async mjs   	0m0.521s  220000
+current glob stream      	0m0.498s  220000
 
 --- pattern: './**/*/**/*/**/*/**/*/**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.622s  200000
-node globby sync                0m0.792s  200000
-node current globSync mjs       0m0.722s  200000
-node current glob syncStream    0m0.695s  200000
+fast-glob sync           	0m0.367s  200000
+globby sync              	0m0.459s  200000
+fs.globSync              	0m0.911s  200000
+current globSync mjs     	0m0.481s  200000
+current glob syncStream  	0m0.454s  200000
 ~~ async ~~
-node fast-glob async            0m0.369s  200000
-node globby async               0m0.527s  200000
-node current glob async mjs     0m0.502s  200000
-node current glob stream        0m0.481s  200000
+fast-glob async          	0m0.519s  200000
+globby async             	0m0.596s  200000
+fs.glob                  	0m2.140s  200000
+current glob async mjs   	0m0.508s  200000
+current glob stream      	0m0.483s  200000
 
 --- pattern: '**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.588s  200023
-node globby sync                0m0.771s  200023
-node current globSync mjs       0m0.684s  200023
-node current glob syncStream    0m0.658s  200023
+fast-glob sync           	0m0.336s  200000
+globby sync              	0m0.425s  200000
+fs.globSync              	0m0.698s  200000
+current globSync mjs     	0m0.437s  200000
+current glob syncStream  	0m0.430s  200000
 ~~ async ~~
-node fast-glob async            0m0.352s  200023
-node globby async               0m0.516s  200023
-node current glob async mjs     0m0.432s  200023
-node current glob stream        0m0.384s  200023
+fast-glob async          	0m0.483s  200000
+globby async             	0m0.565s  200000
+fs.glob                  	0m1.874s  200000
+current glob async mjs   	0m0.462s  200000
+current glob stream      	0m0.468s  200000
 
 --- pattern: './**/**/**/**/**/**/**/**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.589s  200023
-node globby sync                0m0.766s  200023
-node current globSync mjs       0m0.682s  200023
-node current glob syncStream    0m0.652s  200023
+fast-glob sync           	0m0.346s  200000
+globby sync              	0m0.442s  200000
+fs.globSync              	0m0.721s  200000
+current globSync mjs     	0m0.437s  200000
+current glob syncStream  	0m0.417s  200000
 ~~ async ~~
-node fast-glob async            0m0.352s  200023
-node globby async               0m0.523s  200023
-node current glob async mjs     0m0.436s  200023
-node current glob stream        0m0.380s  200023
+fast-glob async          	0m0.522s  200000
+globby async             	0m0.595s  200000
+fs.glob                  	0m1.892s  200000
+current glob async mjs   	0m0.486s  200000
+current glob stream      	0m0.468s  200000
 
 --- pattern: '**/*/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.592s  200023
-node globby sync                0m0.776s  200023
-node current globSync mjs       0m0.691s  200023
-node current glob syncStream    0m0.659s  200023
+fast-glob sync           	0m0.343s  200000
+globby sync              	0m0.434s  200000
+fs.globSync              	0m0.753s  200000
+current globSync mjs     	0m0.448s  200000
+current glob syncStream  	0m0.446s  200000
 ~~ async ~~
-node fast-glob async            0m0.357s  200023
-node globby async               0m0.513s  200023
-node current glob async mjs     0m0.471s  200023
-node current glob stream        0m0.424s  200023
+fast-glob async          	0m0.516s  200000
+globby async             	0m0.576s  200000
+fs.glob                  	0m1.936s  200000
+current glob async mjs   	0m0.492s  200000
+current glob stream      	0m0.465s  200000
 
 --- pattern: '**/*/**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.585s  200023
-node globby sync                0m0.766s  200023
-node current globSync mjs       0m0.694s  200023
-node current glob syncStream    0m0.664s  200023
+fast-glob sync           	0m0.341s  200000
+globby sync              	0m0.429s  200000
+fs.globSync              	0m0.772s  200000
+current globSync mjs     	0m0.451s  200000
+current glob syncStream  	0m0.434s  200000
 ~~ async ~~
-node fast-glob async            0m0.350s  200023
-node globby async               0m0.514s  200023
-node current glob async mjs     0m0.472s  200023
-node current glob stream        0m0.424s  200023
+fast-glob async          	0m0.492s  200000
+globby async             	0m0.565s  200000
+fs.glob                  	0m1.927s  200000
+current glob async mjs   	0m0.480s  200000
+current glob stream      	0m0.447s  200000
 
 --- pattern: '**/[0-9]/**/*.txt' ---
 ~~ sync ~~
-node fast-glob sync             0m0.544s  100000
-node globby sync                0m0.636s  100000
-node current globSync mjs       0m0.626s  100000
-node current glob syncStream    0m0.621s  100000
+fast-glob sync           	0m0.307s  100000
+globby sync              	0m0.347s  100000
+fs.globSync              	0m0.667s  100000
+current globSync mjs     	0m0.393s  100000
+current glob syncStream  	0m0.396s  100000
 ~~ async ~~
-node fast-glob async            0m0.322s  100000
-node globby async               0m0.404s  100000
-node current glob async mjs     0m0.360s  100000
-node current glob stream        0m0.352s  100000
+fast-glob async          	0m0.458s  100000
+globby async             	0m0.490s  100000
+fs.glob                  	0m1.894s  100000
+current glob async mjs   	0m0.433s  100000
+current glob stream      	0m0.426s  100000
+
+--- total of the medians ---
+fast-glob sync (sync)               	7.153s
+globby sync (sync)                  	8.484s
+fs.globSync (sync)                  	18.341s
+current globSync mjs (sync)         	10.174s
+current glob syncStream (sync)      	9.856s
+fast-glob async (async)             	10.314s
+globby async (async)                	11.617s
+fs.glob (async)                     	45.732s
+current glob async mjs (async)      	10.847s
+current glob stream (async)         	10.496s
 ```

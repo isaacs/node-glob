@@ -52,7 +52,8 @@
     "url": "git@github.com:isaacs/node-glob.git"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "scripts": {
     "preversion": "npm test",
@@ -73,6 +74,7 @@
     "test-regen": "npm run profclean && TEST_REGEN=1 node --no-warnings --loader ts-node/esm test/00-setup.ts",
     "prebench": "npm run prepare",
     "bench": "bash benchmark.sh",
+    "bench:docker": "bash bench-docker/bench.sh",
     "preprof": "npm run prepare",
     "prof": "bash prof.sh",
     "benchclean": "node benchclean.cjs"
