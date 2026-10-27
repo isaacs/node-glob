@@ -90,7 +90,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   seen: Set<Path> = new Set<Path>()
   paused: boolean = false
   aborted: boolean = false
-  #onResume: (() => any)[] = []
+  #onResume: (() => unknown)[] = []
   #ignore?: IgnoreLike
   #sep: '\\' | '/'
   signal?: AbortSignal
@@ -143,13 +143,12 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     if (this.signal?.aborted) return
     /* c8 ignore stop */
     this.paused = false
-    let fn: (() => any) | undefined = undefined
+    let fn: (() => unknown) | undefined = undefined
     while (!this.paused && (fn = this.#onResume.shift())) {
       fn()
     }
   }
-  onResume(fn: () => any) {
-    if (this.signal?.aborted) return
+  onResume(fn: () => unknown) {
     /* c8 ignore start */
     if (!this.paused) {
       fn()
@@ -257,9 +256,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     if (p) this.matchFinish(p, absolute)
   }
 
-  walkCB(target: Path, patterns: Pattern[], cb: () => any) {
+  walkCB(target: Path, patterns: Pattern[], cb: () => unknown) {
     /* c8 ignore start */
-    if (this.signal?.aborted) cb()
+    if (this.signal?.aborted) return cb()
     /* c8 ignore stop */
     this.walkCB2(target, patterns, new Processor(this.opts), cb)
   }
@@ -268,10 +267,10 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     target: Path,
     patterns: Pattern[],
     processor: Processor,
-    cb: () => any,
+    cb: () => unknown,
   ) {
     if (this.#childrenIgnored(target)) return cb()
-    if (this.signal?.aborted) cb()
+    if (this.signal?.aborted) return cb()
     if (this.paused) {
       this.onResume(() => this.walkCB2(target, patterns, processor, cb))
       return
@@ -315,7 +314,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     target: Path,
     entries: Path[],
     processor: Processor,
-    cb: () => any,
+    cb: () => unknown,
   ) {
     processor = processor.filterEntries(target, entries)
 
@@ -337,9 +336,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     next()
   }
 
-  walkCBSync(target: Path, patterns: Pattern[], cb: () => any) {
+  walkCBSync(target: Path, patterns: Pattern[], cb: () => unknown) {
     /* c8 ignore start */
-    if (this.signal?.aborted) cb()
+    if (this.signal?.aborted) return cb()
     /* c8 ignore stop */
     this.walkCB2Sync(target, patterns, new Processor(this.opts), cb)
   }
@@ -348,10 +347,10 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     target: Path,
     patterns: Pattern[],
     processor: Processor,
-    cb: () => any,
+    cb: () => unknown,
   ) {
     if (this.#childrenIgnored(target)) return cb()
-    if (this.signal?.aborted) cb()
+    if (this.signal?.aborted) return cb()
     if (this.paused) {
       this.onResume(() =>
         this.walkCB2Sync(target, patterns, processor, cb),
@@ -389,7 +388,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     target: Path,
     entries: Path[],
     processor: Processor,
-    cb: () => any,
+    cb: () => unknown,
   ) {
     processor = processor.filterEntries(target, entries)
 

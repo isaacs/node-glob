@@ -256,3 +256,15 @@ t.test('walkSync', t => {
   t.same(actual, e)
   t.end()
 })
+
+t.test('stream paused while reads are pending', async t => {
+  const mk = (n: number): Record<string, any> =>
+    n ? { a: mk(n - 1), b: mk(n - 1), f: '' } : { f: '' }
+  const cwd = t.testdir(mk(5))
+  const s = globStream('**', { cwd })
+  // do not read until the walk has paused on a full buffer
+  await new Promise(r => setTimeout(r, 50))
+  const found: string[] = []
+  for await (const p of s) found.push(p)
+  t.same(new Set(found), new Set(globSync('**', { cwd })))
+})

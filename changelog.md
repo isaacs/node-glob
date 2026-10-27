@@ -5,6 +5,7 @@
 - Move the CLI program out to a separate package, `glob-bin`.
   Install that if you'd like to continue using glob from the
   command line.
+- Backport fix for walking after abort signal
 
 ## 12
 
