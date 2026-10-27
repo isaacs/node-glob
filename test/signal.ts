@@ -92,3 +92,48 @@ t.test('mid-abort sync stream', t => {
   })
   s.on('data', () => ac.abort(yeet))
 })
+
+t.test('no more reads after abort', async t => {
+  const mk = (n: number): Record<string, any> =>
+    n ? { a: mk(n - 1), b: mk(n - 1), f: '' } : { f: '' }
+  const cwd = t.testdir(mk(5))
+  const counted = (ac: AbortController) => {
+    const c = { calls: 0 }
+    const abortFirst = () => {
+      if (++c.calls === 1) ac.abort(yeet)
+    }
+    const cfs = {
+      ...fs,
+      readdir: (...args: any[]) => {
+        abortFirst()
+        return (fs.readdir as any)(...args)
+      },
+      readdirSync: (...args: any[]) => {
+        abortFirst()
+        return (fs.readdirSync as any)(...args)
+      },
+    }
+    return { c, cfs }
+  }
+
+  t.test('async', async t => {
+    const ac = new AbortController()
+    const { c, cfs } = counted(ac)
+    await t.rejects(glob('**', { cwd, signal: ac.signal, fs: cfs }), yeet)
+    const atReject = c.calls
+    await new Promise(r => setTimeout(r, 100))
+    t.equal(c.calls, atReject)
+  })
+
+  t.test('sync stream', t => {
+    const ac = new AbortController()
+    const { c, cfs } = counted(ac)
+    const s = globStreamSync('**', { cwd, signal: ac.signal, fs: cfs })
+    s.on('error', er => {
+      t.equal(er, yeet)
+      t.equal(c.calls, 1)
+      t.end()
+    })
+    s.resume()
+  })
+})

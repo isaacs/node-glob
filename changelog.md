@@ -32,6 +32,8 @@
   15% to 30% faster async, for large trees).
 - Allow `const string[]` or `readonly string[]` as `ignore`
   option or `pattern` argument.
+- When the `signal` aborts an async walk, the walk stops. Before,
+  it rejected, but continued to read directories.
 
 ## 13
 
