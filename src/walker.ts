@@ -80,9 +80,10 @@ export type MatchStream<O extends GlobWalkerOpts> = Minipass<
 const makeIgnore = (
   ignore: string | string[] | IgnoreLike,
   opts: GlobWalkerOpts,
+  cwd: Path,
 ): IgnoreLike =>
-  typeof ignore === 'string' ? new Ignore([ignore], opts)
-  : Array.isArray(ignore) ? new Ignore(ignore, opts)
+  typeof ignore === 'string' ? new Ignore([ignore], opts, cwd)
+  : Array.isArray(ignore) ? new Ignore(ignore, opts, cwd)
   : ignore
 
 /**
@@ -110,7 +111,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     this.#sep = !opts.posix && opts.platform === 'win32' ? '\\' : '/'
     this.includeChildMatches = opts.includeChildMatches !== false
     if (opts.ignore || !this.includeChildMatches) {
-      this.#ignore = makeIgnore(opts.ignore ?? [], opts)
+      this.#ignore = makeIgnore(opts.ignore ?? [], opts, path)
       if (
         !this.includeChildMatches &&
         typeof this.#ignore.add !== 'function'

@@ -4,7 +4,7 @@
 // Ignores are always parsed in dot:true mode
 
 import type { MinimatchOptions } from 'minimatch'
-import { Minimatch } from 'minimatch'
+import { escape, Minimatch } from 'minimatch'
 import type { Path } from 'path-scurry'
 import { Pattern } from './pattern.js'
 import type { GlobWalkerOpts } from './walker.js'
@@ -34,7 +34,18 @@ export class Ignore implements IgnoreLike {
   absoluteChildren: Minimatch[]
   platform: NodeJS.Platform
   mmopts: MinimatchOptions
+  /**
+   * The escaped glob for the directory that a pattern starting with
+   * `/` is rooted at, with no trailing `/`.
+   */
+  slashRoot: string
 
+  /**
+   * Patterns that start with `/` (but not drive letters or UNC paths
+   * on Windows) start at the `root` option if it is set, or else at
+   * the root of `cwd`, the same as non-ignored patterns. If `cwd` is
+   * not provided, they start at `/`.
+   */
   constructor(
     ignored: string[],
     {
@@ -44,13 +55,19 @@ export class Ignore implements IgnoreLike {
       noglobstar,
       normalize,
       platform = defaultPlatform,
+      root,
+      windowsPathsNoEscape,
+      allowWindowsEscape,
     }: GlobWalkerOpts,
+    cwd?: Path,
   ) {
     this.relative = []
     this.absolute = []
     this.relativeChildren = []
     this.absoluteChildren = []
     this.platform = platform
+    windowsPathsNoEscape =
+      !!windowsPathsNoEscape || allowWindowsEscape === false
     this.mmopts = {
       dot: true,
       nobrace,
@@ -62,7 +79,13 @@ export class Ignore implements IgnoreLike {
       platform,
       nocomment: true,
       nonegate: true,
+      windowsPathsNoEscape,
     }
+    const slashRoot = cwd?.resolve(root ?? '/').fullpath() ?? '/'
+    this.slashRoot = escape(
+      slashRoot.replace(/\\/g, '/').replace(/\/$/, ''),
+      { windowsPathsNoEscape },
+    )
     for (const ign of ignored) this.add(ign)
   }
 
@@ -95,7 +118,11 @@ export class Ignore implements IgnoreLike {
       }
       /* c8 ignore stop */
       const p = new Pattern(parsed, globParts, 0, this.platform)
-      const m = new Minimatch(p.globString(), this.mmopts)
+      const glob =
+        p.root() === '/' ?
+          `${this.slashRoot}/${p.rest()?.globString() ?? ''}`
+        : p.globString()
+      const m = new Minimatch(glob, this.mmopts)
       const children = globParts[globParts.length - 1] === '**'
       const absolute = p.isAbsolute()
       if (absolute) this.absolute.push(m)

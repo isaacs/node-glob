@@ -18,6 +18,12 @@
   and in the file names that it is matched against.
 - `GlobWalker#walk()` and `walkSync()` return arrays in place of
   sets, and `MatchRecord#entries()` is removed.
+- `ignore` patterns that start with `/` now start at the same
+  place as other patterns that start with `/`: the `root` option
+  if set, or else the root of the `cwd`, such as `C:\` on
+  Windows.
+- `ignore` patterns follow the `windowsPathsNoEscape` option,
+  the same as other patterns.
 - Faster `ignore` patterns (about 1.2 to 3 times faster), and
   less work for each entry in a walk (about 10% faster sync, and
   15% to 30% faster async, for large trees).

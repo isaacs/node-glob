@@ -452,6 +452,8 @@ share the previously loaded cache.
   a glob pattern or array of glob patterns to exclude from
   matches. To ignore all children within a directory, as well
   as the entry itself, append `'/**'` to the ignore pattern.
+  Ignore patterns that start with `/` start at the same place as
+  other patterns that start with `/` (see the `root` option).
 
   If an object is provided that has `ignored(path)` and/or
   `childrenIgnored(path)` methods, then these methods will be
