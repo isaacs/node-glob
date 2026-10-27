@@ -15,7 +15,9 @@ import { Ignore } from './ignore.js'
 
 // a single minimatch set entry with 1 or more parts
 import type { Pattern } from './pattern.js'
-import { Processor } from './processor.js'
+import { MatchRecord, Processor } from './processor.js'
+
+const { ABSOLUTE, IF_DIR } = MatchRecord
 
 export interface GlobWalkerOpts {
   absolute?: boolean
@@ -63,10 +65,10 @@ export type Result<O extends GlobWalkerOpts> =
   : Path | string
 
 export type Matches<O extends GlobWalkerOpts> =
-  O extends GWOFileTypesTrue ? Set<Path>
-  : O extends GWOFileTypesFalse ? Set<string>
-  : O extends GWOFileTypesUnset ? Set<string>
-  : Set<Path | string>
+  O extends GWOFileTypesTrue ? Path[]
+  : O extends GWOFileTypesFalse ? string[]
+  : O extends GWOFileTypesUnset ? string[]
+  : (Path | string)[]
 
 export type MatchStream<O extends GlobWalkerOpts> = Minipass<
   Result<O>,
@@ -232,6 +234,11 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
 
   matchFinish(e: Path, absolute: boolean) {
     if (this.#ignored(e)) return
+    this.#matchEmitChecked(e, absolute)
+  }
+
+  // emit a match that is known to not be seen or ignored yet
+  #matchEmitChecked(e: Path, absolute: boolean) {
     // we know we have an ignore if this is false, but TS doesn't
     if (!this.includeChildMatches && this.#ignore?.add) {
       const ign = `${e.relativePosix()}/**`
@@ -263,8 +270,10 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   matchSync(e: Path, absolute: boolean, ifDir: boolean): void {
+    // matchCheckSync just checked that it is not seen or ignored, and
+    // nothing can have changed since
     const p = this.matchCheckSync(e, ifDir)
-    if (p) this.matchFinish(p, absolute)
+    if (p) this.#matchEmitChecked(p, absolute)
   }
 
   walkCB(target: Path, patterns: Pattern[], cb: () => unknown) {
@@ -296,10 +305,12 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       if (--tasks === 0) cb()
     }
 
-    for (const [m, absolute, ifDir] of processor.matches.entries()) {
+    for (const [m, n] of processor.matches.store) {
       if (this.#ignored(m)) continue
       tasks++
-      void this.match(m, absolute, ifDir).then(() => next())
+      void this.match(m, !!(n & ABSOLUTE), !!(n & IF_DIR)).then(() =>
+        next(),
+      )
     }
 
     for (const t of processor.subwalkTargets()) {
@@ -334,10 +345,12 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       if (--tasks === 0) cb()
     }
 
-    for (const [m, absolute, ifDir] of proc.matches.entries()) {
+    for (const [m, n] of proc.matches.store) {
       if (this.#ignored(m)) continue
       tasks++
-      void this.match(m, absolute, ifDir).then(() => next())
+      void this.match(m, !!(n & ABSOLUTE), !!(n & IF_DIR)).then(() =>
+        next(),
+      )
     }
     for (const [target, patterns] of proc.subwalks.entries()) {
       tasks++
@@ -378,9 +391,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       if (--tasks === 0) cb()
     }
 
-    for (const [m, absolute, ifDir] of processor.matches.entries()) {
+    for (const [m, n] of processor.matches.store) {
       if (this.#ignored(m)) continue
-      this.matchSync(m, absolute, ifDir)
+      this.matchSync(m, !!(n & ABSOLUTE), !!(n & IF_DIR))
     }
 
     for (const t of processor.subwalkTargets()) {
@@ -408,9 +421,9 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
       if (--tasks === 0) cb()
     }
 
-    for (const [m, absolute, ifDir] of proc.matches.entries()) {
+    for (const [m, n] of proc.matches.store) {
       if (this.#ignored(m)) continue
-      this.matchSync(m, absolute, ifDir)
+      this.matchSync(m, !!(n & ABSOLUTE), !!(n & IF_DIR))
     }
     for (const [target, patterns] of proc.subwalks.entries()) {
       tasks++
@@ -424,17 +437,19 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
 export class GlobWalker<
   O extends GlobWalkerOpts = GlobWalkerOpts,
 > extends GlobUtil<O> {
-  matches = new Set<Result<O>>()
+  // each Path is only emitted once (see GlobUtil.seen), so the results
+  // do not need to be deduped
+  matches: Result<O>[] = []
 
   constructor(patterns: Pattern[], path: Path, opts: O) {
     super(patterns, path, opts)
   }
 
   matchEmit(e: Result<O>): void {
-    this.matches.add(e)
+    this.matches.push(e)
   }
 
-  async walk(): Promise<Set<Result<O>>> {
+  async walk(): Promise<Result<O>[]> {
     if (this.signal?.aborted) throw this.signal.reason
     if (this.path.isUnknown()) {
       await this.path.lstat()
@@ -451,7 +466,7 @@ export class GlobWalker<
     return this.matches
   }
 
-  walkSync(): Set<Result<O>> {
+  walkSync(): Result<O>[] {
     if (this.signal?.aborted) throw this.signal.reason
     if (this.path.isUnknown()) {
       this.path.lstatSync()

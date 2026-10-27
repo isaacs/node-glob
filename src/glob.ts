@@ -555,18 +555,16 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
     // coerce them into the right shape.  It will have already called
     // realpath() if the option was set to do so, so we know that's cached.
     // start out knowing the cwd, at least
-    return [
-      ...(await new GlobWalker(this.patterns, this.scurry.cwd, {
-        ...this.opts,
-        maxDepth:
-          this.maxDepth !== Infinity ?
-            this.maxDepth + this.scurry.cwd.depth()
-          : Infinity,
-        platform: this.platform,
-        nocase: this.nocase,
-        includeChildMatches: this.includeChildMatches,
-      }).walk()),
-    ]
+    return await new GlobWalker(this.patterns, this.scurry.cwd, {
+      ...this.opts,
+      maxDepth:
+        this.maxDepth !== Infinity ?
+          this.maxDepth + this.scurry.cwd.depth()
+        : Infinity,
+      platform: this.platform,
+      nocase: this.nocase,
+      includeChildMatches: this.includeChildMatches,
+    }).walk()
   }
 
   /**
@@ -574,18 +572,16 @@ export class Glob<Opts extends GlobOptions> implements GlobOptions {
    */
   walkSync(): Results<Opts>
   walkSync(): (string | Path)[] {
-    return [
-      ...new GlobWalker(this.patterns, this.scurry.cwd, {
-        ...this.opts,
-        maxDepth:
-          this.maxDepth !== Infinity ?
-            this.maxDepth + this.scurry.cwd.depth()
-          : Infinity,
-        platform: this.platform,
-        nocase: this.nocase,
-        includeChildMatches: this.includeChildMatches,
-      }).walkSync(),
-    ]
+    return new GlobWalker(this.patterns, this.scurry.cwd, {
+      ...this.opts,
+      maxDepth:
+        this.maxDepth !== Infinity ?
+          this.maxDepth + this.scurry.cwd.depth()
+        : Infinity,
+      platform: this.platform,
+      nocase: this.nocase,
+      includeChildMatches: this.includeChildMatches,
+    }).walkSync()
   }
 
   /**

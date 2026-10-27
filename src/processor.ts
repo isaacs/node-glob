@@ -6,24 +6,44 @@ import type { MMMatcher, MMPattern, Pattern } from './pattern.js'
 import type { GlobWalkerOpts } from './walker.js'
 
 /**
- * A cache of which patterns have been processed for a given Path
+ * A cache of which patterns have been processed for a given Path, in
+ * this walk step and the steps that led to it.
+ *
+ * A step only adds to it before it makes the caches for the next
+ * steps, so a copy can look up the chain of caches before it, in
+ * place of copying their entries. A pattern for a path that a cache
+ * up the chain has already seen is added to that cache's set, so that
+ * the other steps that share it see it too. Paths are keyed by their
+ * full path, because path-scurry can make a new Path object for the
+ * same path once its cache of children is full.
  */
 export class HasWalkedCache {
-  store: Map<string, Set<string>>
-  constructor(store: Map<string, Set<string>> = new Map()) {
-    this.store = store
+  parent?: HasWalkedCache
+  store?: Map<string, Set<string>>
+  constructor(parent?: HasWalkedCache) {
+    this.parent = parent
   }
   copy() {
-    return new HasWalkedCache(new Map(this.store))
+    return new HasWalkedCache(this)
   }
+  // the set for the path in this cache, or the closest one before it
+  #find(fullpath: string): Set<string> | undefined {
+    const set = this.store?.get(fullpath)
+    return set || !this.parent ? set : this.parent.#find(fullpath)
+  }
+
   hasWalked(target: Path, pattern: Pattern) {
-    return this.store.get(target.fullpath())?.has(pattern.globString())
+    return !!this.#find(target.fullpath())?.has(pattern.globString())
   }
   storeWalked(target: Path, pattern: Pattern) {
     const fullpath = target.fullpath()
-    const cached = this.store.get(fullpath)
+    const cached = this.#find(fullpath)
     if (cached) cached.add(pattern.globString())
-    else this.store.set(fullpath, new Set([pattern.globString()]))
+    else
+      (this.store ??= new Map()).set(
+        fullpath,
+        new Set([pattern.globString()]),
+      )
   }
 }
 
@@ -31,21 +51,19 @@ export class HasWalkedCache {
  * A record of which paths have been matched in a given walk step,
  * and whether they only are considered a match if they are a directory,
  * and whether their absolute or relative path should be returned.
+ * The store maps each path to {@link MatchRecord.ABSOLUTE} and
+ * {@link MatchRecord.IF_DIR} flags.
  */
 export class MatchRecord {
+  static readonly ABSOLUTE = 2
+  static readonly IF_DIR = 1
   store: Map<Path, number> = new Map()
   add(target: Path, absolute: boolean, ifDir: boolean) {
-    const n = (absolute ? 2 : 0) | (ifDir ? 1 : 0)
+    const n =
+      (absolute ? MatchRecord.ABSOLUTE : 0) |
+      (ifDir ? MatchRecord.IF_DIR : 0)
     const current = this.store.get(target)
     this.store.set(target, current === undefined ? n : n & current)
-  }
-  // match, absolute, ifdir
-  entries(): [Path, boolean, boolean][] {
-    return [...this.store.entries()].map(([path, n]) => [
-      path,
-      !!(n & 2),
-      !!(n & 1),
-    ])
   }
 }
 
