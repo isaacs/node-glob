@@ -326,17 +326,17 @@ share the previously loaded cache.
   _always_ start in the `x:/` or `//host/share` directory,
   regardless of the `root` setting.
 
-> [!NOTE] This _doesn't_ necessarily limit the walk to the
-> `root` directory, and doesn't affect the cwd starting point
-> for non-absolute patterns. A pattern containing `..` will
-> still be able to traverse out of the root directory, if it
-> is not an actual root directory on the filesystem, and any
-> non-absolute patterns will be matched in the `cwd`. For
-> example, the pattern `/../*` with `{root:'/some/path'}`
-> will return all files in `/some`, not all files in
-> `/some/path`. The pattern `*` with `{root:'/some/path'}`
-> will return all the entries in the cwd, not the entries in
-> `/some/path`.
+> [!NOTE]
+> This _doesn't_ necessarily limit the walk to the `root`
+> directory, and doesn't affect the cwd starting point for
+> non-absolute patterns. A pattern containing `..` will still be
+> able to traverse out of the root directory, if it is not an
+> actual root directory on the filesystem, and any non-absolute
+> patterns will be matched in the `cwd`. For example, the pattern
+> `/../*` with `{root:'/some/path'}` will return all files in
+> `/some`, not all files in `/some/path`. The pattern `*` with
+> `{root:'/some/path'}` will return all the entries in the cwd,
+> not the entries in `/some/path`.
 
 - `windowsPathsNoEscape` Use `\\` as a path separator _only_, and
   _never_ as an escape character. If set, all `\\` characters are
