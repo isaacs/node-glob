@@ -326,17 +326,17 @@ share the previously loaded cache.
   _always_ start in the `x:/` or `//host/share` directory,
   regardless of the `root` setting.
 
-> [!NOTE] This _doesn't_ necessarily limit the walk to the
-> `root` directory, and doesn't affect the cwd starting point
-> for non-absolute patterns. A pattern containing `..` will
-> still be able to traverse out of the root directory, if it
-> is not an actual root directory on the filesystem, and any
-> non-absolute patterns will be matched in the `cwd`. For
-> example, the pattern `/../*` with `{root:'/some/path'}`
-> will return all files in `/some`, not all files in
-> `/some/path`. The pattern `*` with `{root:'/some/path'}`
-> will return all the entries in the cwd, not the entries in
-> `/some/path`.
+> [!NOTE]
+> This _doesn't_ necessarily limit the walk to the `root`
+> directory, and doesn't affect the cwd starting point for
+> non-absolute patterns. A pattern containing `..` will still be
+> able to traverse out of the root directory, if it is not an
+> actual root directory on the filesystem, and any non-absolute
+> patterns will be matched in the `cwd`. For example, the pattern
+> `/../*` with `{root:'/some/path'}` will return all files in
+> `/some`, not all files in `/some/path`. The pattern `*` with
+> `{root:'/some/path'}` will return all the entries in the cwd,
+> not the entries in `/some/path`.
 
 - `windowsPathsNoEscape` Use `\\` as a path separator _only_, and
   _never_ as an escape character. If set, all `\\` characters are
@@ -558,7 +558,7 @@ share the previously loaded cache.
       // likely to match first, since it's just a stat
       'a/b/c/d/e/f',
 
-      // this pattern is more complicated! It must to various readdir()
+      // this pattern is more complicated! It must do various readdir()
       // calls and test the results against the pattern, and that is
       // certainly going to take a little bit longer.
       //
@@ -576,12 +576,12 @@ share the previously loaded cache.
   included child entry will not cause problems.
 
 > [!NOTE]
-> It _only_ ignores matches that would be a descendant
-> of a previous match, and only if that descendant is matched
-> _after_ the ancestor is encountered. Since the file system walk
-> happens in indeterminate order, it's possible that a match will
-> already be added before its ancestor, if multiple or braced
-> patterns are used.
+> It _only_ ignores matches that would be a descendant of a
+> previous match, and only if that descendant is matched _after_
+> the ancestor is encountered. Since the file system walk happens
+> in indeterminate order, it's possible that a match will already
+> be added before its ancestor, if multiple or braced patterns
+> are used.
 
 - `braceExpandMax` number, defaults to `10_000`. This is the
   maximum number of `{x,y,...}` patterns to expand. It is very
@@ -687,9 +687,9 @@ it is the only thing in a path part. That is, `a/**/b` will match
 `a/x/y/b`, but `a/**b` will not.
 
 > [!NOTE]
-> Symlinked directories are not traversed as part of a
-> `**`, though their contents may match against subsequent portions
-> of the pattern. This prevents infinite loops and duplicates and
+> Symlinked directories are not traversed as part of a `**`,
+> though their contents may match against subsequent portions of
+> the pattern. This prevents infinite loops and duplicates and
 > the like. You can force glob to traverse symlinks with `**` by
 > setting `{follow:true}` in the options.
 
