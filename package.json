@@ -80,7 +80,7 @@
     "benchclean": "node benchclean.cjs"
   },
   "dependencies": {
-    "minimatch": "^11.0.0",
+    "minimatch": "^11.0.2",
     "minipass": "^7.1.3",
     "path-scurry": "^3.0.0"
   },
