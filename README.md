@@ -558,7 +558,7 @@ share the previously loaded cache.
       // likely to match first, since it's just a stat
       'a/b/c/d/e/f',
 
-      // this pattern is more complicated! It must to various readdir()
+      // this pattern is more complicated! It must do various readdir()
       // calls and test the results against the pattern, and that is
       // certainly going to take a little bit longer.
       //
@@ -576,12 +576,12 @@ share the previously loaded cache.
   included child entry will not cause problems.
 
 > [!NOTE]
-> It _only_ ignores matches that would be a descendant
-> of a previous match, and only if that descendant is matched
-> _after_ the ancestor is encountered. Since the file system walk
-> happens in indeterminate order, it's possible that a match will
-> already be added before its ancestor, if multiple or braced
-> patterns are used.
+> It _only_ ignores matches that would be a descendant of a
+> previous match, and only if that descendant is matched _after_
+> the ancestor is encountered. Since the file system walk happens
+> in indeterminate order, it's possible that a match will already
+> be added before its ancestor, if multiple or braced patterns
+> are used.
 
 - `braceExpandMax` number, defaults to `10_000`. This is the
   maximum number of `{x,y,...}` patterns to expand. It is very
@@ -687,9 +687,9 @@ it is the only thing in a path part. That is, `a/**/b` will match
 `a/x/y/b`, but `a/**b` will not.
 
 > [!NOTE]
-> Symlinked directories are not traversed as part of a
-> `**`, though their contents may match against subsequent portions
-> of the pattern. This prevents infinite loops and duplicates and
+> Symlinked directories are not traversed as part of a `**`,
+> though their contents may match against subsequent portions of
+> the pattern. This prevents infinite loops and duplicates and
 > the like. You can force glob to traverse symlinks with `**` by
 > setting `{follow:true}` in the options.
 
