@@ -5,7 +5,7 @@
     "tag": "v13-legacy"
   },
   "description": "the most correct and second fastest glob implementation in JavaScript",
-  "version": "13.0.6",
+  "version": "13.0.7",
   "type": "module",
   "tshy": {
     "exports": {
