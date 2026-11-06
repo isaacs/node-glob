@@ -1,6 +1,9 @@
 {
   "author": "Isaac Z. Schlueter <i@izs.me> (https://blog.izs.me/)",
   "name": "glob",
+  "publishConfig": {
+    "tag": "v13-legacy"
+  },
   "description": "the most correct and second fastest glob implementation in JavaScript",
   "version": "13.0.6",
   "type": "module",
