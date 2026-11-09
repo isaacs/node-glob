@@ -199,9 +199,9 @@ export class Processor {
         const rp = rest?.pattern()
         const rrest = rest?.rest()
         if (!rest || ((rp === '' || rp === '.') && !rrest)) {
-          // only HAS to be a dir if it ends in **/ or **/.
-          // but ending in ** will match files as well.
-          this.matches.add(t, absolute, rp === '' || rp === '.')
+          // the path that the ** starts from is only a match if it is
+          // a dir, like bash. Files under it are matched as children.
+          this.matches.add(t, absolute, true)
         } else {
           if (rp === '..') {
             // this would mean you're matching **/.. at the fs root,

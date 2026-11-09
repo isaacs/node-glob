@@ -74,6 +74,7 @@ if (process.platform === 'win32' || !process.env.TEST_REGEN) {
       'a/**/[cg]/../[cg]',
       'a/{b,c,d,e,f}/**/g',
       'a/b/**',
+      'a/b/c/d/**',
       './**/g',
       'a/abc{fed,def}/g/h',
       'a/abc{fed/g,def}/**/',
