@@ -1,0 +1,48 @@
+# Stage an npm release when a v* tag is pushed. Nothing reaches the
+# registry until a maintainer approves the staged version on
+# npmjs.com (or with `npm stage approve`), with 2FA.
+#
+# Trusted publishing (OIDC) authenticates the job, so no npm token
+# is stored. On npmjs.com, the package's trusted publisher entry
+# must name this repository, the workflow file `release.yml`, and
+# the environment `npm`.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  id-token: write # for the npm OIDC token
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '26'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false # no cache in release builds
+
+      # The tag must name the version in package.json.
+      - name: Check the tag
+        run: |
+          want="v$(node -p 'require("./package.json").version')"
+          if [ "$GITHUB_REF_NAME" != "$want" ]; then
+            echo "tag $GITHUB_REF_NAME does not match package.json ($want)"
+            exit 1
+          fi
+
+      - run: npm ci --ignore-scripts
+        if: hashFiles('package-lock.json') != ''
+      - run: npm run build --if-present
+      - run: npm test --if-present
+
+      - run: npm stage publish --access public
