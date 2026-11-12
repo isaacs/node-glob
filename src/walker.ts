@@ -23,6 +23,7 @@ const { ABSOLUTE, IF_DIR } = MatchRecord
 export interface GlobWalkerOpts {
   absolute?: boolean
   allowWindowsEscape?: boolean
+  braceExpandMax?: number
   cwd?: string | URL
   dot?: boolean
   dotRelative?: boolean

@@ -58,6 +58,7 @@ export class Ignore implements IgnoreLike {
       root,
       windowsPathsNoEscape,
       allowWindowsEscape,
+      braceExpandMax = 10_000,
     }: GlobWalkerOpts,
     cwd?: Path,
   ) {
@@ -69,6 +70,7 @@ export class Ignore implements IgnoreLike {
     windowsPathsNoEscape =
       !!windowsPathsNoEscape || allowWindowsEscape === false
     this.mmopts = {
+      braceExpandMax,
       dot: true,
       nobrace,
       nocase,
@@ -84,7 +86,7 @@ export class Ignore implements IgnoreLike {
     const slashRoot = cwd?.resolve(root ?? '/').fullpath() ?? '/'
     this.slashRoot = escape(
       slashRoot.replace(/\\/g, '/').replace(/\/$/, ''),
-      { windowsPathsNoEscape },
+      { magicalBraces: true, windowsPathsNoEscape },
     )
     for (const ign of ignored) this.add(ign)
   }
