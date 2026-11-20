@@ -1,7 +1,8 @@
 import * as fs from 'fs'
 import * as fsp from 'fs/promises'
 import { resolve } from 'path'
-import t from 'tap'
+import { assert, cleanup, describe, mockImport, test } from 'ubqtest'
+import './00-setup.js'
 import { glob } from '../dist/esm/index.js'
 import type { GlobOptionsWithFileTypesUnset } from '../dist/esm/glob.js'
 import { fileURLToPath } from 'url'
@@ -15,9 +16,9 @@ const fixtureDir = resolve(__dirname, 'fixtures')
 const origCwd = process.cwd()
 process.chdir(fixtureDir)
 
-if (process.platform === 'win32') {
-  t.plan(0, 'skip on windows')
-} else {
+const skip = process.platform === 'win32' && 'skip on windows'
+
+{
   // options, results
   // realpath:true set on each option
 
@@ -55,46 +56,67 @@ if (process.platform === 'win32') {
 
   for (const [opt, expect, p = pattern] of cases) {
     expect.sort(alphasort)
-    t.test(`${p} ${JSON.stringify(opt)}`, async t => {
+    test(`${p} ${JSON.stringify(opt)}`, { skip }, async () => {
       opt.realpath = true
-      t.same(glob.globSync(p, opt).sort(alphasort), expect, 'sync')
+      assert.deepEqual(
+        glob.globSync(p, opt).sort(alphasort),
+        expect,
+        'sync',
+      )
       const a = await glob(p, opt)
-      t.same(a.sort(alphasort), expect, 'async')
+      assert.deepEqual(a.sort(alphasort), expect, 'async')
     })
   }
 
-  t.test('realpath failure', async t => {
-    // failing realpath means that it does not include the result
-    process.chdir(origCwd)
-    const { glob } = await t.mockImport<
-      typeof import('../dist/esm/index.js')
-    >('../dist/esm/index.js', {
-      fs: {
-        ...fs,
-        realpathSync: Object.assign(fs.realpathSync, {
-          native: () => {
-            throw new Error('no error for you sync')
-          },
-        }),
-      },
-      'fs/promises': {
-        ...fsp,
-        realpath: async () => {
-          throw new Error('no error for you async')
+  // glob does its fs work in path-scurry, a package in node_modules,
+  // so the mock of fs goes to an instance of path-scurry.
+  const mockGlob = async () => {
+    const realpathSync = Object.assign(
+      (p: fs.PathLike) => fs.realpathSync(p),
+      {
+        native: () => {
+          throw new Error('no error for you sync')
         },
       },
-    })
+    ) as unknown as typeof fs.realpathSync
+    const scurry = await mockImport(
+      () => import('path-scurry'),
+      [
+        [() => import('fs'), { ...fs, realpathSync }],
+        [
+          () => import('node:fs/promises'),
+          {
+            ...fsp,
+            realpath: async () => {
+              throw new Error('no error for you async')
+            },
+          },
+        ],
+      ],
+    )
+    const { glob } = await mockImport(
+      () => import('../dist/esm/index.js'),
+      [[() => import('path-scurry'), scurry]],
+    )
+    return glob
+  }
+
+  // failing realpath means that it does not include the result
+  describe('realpath failure', { skip }, () => {
     const pattern = 'a/symlink/a/b/c/a/b/**'
-    t.test('setting cwd explicitly', async t => {
+    test('setting cwd explicitly', async () => {
+      process.chdir(origCwd)
+      cleanup(() => process.chdir(fixtureDir))
+      const glob = await mockGlob()
       const opt = { realpath: true, cwd: fixtureDir }
-      t.same(glob.globSync(pattern, opt), [])
-      t.same(await glob(pattern, opt), [])
+      assert.deepEqual(glob.globSync(pattern, opt), [])
+      assert.deepEqual(await glob(pattern, opt), [])
     })
-    t.test('looking in cwd', async t => {
-      process.chdir(fixtureDir)
+    test('looking in cwd', async () => {
+      const glob = await mockGlob()
       const opt = { realpath: true }
-      t.same(glob.globSync(pattern, opt), [])
-      t.same(await glob(pattern, opt), [])
+      assert.deepEqual(glob.globSync(pattern, opt), [])
+      assert.deepEqual(await glob(pattern, opt), [])
     })
   })
 }

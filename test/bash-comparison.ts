@@ -1,7 +1,8 @@
 // basic test
 // show that it does the same thing by default as the shell.
 import { resolve } from 'path'
-import t from 'tap'
+import { assert, test } from 'ubqtest'
+import './00-setup.js'
 import { fileURLToPath } from 'url'
 import { glob } from '../dist/esm/index.js'
 import { bashResults } from './bash-results.js'
@@ -36,7 +37,7 @@ const cleanResults = (m: string[]) => {
 }
 
 globs.forEach(function (pattern) {
-  let expect = bashResults[pattern]
+  let expect = bashResults[pattern]!
   // anything regarding the symlink thing will fail on windows, so just skip it
   if (
     process.platform === 'win32' &&
@@ -45,14 +46,14 @@ globs.forEach(function (pattern) {
     return
   }
 
-  t.test(pattern, async t => {
+  test(pattern, async () => {
     // sort and unmark, just to match the shell results
     const matches = cleanResults(await glob(pattern))
-    t.same(matches, expect, pattern)
+    assert.deepEqual(matches, expect, pattern)
   })
 
-  t.test(`${pattern} sync`, async t => {
+  test(`${pattern} sync`, async () => {
     const matches = cleanResults(glob.globSync(pattern))
-    t.same(matches, expect, 'should match shell (sync)')
+    assert.deepEqual(matches, expect, 'should match shell (sync)')
   })
 })

@@ -86,11 +86,10 @@ export class SubWalks {
   }
   get(target: Path): Pattern[] {
     const subs = this.store.get(target)
-    /* c8 ignore start */
+    // ubq: not measured: only paths in the store are walked
     if (!subs) {
       throw new Error('attempting to walk unknown path')
     }
-    /* c8 ignore stop */
     return subs
   }
   entries(): [Path, Pattern[]][] {
@@ -206,9 +205,8 @@ export class Processor {
           if (rp === '..') {
             // this would mean you're matching **/.. at the fs root,
             // and no thanks, I'm not gonna test that specific case.
-            /* c8 ignore start */
+            // ubq: not measured: **/.. at the fs root
             const tp = t.parent || t
-            /* c8 ignore stop */
             if (!rrest) this.matches.add(tp, absolute, true)
             else if (!this.hasWalkedCache.hasWalked(tp, rrest)) {
               this.subwalks.add(tp, rrest)
@@ -296,9 +294,8 @@ export class Processor {
       ) {
         this.testString(e, rp, rest.rest(), absolute)
       } else if (rp === '..') {
-        /* c8 ignore start */
+        // ubq: not measured: .. at the fs root
         const ep = e.parent || e
-        /* c8 ignore stop */
         this.subwalks.add(ep, rest)
       } else if (typeof rp === 'object') {
         this.testMatcher(e, rp, rest.rest(), absolute)

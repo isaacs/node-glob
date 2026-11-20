@@ -1,16 +1,16 @@
-// just a little pre-run script to set up the fixtures.
-// zz-finish cleans it up
+// Set up the fixtures. Each test file that uses them imports this
+// module. The test files run at the same time, so each step must be
+// safe to run again, and at the same time as another process.
+//
+// Run this file directly with TEST_REGEN=1 to make the bash pattern
+// results again: npm run test-regen
 
 import { spawn } from 'child_process'
-import { createWriteStream, promises } from 'fs'
-import { mkdirp } from 'mkdirp'
+import { mkdirSync, promises, symlinkSync, writeFileSync } from 'fs'
 import { join, dirname, resolve } from 'path'
-import t from 'tap'
 import { fileURLToPath } from 'url'
 
-const { writeFile, symlink } = promises
-t.pipe(createWriteStream('00-setup.tap'))
-process.env.TAP_BAIL = '1'
+const { writeFile } = promises
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const fixtureDir = resolve(__dirname, 'fixtures')
@@ -30,37 +30,29 @@ const filesUnresolved = [
 const symlinkTo = resolve(fixtureDir, 'a/symlink/a/b/c')
 const symlinkFrom = '../..'
 
-const files = filesUnresolved.map(f => resolve(fixtureDir, f))
-
-for (const file of files) {
-  t.test(file, { bail: true }, async () => {
-    const f = resolve(fixtureDir, file)
-    const d = dirname(f)
-    await mkdirp(d)
-    await writeFile(f, 'i like tests')
-  })
+for (const file of filesUnresolved) {
+  const f = resolve(fixtureDir, file)
+  mkdirSync(dirname(f), { recursive: true })
+  writeFileSync(f, 'i like tests')
 }
 
 if (process.platform !== 'win32') {
-  t.test('symlinky', async () => {
-    const d = dirname(symlinkTo)
-    await mkdirp(d)
-    await symlink(symlinkFrom, symlinkTo, 'dir')
-  })
+  mkdirSync(dirname(symlinkTo), { recursive: true })
+  try {
+    symlinkSync(symlinkFrom, symlinkTo, 'dir')
+  } catch (er) {
+    if ((er as NodeJS.ErrnoException).code !== 'EEXIST') throw er
+  }
 }
 
-;['foo', 'bar', 'baz', 'asdf', 'quux', 'qwer', 'rewq'].forEach(
-  function (s) {
-    const w = `/tmp/glob-test/${s}`
-    t.test(`create ${w}`, async t => {
-      await mkdirp(w)
-      t.pass(w)
-    })
-  },
-)
+for (const s of ['foo', 'bar', 'baz', 'asdf', 'quux', 'qwer', 'rewq']) {
+  mkdirSync(`/tmp/glob-test/${s}`, { recursive: true })
+}
 
 // generate the bash pattern test-fixtures if possible
-if (process.platform === 'win32' || !process.env.TEST_REGEN) {
+if (process.argv[1] !== fileURLToPath(import.meta.url)) {
+  // imported by a test file: the fixtures are ready
+} else if (process.platform === 'win32' || !process.env.TEST_REGEN) {
   console.error('Windows, or TEST_REGEN unset.  Using cached fixtures.')
 } else {
   const globs =
@@ -109,7 +101,7 @@ if (process.platform === 'win32' || !process.env.TEST_REGEN) {
   const bashOutput: { [k: string]: string[] } = {}
 
   for (const pattern of globs) {
-    t.test(`generate fixture ${pattern}`, t => {
+    await new Promise<void>((res, rej) => {
       const opts = [
         '-O',
         'globstar',
@@ -127,40 +119,30 @@ if (process.platform === 'win32' || !process.env.TEST_REGEN) {
       cp.on('close', function (code) {
         const o = flatten(out)
         bashOutput[pattern] = !o ? [] : cleanResults(o.split(/\r*\n/))
-        t.notOk(code, 'bash test should finish nicely')
-        t.end()
+        if (code) rej(new Error(`bash failed for ${pattern}: ${code}`))
+        else res()
       })
     })
   }
 
-  t.test('save fixtures', async () => {
-    const fname = resolve(__dirname, 'bash-results.ts')
-    const data = `// generated via 'npm run test-regen'
-import { fileURLToPath } from 'url'
-
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  console.log('TAP version 14\\n1..1\\nok\\n')
-}
-
+  const fname = resolve(__dirname, 'bash-results.ts')
+  const data = `// generated via 'npm run test-regen'
 export const bashResults:{ [path: string]: string[] } = ${JSON.stringify(
-      bashOutput,
-      null,
-      2,
-    )}
+    bashOutput,
+    null,
+    2,
+  )}
 `
-    await writeFile(fname, data)
-  })
+  await writeFile(fname, data)
 
-  t.test('formatting', t => {
-    const c = spawn(
-      'prettier',
-      ['--write', resolve(__dirname, 'bash-results.ts')],
-      { stdio: ['ignore', 2, 2] },
-    )
+  await new Promise<void>((res, rej) => {
+    const c = spawn('prettier', ['--write', fname], {
+      stdio: ['ignore', 2, 2],
+    })
     c.on('close', (code, signal) => {
-      t.equal(code, 0, 'code')
-      t.equal(signal, null, 'signal')
-      t.end()
+      if (code || signal)
+        rej(new Error(`prettier failed: ${code} ${signal}`))
+      else res()
     })
   })
 

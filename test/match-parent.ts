@@ -1,26 +1,23 @@
-import t from 'tap'
+import { assert, test } from 'ubqtest'
 import { PathScurry } from 'path-scurry'
 import { Glob } from '../dist/esm/index.js'
 
 const scurry = new PathScurry()
-t.test('/', t => {
+test('/', () => {
   const g = new Glob('/', { withFileTypes: true, scurry })
   const m = g.walkSync()
-  t.equal(m.length, 1)
-  t.equal(m[0], scurry.cwd.resolve('/'))
-  t.end()
+  assert.equal(m.length, 1)
+  assert.equal(m[0], scurry.cwd.resolve('/'))
 })
-t.test('/..', t => {
+test('/..', () => {
   const g = new Glob('/..', { withFileTypes: true, scurry })
   const m = g.walkSync()
-  t.equal(m.length, 1)
-  t.equal(m[0], scurry.cwd.resolve('/'))
-  t.end()
+  assert.equal(m.length, 1)
+  assert.equal(m[0], scurry.cwd.resolve('/'))
 })
-t.test('/../../../../../', t => {
+test('/../../../../../', () => {
   const g = new Glob('/../../../../../', { withFileTypes: true, scurry })
   const m = g.walkSync()
-  t.equal(m.length, 1)
-  t.equal(m[0], scurry.cwd.resolve('/'))
-  t.end()
+  assert.equal(m.length, 1)
+  assert.equal(m[0], scurry.cwd.resolve('/'))
 })

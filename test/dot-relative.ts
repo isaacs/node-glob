@@ -1,5 +1,6 @@
 import { resolve, sep } from 'path'
-import t from 'tap'
+import { assert, describe, test } from 'ubqtest'
+import './00-setup.js'
 import { fileURLToPath } from 'url'
 import { Glob } from '../dist/esm/index.js'
 import { bashResults } from './bash-results.js'
@@ -10,70 +11,64 @@ process.chdir(fileURLToPath(new URL('./fixtures', import.meta.url)))
 
 const marks = [true, false]
 for (const mark of marks) {
-  t.test(`'mark=${mark}`, t => {
-    t.plan(3)
-
-    t.test('Emits relative matches prefixed with ./', async t => {
+  describe(`'mark=${mark}`, () => {
+    test('Emits relative matches prefixed with ./', async () => {
       const g = new Glob(pattern, { dotRelative: true })
       const results = await g.walk()
 
-      t.equal(
+      assert.equal(
         results.length,
-        bashResults[pattern]?.length,
+        bashResults[pattern]!.length,
         'must match all files',
       )
       for (const m of results) {
-        t.ok(m.startsWith(`.${sep}`))
+        assert(m.startsWith(`.${sep}`))
       }
     })
 
-    t.test('returns ./ prefixed matches synchronously', async t => {
+    test('returns ./ prefixed matches synchronously', async () => {
       const g = new Glob(pattern, { dotRelative: true })
       const results = g.walkSync()
 
-      t.equal(
+      assert.equal(
         results.length,
-        bashResults[pattern]?.length,
+        bashResults[pattern]!.length,
         'must match all files',
       )
       for (const m of results) {
-        t.ok(m.startsWith(`.${sep}`))
+        assert(m.startsWith(`.${sep}`))
       }
     })
 
-    t.test(
-      'does not prefix with ./ unless dotRelative is true',
-      async t => {
-        const g = new Glob(pattern, {})
-        const results = await g.walk()
+    test('does not prefix with ./ unless dotRelative is true', async () => {
+      const g = new Glob(pattern, {})
+      const results = await g.walk()
 
-        t.equal(
-          results.length,
-          bashResults[pattern]?.length,
-          'must match all files',
-        )
-        for (const m of results) {
-          t.ok((mark && m === `.${sep}`) || !m.startsWith(`.${sep}`))
-        }
-      },
-    )
+      assert.equal(
+        results.length,
+        bashResults[pattern]!.length,
+        'must match all files',
+      )
+      for (const m of results) {
+        assert((mark && m === `.${sep}`) || !m.startsWith(`.${sep}`))
+      }
+    })
   })
 }
 
-t.test('does not add ./ for patterns starting in ../', async t => {
-  t.plan(2)
+describe('does not add ./ for patterns starting in ../', () => {
   const pattern = '../a/b/**'
   const cwd = resolve(__dirname, 'fixtures/a')
-  t.test('async', async t => {
+  test('async', async () => {
     const g = new Glob(pattern, { dotRelative: true, cwd })
     for await (const m of g) {
-      t.ok(!m.startsWith(`.${sep}..${sep}`))
+      assert(!m.startsWith(`.${sep}..${sep}`))
     }
   })
-  t.test('sync', async t => {
+  test('sync', async () => {
     const g = new Glob(pattern, { dotRelative: true, cwd })
     for (const m of g) {
-      t.ok(!m.startsWith(`.${sep}..${sep}`))
+      assert(!m.startsWith(`.${sep}..${sep}`))
     }
   })
 })

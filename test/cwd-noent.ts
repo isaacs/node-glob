@@ -1,82 +1,77 @@
-import t from 'tap'
+import { assert, test } from 'ubqtest'
+import './00-setup.js'
 import { fileURLToPath } from 'url'
 import { Glob } from '../dist/esm/index.js'
 const cwd = fileURLToPath(
   new URL('./fixtures/does-not-exist', import.meta.url),
 )
 
-t.test('walk', async t => {
+test('walk', async () => {
   const g = new Glob('**', { cwd })
-  t.same(await g.walk(), [])
+  assert.deepEqual(await g.walk(), [])
 })
 
-t.test('walkSync', t => {
+test('walkSync', () => {
   const g = new Glob('**', { cwd })
-  t.same(g.walkSync(), [])
-  t.end()
+  assert.deepEqual(g.walkSync(), [])
 })
 
-t.test('stream', async t => {
+test('stream', async () => {
   const g = new Glob('**', { cwd })
   const s = g.stream()
-  s.on('data', () => t.fail('should not get entries'))
-  t.same(await s.collect(), [])
+  s.on('data', () => assert.fail('should not get entries'))
+  assert.deepEqual([...(await s.collect())], [])
 })
 
-t.test('streamSync', t => {
-  const g = new Glob('**', { cwd })
-  const s = g.streamSync()
-  const c: string[] = []
-  s.on('data', p => {
-    t.fail('should not get entries')
-    c.push(p)
-  })
-  s.on('end', () => {
-    t.same(c, [])
-    t.end()
-  })
-})
+test('streamSync', () =>
+  new Promise<void>(done => {
+    const g = new Glob('**', { cwd })
+    const s = g.streamSync()
+    const c: string[] = []
+    s.on('data', p => {
+      assert.fail('should not get entries')
+      c.push(p)
+    })
+    s.on('end', () => {
+      assert.deepEqual(c, [])
+      done()
+    })
+  }))
 
-t.test('iterate', async t => {
+test('iterate', async () => {
   const g = new Glob('**', { cwd })
   const s = g.iterate()
   const c: string[] = []
   for await (const p of s) {
     c.push(p)
-    t.fail('should not get entries')
   }
-  t.same(c, [])
+  assert.deepEqual(c, [])
 })
 
-t.test('iterateSync', async t => {
+test('iterateSync', async () => {
   const g = new Glob('**', { cwd })
   const s = g.iterateSync()
   const c: string[] = []
   for (const p of s) {
     c.push(p)
-    t.fail('should not get entries')
   }
-  t.same(c, [])
-  t.end()
+  assert.deepEqual(c, [])
 })
 
-t.test('for await', async t => {
+test('for await', async () => {
   const g = new Glob('**', { cwd })
   const c: string[] = []
   for await (const p of g) {
     c.push(p)
-    t.fail('should not get entries')
   }
-  t.same(c, [])
+  assert.deepEqual(c, [])
 })
 
-t.test('iterateSync', async t => {
+test('for of', async () => {
   const g = new Glob('**', { cwd })
   const c: string[] = []
   for (const p of g) {
     c.push(p)
-    t.fail('should not get entries')
   }
-  t.same(c, [])
-  t.end()
+  assert.deepEqual(c, [])
 })

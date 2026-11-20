@@ -1,9 +1,9 @@
-import t from 'tap'
+import { assert, test, testdir } from 'ubqtest'
 import type { GlobOptionsWithFileTypesUnset } from '../src/index.js'
 import { glob, globSync } from '../src/index.js'
 
-t.test('no include child matches', async t => {
-  const cwd = t.testdir({ a: { b: { c: { d: { e: { f: '' } } } } } })
+test('no include child matches', async () => {
+  const cwd = testdir({ a: { b: { c: { d: { e: { f: '' } } } } } })
   const pattern = 'a/**/[cde]/**'
   const o: GlobOptionsWithFileTypesUnset = {
     cwd,
@@ -12,12 +12,12 @@ t.test('no include child matches', async t => {
   }
   const a = await glob(pattern, o)
   const s = globSync(pattern, o)
-  t.strictSame(a, ['a/b/c'])
-  t.strictSame(s, ['a/b/c'])
+  assert.deepEqual(a, ['a/b/c'])
+  assert.deepEqual(s, ['a/b/c'])
 })
 
-t.test('test the caveat', async t => {
-  const cwd = t.testdir({ a: { b: { c: { d: { e: { f: '' } } } } } })
+test('test the caveat', async () => {
+  const cwd = testdir({ a: { b: { c: { d: { e: { f: '' } } } } } })
   const pattern = ['a/b/c/d/e/f', 'a/[bdf]/?/[a-z]/*']
   const o: GlobOptionsWithFileTypesUnset = {
     cwd,
@@ -26,19 +26,20 @@ t.test('test the caveat', async t => {
   }
   const a = await glob(pattern, o)
   const s = globSync(pattern, o)
-  t.strictSame(a, ['a/b/c/d/e/f', 'a/b/c/d/e'])
-  t.strictSame(s, ['a/b/c/d/e/f', 'a/b/c/d/e'])
+  assert.deepEqual(a, ['a/b/c/d/e/f', 'a/b/c/d/e'])
+  assert.deepEqual(s, ['a/b/c/d/e/f', 'a/b/c/d/e'])
 })
 
-t.test('ignore impl must have an add() method', t => {
-  t.throws(() =>
-    globSync('', {
-      ignore: {
-        ignored: () => true,
-        childrenIgnored: () => true,
-      },
-      includeChildMatches: false,
-    }),
+test('ignore impl must have an add() method', () => {
+  assert.throws(
+    () =>
+      globSync('', {
+        ignore: {
+          ignored: () => true,
+          childrenIgnored: () => true,
+        },
+        includeChildMatches: false,
+      }),
+    Error,
   )
-  t.end()
 })

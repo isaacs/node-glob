@@ -108,7 +108,7 @@ export class Ignore implements IgnoreLike {
     for (let i = 0; i < mm.set.length; i++) {
       const parsed = mm.set[i]
       const globParts = mm.globParts[i]
-      /* c8 ignore start */
+      // ubq: not measured: minimatch gives a globParts row for each set row
       if (!parsed || !globParts) {
         throw new Error('invalid pattern object')
       }
@@ -118,7 +118,6 @@ export class Ignore implements IgnoreLike {
         parsed.shift()
         globParts.shift()
       }
-      /* c8 ignore stop */
       const p = new Pattern(parsed, globParts, 0, this.platform)
       const glob =
         p.root() === '/' ?

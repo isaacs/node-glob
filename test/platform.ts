@@ -1,5 +1,6 @@
 import { resolve } from 'path'
-import t from 'tap'
+import { assert, cleanup, mockImport, test } from 'ubqtest'
+import './00-setup.js'
 
 import {
   PathScurry,
@@ -15,58 +16,54 @@ import { GlobWalker } from '../dist/esm/walker.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
-t.test('default platform is process.platform', t => {
+test('default platform is process.platform', () => {
   const g = new Glob('.', {})
-  t.equal(g.platform, process.platform)
-  t.end()
+  assert.equal(g.platform, process.platform)
 })
 
-t.test('default linux when not found', async t => {
+test('default linux when not found', async () => {
   const prop = Object.getOwnPropertyDescriptor(process, 'platform')
   if (!prop) throw new Error('no platform?')
-  t.teardown(() => {
+  cleanup(() => {
     Object.defineProperty(process, 'platform', prop)
   })
   Object.defineProperty(process, 'platform', {
     value: null,
     configurable: true,
   })
-  const { Glob } = (await t.mockImport(
-    '../dist/esm/index.js',
-    {},
+  const { Glob } = (await mockImport(
+    () => import('../dist/esm/index.js'),
+    [],
   )) as typeof import('../dist/esm/index.js')
   const g = new Glob('.', {})
-  t.equal(g.platform, 'linux')
-  t.end()
+  assert.equal(g.platform, 'linux')
 })
 
-t.test('set platform, get appropriate scurry object', t => {
-  t.equal(
+test('set platform, get appropriate scurry object', () => {
+  assert.equal(
     new Glob('.', { platform: 'darwin' }).scurry.constructor,
     PathScurryDarwin,
   )
-  t.equal(
+  assert.equal(
     new Glob('.', { platform: 'linux' }).scurry.constructor,
     PathScurryPosix,
   )
-  t.equal(
+  assert.equal(
     new Glob('.', { platform: 'win32' }).scurry.constructor,
     PathScurryWin32,
   )
-  t.equal(new Glob('.', {}).scurry.constructor, PathScurry)
-  t.end()
+  assert.equal(new Glob('.', {}).scurry.constructor, PathScurry)
 })
 
-t.test('set scurry, sets nocase and scurry', t => {
+test('set scurry, sets nocase and scurry', () => {
   const scurry = new PathScurryWin32('.')
-  t.throws(() => new Glob('.', { scurry, nocase: false }))
+  assert.throws(() => new Glob('.', { scurry, nocase: false }), Error)
   const g = new Glob('.', { scurry })
-  t.equal(g.scurry, scurry)
-  t.equal(g.nocase, true)
-  t.end()
+  assert.equal(g.scurry, scurry)
+  assert.equal(g.nocase, true)
 })
 
-t.test('instantiate to hit a coverage line', async t => {
+test('instantiate to hit a coverage line', async () => {
   const s = new PathScurry(resolve(__dirname, 'fixtures/a/b'))
   const [row] = new Minimatch('?/?').set
   const p = new Pattern(row!, ['?', '?'], 0, process.platform)
@@ -76,5 +73,5 @@ t.test('instantiate to hit a coverage line', async t => {
   new GlobWalker([p], s.cwd, {
     platform: 'linux',
   })
-  t.pass('this is fine')
+  assert(true, 'this is fine')
 })
