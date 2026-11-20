@@ -1,6 +1,7 @@
 import { basename } from 'path'
 import type { Path } from 'path-scurry'
-import t from 'tap'
+import { assert, test } from 'ubqtest'
+import './00-setup.js'
 import { fileURLToPath } from 'url'
 import type { IgnoreLike } from '../dist/esm/index.js'
 import { glob, globSync } from '../dist/esm/index.js'
@@ -12,7 +13,7 @@ const j = (a: string[]) =>
     .map(s => s.replace(/\\/g, '/'))
     .sort((a, b) => a.localeCompare(b, 'en'))
 
-t.test('ignore files with long names', async t => {
+test('ignore files with long names', async () => {
   const ignore: IgnoreLike = {
     ignored: (p: Path) => p.name.length > 1,
   }
@@ -23,14 +24,15 @@ t.test('ignore files with long names', async t => {
       return basename(p).length === 1 && basename(p) !== '.'
     }),
   )
-  t.same(j(syncRes), expect)
-  t.same(j(asyncRes), expect)
-  for (const r of syncRes) {
-    if (basename(r).length > 1) t.fail(r)
-  }
+  assert.deepEqual(j(syncRes), expect)
+  assert.deepEqual(j(asyncRes), expect)
+  assert.deepEqual(
+    syncRes.filter(r => basename(r).length > 1),
+    [],
+  )
 })
 
-t.test('ignore symlink and abcdef directories', async t => {
+test('ignore symlink and abcdef directories', async () => {
   const ignore: IgnoreLike = {
     childrenIgnored: (p: Path) => {
       return p.isNamed('symlink') || p.isNamed('abcdef')
@@ -43,9 +45,10 @@ t.test('ignore symlink and abcdef directories', async t => {
       return !/\bsymlink\b|\babcdef\b/.test(p)
     }),
   )
-  t.same(j(syncRes), expect)
-  t.same(j(asyncRes), expect)
-  for (const r of syncRes) {
-    if (r === 'symlink' || r === 'basename') t.fail(r)
-  }
+  assert.deepEqual(j(syncRes), expect)
+  assert.deepEqual(j(asyncRes), expect)
+  assert.deepEqual(
+    syncRes.filter(r => r === 'symlink' || r === 'basename'),
+    [],
+  )
 })

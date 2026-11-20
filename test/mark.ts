@@ -1,5 +1,6 @@
 import { sep } from 'path'
-import t from 'tap'
+import { assert, test } from 'ubqtest'
+import './00-setup.js'
 import { fileURLToPath } from 'url'
 import { glob } from '../dist/esm/index.js'
 
@@ -9,7 +10,7 @@ const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
 const j = (a: string[]) =>
   a.map(s => s.split('/').join(sep)).sort(alphasort)
 
-t.test('mark with cwd', async t => {
+test('mark with cwd', async () => {
   const pattern = '*/*'
   const opt = { mark: true, cwd: 'a' }
   const expect = [
@@ -26,11 +27,11 @@ t.test('mark with cwd', async t => {
     expect.push('symlink/a/')
   }
 
-  t.same(res.sort(alphasort), j(expect))
-  t.same(glob.globSync(pattern, opt).sort(alphasort), j(expect))
+  assert.deepEqual(res.sort(alphasort), j(expect))
+  assert.deepEqual(glob.globSync(pattern, opt).sort(alphasort), j(expect))
 })
 
-t.test('mark, with **', async t => {
+test('mark, with **', async () => {
   const pattern = 'a/*b*/**'
   const opt = { mark: true }
   const expect = [
@@ -51,11 +52,19 @@ t.test('mark, with **', async t => {
     'a/cb/e/f',
   ].sort(alphasort)
 
-  t.same((await glob(pattern, opt)).sort(alphasort), j(expect), 'async')
-  t.same(glob.globSync(pattern, opt).sort(alphasort), j(expect), 'sync')
+  assert.deepEqual(
+    (await glob(pattern, opt)).sort(alphasort),
+    j(expect),
+    'async',
+  )
+  assert.deepEqual(
+    glob.globSync(pattern, opt).sort(alphasort),
+    j(expect),
+    'sync',
+  )
 })
 
-t.test('mark, no / on pattern', async t => {
+test('mark, no / on pattern', async () => {
   const pattern = 'a/*'
   const opt = { mark: true }
   const expect = [
@@ -72,11 +81,11 @@ t.test('mark, no / on pattern', async t => {
     expect.push('a/symlink/')
   }
   const results = (await glob(pattern, opt)).sort(alphasort)
-  t.same(results, j(expect))
-  t.same(glob.globSync(pattern, opt).sort(alphasort), j(expect))
+  assert.deepEqual(results, j(expect))
+  assert.deepEqual(glob.globSync(pattern, opt).sort(alphasort), j(expect))
 })
 
-t.test('mark=false, no / on pattern', async t => {
+test('mark=false, no / on pattern', async () => {
   const pattern = 'a/*'
   const expect = [
     'a/abcdef',
@@ -93,11 +102,11 @@ t.test('mark=false, no / on pattern', async t => {
   }
   const results = (await glob(pattern)).sort(alphasort)
 
-  t.same(results, j(expect))
-  t.same(glob.globSync(pattern).sort(alphasort), j(expect))
+  assert.deepEqual(results, j(expect))
+  assert.deepEqual(glob.globSync(pattern).sort(alphasort), j(expect))
 })
 
-t.test('mark=true, / on pattern', async t => {
+test('mark=true, / on pattern', async () => {
   const pattern = 'a/*/'
   const opt = { mark: true }
   const expect = [
@@ -115,11 +124,11 @@ t.test('mark=true, / on pattern', async t => {
     expect.push('a/symlink/')
   }
   const results = (await glob(pattern, opt)).sort(alphasort)
-  t.same(results, j(expect))
-  t.same(glob.globSync(pattern, opt).sort(alphasort), j(expect))
+  assert.deepEqual(results, j(expect))
+  assert.deepEqual(glob.globSync(pattern, opt).sort(alphasort), j(expect))
 })
 
-t.test('mark=false, / on pattern', async t => {
+test('mark=false, / on pattern', async () => {
   const pattern = 'a/*/'
   const expect = [
     'a/abcdef',
@@ -136,8 +145,8 @@ t.test('mark=false, / on pattern', async t => {
   }
 
   const results = (await glob(pattern)).sort(alphasort)
-  t.same(results, j(expect))
-  t.same(glob.globSync(pattern).sort(alphasort), j(expect))
+  assert.deepEqual(results, j(expect))
+  assert.deepEqual(glob.globSync(pattern).sort(alphasort), j(expect))
 })
 
 const cwd = process
@@ -146,38 +155,38 @@ const cwd = process
   .replace(/\\/g, '/')
 for (const mark of [true, false]) {
   for (const slash of [true, false]) {
-    t.test(`cwd mark:${mark} slash:${slash}`, async t => {
+    test(`cwd mark:${mark} slash:${slash}`, async () => {
       const pattern = cwd + (slash ? '/' : '')
       const results = await glob(pattern, { mark })
-      t.equal(results.length, 1)
+      assert.equal(results.length, 1)
       const res = results[0]?.replace(/\\/g, '/')
       const syncResults = glob.globSync(pattern, { mark: mark })
       const syncRes = syncResults[0]?.replace(/\\/g, '/')
       if (mark) {
-        t.equal(res, `${cwd}/`)
+        assert.equal(res, `${cwd}/`)
       } else {
-        t.equal(res?.indexOf(cwd), 0)
+        assert.equal(res?.indexOf(cwd), 0)
       }
-      t.equal(syncRes, res, 'sync should match async')
+      assert.equal(syncRes, res, 'sync should match async')
     })
   }
 }
 
 for (const mark of [true, false]) {
   for (const slash of [true, false]) {
-    t.test(`. mark:${mark} slash:${slash}`, async t => {
+    test(`. mark:${mark} slash:${slash}`, async () => {
       const pattern = `.${slash ? '/' : ''}`
       const results = await glob(pattern, { mark })
-      t.equal(results.length, 1)
+      assert.equal(results.length, 1)
       const res = results[0]?.replace(/\\/g, '/')
       const syncResults = glob.globSync(pattern, { mark: mark })
       const syncRes = syncResults[0]?.replace(/\\/g, '/')
       if (mark) {
-        t.equal(res, './')
+        assert.equal(res, './')
       } else {
-        t.equal(res, '.')
+        assert.equal(res, '.')
       }
-      t.equal(syncRes, res, 'sync should match async')
+      assert.equal(syncRes, res, 'sync should match async')
     })
   }
 }

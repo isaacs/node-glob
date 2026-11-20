@@ -1,10 +1,4 @@
 // generated via 'npm run test-regen'
-import { fileURLToPath } from 'url'
-
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  console.log('TAP version 14\n1..1\nok\n')
-}
-
 export const bashResults: { [path: string]: string[] } = {
   'a/c/d/*/b': ['a/c/d/c/b'],
   'a//c//d//*//b': ['a/c/d/c/b'],

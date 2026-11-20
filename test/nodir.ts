@@ -1,5 +1,6 @@
 import { resolve, sep } from 'path'
-import t from 'tap'
+import { assert, test } from 'ubqtest'
+import './00-setup.js'
 import { fileURLToPath } from 'url'
 import type { GlobOptions } from '../dist/esm/index.js'
 import { glob } from '../dist/esm/index.js'
@@ -45,8 +46,16 @@ for (const [pattern, options, expectRaw] of cases) {
   expect.sort()
   if (process.platform !== 'win32') {
   }
-  t.test(`${pattern} ${JSON.stringify(options)}`, async t => {
-    t.same(glob.globSync(pattern, options).sort(), expect, 'sync results')
-    t.same((await glob(pattern, options)).sort(), expect, 'async results')
+  test(`${pattern} ${JSON.stringify(options)}`, async () => {
+    assert.deepEqual(
+      glob.globSync(pattern, options).sort(),
+      expect,
+      'sync results',
+    )
+    assert.deepEqual(
+      (await glob(pattern, options)).sort(),
+      expect,
+      'async results',
+    )
   })
 }

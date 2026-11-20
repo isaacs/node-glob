@@ -1,40 +1,40 @@
-import t from 'tap'
+import { assert, test } from 'ubqtest'
 import { fileURLToPath } from 'url'
 import { glob } from '../dist/esm/index.js'
 
 process.chdir(fileURLToPath(new URL('.', import.meta.url)))
 
-t.test('non-string pattern is evil magic', async t => {
+test('non-string pattern is evil magic', async () => {
   const patterns = [0, null, 12, { x: 1 }, undefined, /x/, NaN]
   patterns.forEach(function (p) {
-    t.throws(function () {
+    assert.throws(function () {
       // @ts-expect-error
       glob.hasMagic(p)
-    })
+    }, Error)
   })
 })
 
-t.test('detect magic in glob patterns', async t => {
-  t.notOk(glob.hasMagic(['']), "no magic in ''")
-  t.notOk(glob.hasMagic('a/b/c/'), 'no magic a/b/c/')
-  t.ok(glob.hasMagic('a/b/**/'), 'magic in a/b/**/')
-  t.ok(glob.hasMagic('a/b/?/'), 'magic in a/b/?/')
-  t.ok(glob.hasMagic('a/b/+(x|y)'), 'magic in a/b/+(x|y)')
-  t.notOk(
-    glob.hasMagic('a/b/+(x|y)', { noext: true }),
+test('detect magic in glob patterns', async () => {
+  assert(!glob.hasMagic(['']), "no magic in ''")
+  assert(!glob.hasMagic('a/b/c/'), 'no magic a/b/c/')
+  assert(glob.hasMagic('a/b/**/'), 'magic in a/b/**/')
+  assert(glob.hasMagic('a/b/?/'), 'magic in a/b/?/')
+  assert(glob.hasMagic('a/b/+(x|y)'), 'magic in a/b/+(x|y)')
+  assert(
+    !glob.hasMagic('a/b/+(x|y)', { noext: true }),
     'no magic in a/b/+(x|y) noext',
   )
-  t.notOk(glob.hasMagic('{a,b}'), 'no magic in {a,b}')
-  t.ok(
+  assert(!glob.hasMagic('{a,b}'), 'no magic in {a,b}')
+  assert(
     glob.hasMagic('{a,b}', { magicalBraces: true }),
     'magical braces are magic in {a,b}',
   )
-  t.notOk(
-    glob.hasMagic('{a,b}', { nobrace: true }),
+  assert(
+    !glob.hasMagic('{a,b}', { nobrace: true }),
     'no magic in {a,b} nobrace:true',
   )
-  t.notOk(
-    glob.hasMagic('{a,b}', { nobrace: true, magicalBraces: true }),
+  assert(
+    !glob.hasMagic('{a,b}', { nobrace: true, magicalBraces: true }),
     'magical braces not magic in {a,b} nobrace:true',
   )
 })

@@ -1,6 +1,6 @@
 // regression test to make sure that slash-ended patterns
 // don't match files when using a different cwd.
-import t from 'tap'
+import { assert, test } from 'ubqtest'
 import { fileURLToPath } from 'url'
 import type { GlobOptions } from '../dist/esm/index.js'
 import { glob } from '../dist/esm/index.js'
@@ -12,7 +12,7 @@ const cwd = __dirname
 const opt: GlobOptions = { cwd }
 process.chdir(`${__dirname}/..`)
 
-t.test('slashes only match directories', async t => {
-  t.same(glob.globSync(pattern, opt), expect, 'sync test')
-  t.same(await glob(pattern, opt), expect, 'async test')
+test('slashes only match directories', async () => {
+  assert.deepEqual(glob.globSync(pattern, opt), expect, 'sync test')
+  assert.deepEqual(await glob(pattern, opt), expect, 'async test')
 })

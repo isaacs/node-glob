@@ -1,4 +1,5 @@
-import t from 'tap'
+import { assert, cleanup, test } from 'ubqtest'
+import './00-setup.js'
 import { glob } from '../dist/esm/index.js'
 import { sep } from 'path'
 import { fileURLToPath } from 'url'
@@ -16,28 +17,28 @@ if (process.platform !== 'win32') {
   expect.push('a/symlink/a', 'a/symlink/a/b/c/a')
 }
 
-t.test('chdir', async t => {
+test('chdir', async () => {
   const origCwd = process.cwd()
   process.chdir(fixtureDir)
-  t.teardown(() => process.chdir(origCwd))
-  t.same(
+  cleanup(() => process.chdir(origCwd))
+  assert.deepEqual(
     glob.globSync(pattern, { matchBase: true }).sort(alphasort),
     j(expect),
   )
-  t.same(
+  assert.deepEqual(
     (await glob(pattern, { matchBase: true })).sort(alphasort),
     j(expect),
   )
 })
 
-t.test('cwd', async t => {
-  t.same(
+test('cwd', async () => {
+  assert.deepEqual(
     glob
       .globSync(pattern, { matchBase: true, cwd: fixtureDir })
       .sort(alphasort),
     j(expect),
   )
-  t.same(
+  assert.deepEqual(
     (await glob(pattern, { matchBase: true, cwd: fixtureDir })).sort(
       alphasort,
     ),
@@ -45,24 +46,27 @@ t.test('cwd', async t => {
   )
 })
 
-t.test('noglobstar', async t => {
-  t.rejects(glob(pattern, { matchBase: true, noglobstar: true }))
-  t.throws(() =>
-    glob.globSync(pattern, { matchBase: true, noglobstar: true }),
+test('noglobstar', async () => {
+  await assert.rejects(
+    glob(pattern, { matchBase: true, noglobstar: true }),
+    Error,
   )
-  t.end()
+  assert.throws(
+    () => glob.globSync(pattern, { matchBase: true, noglobstar: true }),
+    Error,
+  )
 })
 
-t.test('pattern includes /', async t => {
+test('pattern includes /', async () => {
   const pattern = 'a/b*'
   const expect = ['a/b', 'a/bc']
-  t.same(
+  assert.deepEqual(
     glob
       .globSync(pattern, { matchBase: true, cwd: fixtureDir })
       .sort(alphasort),
     j(expect),
   )
-  t.same(
+  assert.deepEqual(
     (await glob(pattern, { matchBase: true, cwd: fixtureDir })).sort(
       alphasort,
     ),
@@ -70,16 +74,16 @@ t.test('pattern includes /', async t => {
   )
 })
 
-t.test('one brace section of pattern includes /', async t => {
+test('one brace section of pattern includes /', async () => {
   const pattern = 'a{*,/b*}'
   const exp = ['a', 'a/b', 'a/bc']
-  t.same(
+  assert.deepEqual(
     glob
       .globSync(pattern, { matchBase: true, cwd: fixtureDir })
       .sort(alphasort),
     j(exp),
   )
-  t.same(
+  assert.deepEqual(
     (await glob(pattern, { matchBase: true, cwd: fixtureDir })).sort(
       alphasort,
     ),
@@ -87,16 +91,16 @@ t.test('one brace section of pattern includes /', async t => {
   )
 })
 
-t.test('one array member of pattern includes /', async t => {
+test('one array member of pattern includes /', async () => {
   const pattern = ['a*', 'a/b*']
   const exp = expect.concat(['a/b', 'a/bc']).sort()
-  t.same(
+  assert.deepEqual(
     glob
       .globSync(pattern, { matchBase: true, cwd: fixtureDir })
       .sort(alphasort),
     j(exp),
   )
-  t.same(
+  assert.deepEqual(
     (await glob(pattern, { matchBase: true, cwd: fixtureDir })).sort(
       alphasort,
     ),

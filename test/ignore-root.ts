@@ -4,10 +4,10 @@
 
 import { resolve } from 'path'
 import { PathScurry, PathScurryPosix, PathScurryWin32 } from 'path-scurry'
-import t from 'tap'
+import { assert, test, testdir } from 'ubqtest'
 import { glob, globSync, Ignore } from '../dist/esm/index.js'
 
-t.test('windows, rooted at the drive of the cwd', t => {
+test('windows, rooted at the drive of the cwd', () => {
   const cwd = new PathScurryWin32('C:\\a\\b').cwd
   const ign = new Ignore(
     ['/exclude/**', '/x'],
@@ -17,18 +17,17 @@ t.test('windows, rooted at the drive of the cwd', t => {
   const ignored = (p: string) => ign.ignored(cwd.resolve(p))
   const childrenIgnored = (p: string) =>
     ign.childrenIgnored(cwd.resolve(p))
-  t.equal(ignored('C:\\exclude'), true)
-  t.equal(ignored('C:\\exclude\\y'), true)
-  t.equal(childrenIgnored('C:\\exclude'), true)
-  t.equal(ignored('C:\\x'), true)
-  t.equal(ignored('C:\\x\\y'), false)
-  t.equal(ignored('C:\\a\\b\\exclude\\y'), false)
-  t.equal(ignored('D:\\exclude\\y'), false)
-  t.equal(childrenIgnored('D:\\exclude'), false)
-  t.end()
+  assert.equal(ignored('C:\\exclude'), true)
+  assert.equal(ignored('C:\\exclude\\y'), true)
+  assert.equal(childrenIgnored('C:\\exclude'), true)
+  assert.equal(ignored('C:\\x'), true)
+  assert.equal(ignored('C:\\x\\y'), false)
+  assert.equal(ignored('C:\\a\\b\\exclude\\y'), false)
+  assert.equal(ignored('D:\\exclude\\y'), false)
+  assert.equal(childrenIgnored('D:\\exclude'), false)
 })
 
-t.test('windows, drive and UNC patterns are not changed', t => {
+test('windows, drive and UNC patterns are not changed', () => {
   const cwd = new PathScurryWin32('C:\\a\\b').cwd
   const ign = new Ignore(
     ['D:/exclude/**', '//host/share/x/**', '//?/C:/y/**'],
@@ -36,14 +35,13 @@ t.test('windows, drive and UNC patterns are not changed', t => {
     cwd,
   )
   const ignored = (p: string) => ign.ignored(cwd.resolve(p))
-  t.equal(ignored('D:\\exclude\\y'), true)
-  t.equal(ignored('C:\\exclude\\y'), false)
-  t.equal(ignored('\\\\host\\share\\x\\y'), true)
-  t.equal(ignored('C:\\y\\z'), true)
-  t.end()
+  assert.equal(ignored('D:\\exclude\\y'), true)
+  assert.equal(ignored('C:\\exclude\\y'), false)
+  assert.equal(ignored('\\\\host\\share\\x\\y'), true)
+  assert.equal(ignored('C:\\y\\z'), true)
 })
 
-t.test('windows, rooted at the root option', t => {
+test('windows, rooted at the root option', () => {
   const cwd = new PathScurryWin32('C:\\a\\b').cwd
   const ign = new Ignore(
     ['/exclude/**'],
@@ -51,22 +49,20 @@ t.test('windows, rooted at the root option', t => {
     cwd,
   )
   const ignored = (p: string) => ign.ignored(cwd.resolve(p))
-  t.equal(ignored('D:\\r[1]\\exclude\\y'), true)
-  t.equal(ignored('C:\\exclude\\y'), false)
-  t.end()
+  assert.equal(ignored('D:\\r[1]\\exclude\\y'), true)
+  assert.equal(ignored('C:\\exclude\\y'), false)
 })
 
-t.test('posix, without cwd or root, rooted at /', t => {
+test('posix, without cwd or root, rooted at /', () => {
   const cwd = new PathScurryPosix('/a/b').cwd
   const ign = new Ignore(['/exclude/**', '/'], { platform: 'linux' })
-  t.equal(ign.ignored(cwd.resolve('/exclude/y')), true)
-  t.equal(ign.ignored(cwd.resolve('/')), true)
-  t.equal(ign.ignored(cwd.resolve('/a')), false)
-  t.end()
+  assert.equal(ign.ignored(cwd.resolve('/exclude/y')), true)
+  assert.equal(ign.ignored(cwd.resolve('/')), true)
+  assert.equal(ign.ignored(cwd.resolve('/a')), false)
 })
 
-t.test('walk with the root option', async t => {
-  const cwd = t.testdir({
+test('walk with the root option', async () => {
+  const cwd = testdir({
     r: { x: { a: '' }, y: { a: '' } },
     x: { a: '' },
   })
@@ -74,11 +70,11 @@ t.test('walk with the root option', async t => {
   const opts = { cwd, root, posix: true, ignore: '/x/**' }
   // on windows, posix absolute paths are //?/C:/...
   const expect = [new PathScurry(root).cwd.resolve('y/a').fullpathPosix()]
-  t.strictSame(await glob('/*/a', opts), expect)
-  t.strictSame(globSync('/*/a', opts), expect)
+  assert.deepEqual(await glob('/*/a', opts), expect)
+  assert.deepEqual(globSync('/*/a', opts), expect)
 })
 
-t.test('windowsPathsNoEscape', t => {
+test('windowsPathsNoEscape', () => {
   const cwd = new PathScurryWin32('C:\\a\\b').cwd
   for (const o of [
     { windowsPathsNoEscape: true },
@@ -90,12 +86,11 @@ t.test('windowsPathsNoEscape', t => {
       cwd,
     )
     const ignored = (p: string) => ign.ignored(cwd.resolve(p))
-    t.equal(ignored('C:\\x\\y'), true)
-    t.equal(ignored('D:\\r[1]\\y\\z'), true)
-    t.equal(ignored('D:\\r1\\y\\z'), false)
+    assert.equal(ignored('C:\\x\\y'), true)
+    assert.equal(ignored('D:\\r[1]\\y\\z'), true)
+    assert.equal(ignored('D:\\r1\\y\\z'), false)
   }
   // without it, \ escapes the next char
   const ign = new Ignore(['C:\\x\\**'], { platform: 'win32' }, cwd)
-  t.equal(ign.ignored(cwd.resolve('C:\\x\\y')), false)
-  t.end()
+  assert.equal(ign.ignored(cwd.resolve('C:\\x\\y')), false)
 })

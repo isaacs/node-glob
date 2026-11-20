@@ -1,31 +1,25 @@
-// test the native fs.glob and fs.globSync against all our patterns
-// This is not so much for testing node-glob, so failures are reduced
-// to just warnings by default.
+// Compare the native fs.glob and fs.globSync with the bash results of
+// each pattern. This is not a test of node-glob: it is a way to spot
+// differences between node-glob and the glob of node core.
 //
-// Run this with `TEST_NATIVE_GLOB=1` in the environment to turn failures
-// into actual test failures.
+// Run: npm run native-glob
+// It prints each difference, and exits 1 if there is one.
 
-import t from 'tap'
+import './00-setup.ts'
 import * as fs from 'node:fs'
 import * as fsp from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { bashResults } from './bash-results.js'
-import { same } from 'tcompare'
-const globs = Object.keys(bashResults)
-
-const testNativeGlob = !!Number(process.env.TEST_NATIVE_GLOB ?? '0')
+import { isDeepStrictEqual } from 'node:util'
+import { bashResults } from './bash-results.ts'
 
 if (!fs.glob || !fs.globSync || !fsp.glob) {
-  t.plan(0, 'This version of node does not include fs.glob')
-  process.exit(testNativeGlob ? 1 : 0)
+  console.error('This version of node does not include fs.glob')
+  process.exit(1)
 }
 
-// run from the root of the project
-// this is usually where you're at anyway, but be sure.
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
-const fixtures = resolve(__dirname, 'fixtures')
-process.chdir(fixtures)
+process.chdir(resolve(__dirname, 'fixtures'))
 
 const alphasort = (a: string, b: string) =>
   a.toLowerCase().localeCompare(b.toLowerCase(), 'en')
@@ -49,41 +43,40 @@ const cleanResults = (m: string[]) => {
     .sort(alphasort)
 }
 
-globs.forEach(function (pattern) {
-  let expect = bashResults[pattern]
+let differences = 0
+const check = (pattern: string, kind: string, results: string[]) => {
+  const expect = bashResults[pattern]
+  const matches = cleanResults(results)
+  if (isDeepStrictEqual(matches, expect)) return
+  differences++
+  console.log(`${pattern} (${kind})`)
+  console.log(`  bash:    ${JSON.stringify(expect)}`)
+  console.log(`  fs.glob: ${JSON.stringify(matches)}`)
+}
+
+for (const pattern of Object.keys(bashResults)) {
   // anything regarding the symlink thing will fail on windows
   if (
     process.platform === 'win32' &&
-    expect?.some((m: string) => /\bsymlink\b/.test(m))
+    bashResults[pattern]?.some((m: string) => /\bsymlink\b/.test(m))
   ) {
-    return
+    continue
   }
 
-  t.test(`${pattern} async iterator`, async t => {
-    // sort and unmark, just to match the shell results
-    const results: string[] = []
-    for await (const res of fsp.glob(pattern)) {
-      results.push(res)
-    }
-    const matches = cleanResults(results)
-    // don't mark it TODO if it passes, or if we're testing for reals
-    const todo = !(testNativeGlob || same(matches, expect).match)
-    t.same(matches, expect, pattern, { todo })
-  })
+  const iterated: string[] = []
+  for await (const res of fsp.glob(pattern)) iterated.push(res)
+  check(pattern, 'async iterator', iterated)
 
-  t.test(`${pattern} async callback`, t => {
-    fs.glob(pattern, (er, results) => {
-      if (er) throw er
-      const matches = cleanResults(results)
-      const todo = !(testNativeGlob || same(matches, expect).match)
-      t.same(matches, expect, pattern, { todo })
-      t.end()
-    })
-  })
+  check(
+    pattern,
+    'async callback',
+    await new Promise<string[]>((res, rej) =>
+      fs.glob(pattern, (er, results) => (er ? rej(er) : res(results))),
+    ),
+  )
 
-  t.test(`${pattern} sync`, async t => {
-    const matches = cleanResults(fs.globSync(pattern))
-    const todo = !(testNativeGlob || same(matches, expect).match)
-    t.same(matches, expect, pattern, { todo })
-  })
-})
+  check(pattern, 'sync', fs.globSync(pattern))
+}
+
+console.log(`${differences} differences`)
+process.exitCode = differences ? 1 : 0

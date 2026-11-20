@@ -16,3 +16,5 @@
 /test/fixtures
 /.tshy
 /docs
+/.ubq
+/.oxlint.json

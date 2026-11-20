@@ -123,9 +123,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
     // ignore, always set with maxDepth, but it's optional on the
     // GlobOptions type
-    /* c8 ignore start */
     this.maxDepth = opts.maxDepth || Infinity
-    /* c8 ignore stop */
     if (opts.signal) {
       this.signal = opts.signal
       this.signal.addEventListener('abort', () => {
@@ -146,9 +144,8 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     this.paused = true
   }
   resume() {
-    /* c8 ignore start */
+    // ubq: not measured: an abort while paused is a race
     if (this.signal?.aborted) return
-    /* c8 ignore stop */
     this.paused = false
     let fn: (() => unknown) | undefined = undefined
     while (!this.paused && (fn = this.#onResume.shift())) {
@@ -156,11 +153,10 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     }
   }
   onResume(fn: () => unknown) {
-    /* c8 ignore start */
+    // ubq: not measured: callers only wait for a resume while paused
     if (!this.paused) {
       fn()
     } else {
-      /* c8 ignore stop */
       this.#onResume.push(fn)
     }
   }
@@ -185,11 +181,10 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     const s = needStat ? await e.lstat() : e
     if (this.opts.follow && this.opts.nodir && s?.isSymbolicLink()) {
       const target = await s.realpath()
-      /* c8 ignore start */
+      // ubq: not measured: target can be known already, by walk order
       if (target && (target.isUnknown() || this.opts.stat)) {
         await target.lstat()
       }
-      /* c8 ignore stop */
     }
     return this.matchCheckTest(s, ifDir)
   }
@@ -280,9 +275,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   walkCB(target: Path, patterns: Pattern[], cb: () => unknown) {
-    /* c8 ignore start */
     if (this.signal?.aborted) return cb()
-    /* c8 ignore stop */
     this.walkCB2(target, patterns, new Processor(this.opts), cb)
   }
 
@@ -364,9 +357,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   }
 
   walkCBSync(target: Path, patterns: Pattern[], cb: () => unknown) {
-    /* c8 ignore start */
     if (this.signal?.aborted) return cb()
-    /* c8 ignore stop */
     this.walkCB2Sync(target, patterns, new Processor(this.opts), cb)
   }
 

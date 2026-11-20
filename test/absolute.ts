@@ -1,6 +1,6 @@
 import { isAbsolute } from 'path'
-import type { Test } from 'tap'
-import t from 'tap'
+import { assert, describe, test } from 'ubqtest'
+import './00-setup.js'
 import { fileURLToPath } from 'url'
 import { Glob } from '../dist/esm/index.js'
 import { bashResults } from './bash-results.js'
@@ -9,39 +9,37 @@ const pattern = 'a/b/**'
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 process.chdir(`${__dirname}/fixtures`)
 
-const ok = (t: Test, file: string) =>
-  t.ok(isAbsolute(file), 'must be absolute', { found: file })
+const ok = (file: string) =>
+  assert(isAbsolute(file), `must be absolute: ${file}`)
 
 var marks = [true, false]
 for (const mark of marks) {
-  t.test(`mark=${mark}`, t => {
-    t.plan(2)
-
-    t.test('Emits absolute matches if option set', async t => {
+  describe(`mark=${mark}`, () => {
+    test('Emits absolute matches if option set', async () => {
       var g = new Glob(pattern, { absolute: true, posix: true })
       const results = await g.walk()
 
-      t.equal(
+      assert.equal(
         results.length,
-        bashResults[pattern]?.length,
+        bashResults[pattern]!.length,
         'must match all files',
       )
       for (const m of results) {
-        t.ok(m.startsWith('/'), `starts with / ${m}`)
+        assert(m.startsWith('/'), `starts with / ${m}`)
       }
     })
 
-    t.test('returns absolute results synchronously', async t => {
+    test('returns absolute results synchronously', async () => {
       var g = new Glob(pattern, { absolute: true })
       const results = g.walkSync()
 
-      t.equal(
+      assert.equal(
         results.length,
-        bashResults[pattern]?.length,
+        bashResults[pattern]!.length,
         'must match all files',
       )
       for (const m of results) {
-        ok(t, m)
+        ok(m)
       }
     })
   })

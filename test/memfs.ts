@@ -1,37 +1,47 @@
-import t from 'tap'
-
-if (process.platform === 'win32') {
-  t.plan(0, 'this test does not work on windows')
-  process.exit(0)
-}
-
+import { assert, describe, mockImport, test } from 'ubqtest'
 import { fs as memfs, vol } from 'memfs'
 import { glob } from '../dist/esm/index.js'
 
-t.beforeEach(() => vol.fromJSON({ '/x': 'abc' }))
+const skip =
+  process.platform === 'win32' && 'this test does not work on windows'
+
+const setup = () => vol.fromJSON({ '/x': 'abc' })
 
 const fs = memfs as unknown as typeof import('fs')
+const fsp = memfs.promises as unknown as typeof import('fs/promises')
 
-const mock = {
-  fs: memfs,
-  'fs/promises': memfs.promises,
+// glob does its fs work in path-scurry, a package in node_modules, so
+// the mock of fs goes to an instance of path-scurry.
+const mockGlob = async () => {
+  const scurry = await mockImport(
+    () => import('path-scurry'),
+    [
+      [() => import('fs'), fs],
+      [() => import('node:fs/promises'), fsp],
+    ],
+  )
+  return mockImport(
+    () => import('../dist/esm/index.js'),
+    [[() => import('path-scurry'), scurry]],
+  )
 }
 
 const patterns = ['/**/*', '/*', '/x']
 const cwds = ['/', undefined]
 for (const pattern of patterns) {
-  t.test(pattern, async t => {
+  describe(pattern, { skip }, () => {
     for (const cwd of cwds) {
-      t.test(`cwd=${cwd}`, async t => {
-        t.test('mocking the fs', async t => {
-          const { glob } = (await t.mockImport(
-            '../dist/esm/index.js',
-            mock,
-          )) as typeof import('../dist/esm/index.js')
-          t.strictSame(await glob(pattern, { nodir: true, cwd }), ['/x'])
+      describe(`cwd=${cwd}`, () => {
+        test('mocking the fs', async () => {
+          setup()
+          const { glob } = await mockGlob()
+          assert.deepEqual(await glob(pattern, { nodir: true, cwd }), [
+            '/x',
+          ])
         })
-        t.test('passing in fs argument', async t => {
-          t.strictSame(await glob(pattern, { nodir: true, cwd, fs }), [
+        test('passing in fs argument', async () => {
+          setup()
+          assert.deepEqual(await glob(pattern, { nodir: true, cwd, fs }), [
             '/x',
           ])
         })

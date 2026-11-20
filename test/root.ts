@@ -1,5 +1,5 @@
 import { resolve, sep } from 'path'
-import t from 'tap'
+import { assert, describe, test, testdir } from 'ubqtest'
 import { Glob } from '../dist/esm/index.js'
 
 const alphasort = (a: string, b: string) => a.localeCompare(b, 'en')
@@ -8,8 +8,8 @@ const j = (a: string[]) =>
     .map(s => s.split(process.cwd()).join('{CWD}').split(sep).join('/'))
     .sort(alphasort)
 
-t.test('set root option', t => {
-  const cwd = t.testdir({
+describe('set root option', () => {
+  const cwd = testdir({
     x: {
       a: '',
       x: {
@@ -35,12 +35,11 @@ t.test('set root option', t => {
 
   const pattern = ['**/r', '/**/a', '/**/../y']
   const root = resolve(cwd, 'x/x')
-  t.plan(3)
   for (const absolute of [true, false, undefined]) {
-    t.test(`absolute=${absolute}`, async t => {
+    test(`absolute=${absolute}`, async () => {
       const g = new Glob(pattern, { root, absolute, cwd })
-      t.matchSnapshot(j(await g.walk()), 'async')
-      t.matchSnapshot(j(g.walkSync()), 'sync')
+      assert.snapshot(j(await g.walk()), 'async')
+      assert.snapshot(j(g.walkSync()), 'sync')
     })
   }
 })

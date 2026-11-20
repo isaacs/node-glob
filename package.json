@@ -61,16 +61,17 @@
     "prepare": "tshy && bash scripts/build.sh",
     "pretest": "npm run prepare",
     "presnap": "npm run prepare",
-    "test": "tap",
-    "snap": "tap",
+    "test": "ubq",
+    "snap": "ubq --update",
     "posttest": "npm run lint",
     "postsnap": "npm run lint",
-    "format": "prettier --write .",
+    "format": "prettier --write . --log-level warn",
     "lint": "oxlint --fix src test",
     "postlint": "npm run format",
     "typedoc": "typedoc",
     "profclean": "rm -f v8.log profile.txt",
-    "test-regen": "npm run profclean && TEST_REGEN=1 node --no-warnings --loader ts-node/esm test/00-setup.ts",
+    "test-regen": "npm run profclean && TEST_REGEN=1 node test/00-setup.ts",
+    "native-glob": "node test/native-fs-glob.ts",
     "prebench": "npm run prepare",
     "bench": "bash benchmark.sh",
     "bench:docker": "bash bench-docker/bench.sh",
@@ -92,9 +93,9 @@
     "oxlint-tsgolint": "^7.0.2005",
     "prettier": "^3.9.10",
     "rimraf": "^6.1.3",
-    "tap": "^21.8.0",
     "tshy": "^4.1.3",
-    "typedoc": "^0.28.20"
+    "typedoc": "^0.28.20",
+    "ubqtest": "^0.0.26"
   },
   "license": "BlueOak-1.0.0",
   "funding": {
@@ -109,5 +110,16 @@
     "minimatch": true,
     "file:../../path-scurry": true,
     "path-scurry": true
+  },
+  "ubq": {
+    "include": [
+      "test/**/*.ts"
+    ],
+    "exclude": [
+      "test/00-setup.ts",
+      "test/bash-results.ts",
+      "test/fixtures/**",
+      "test/native-fs-glob.ts"
+    ]
   }
 }

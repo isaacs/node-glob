@@ -1,6 +1,7 @@
 import { resolve } from 'path'
 import { PathScurry } from 'path-scurry'
-import t from 'tap'
+import { assert, test } from 'ubqtest'
+import './00-setup.js'
 import { fileURLToPath } from 'url'
 import {
   Glob,
@@ -14,7 +15,7 @@ const j = (a: string[]) =>
   a
     .map(s => s.replace(/\\/g, '/'))
     .sort((a, b) => a.localeCompare(b, 'en'))
-t.test('set maxDepth', async t => {
+test('set maxDepth', async () => {
   const maxDepth = 2
   const cwd = resolve(
     fileURLToPath(new URL('./fixtures', import.meta.url)),
@@ -46,33 +47,29 @@ t.test('set maxDepth', async t => {
 
   const ssync = j(syncRes.map(p => p.relative() || '.'))
   const sasync = j(asyncRes.map(p => p.relative() || '.'))
-  t.same(ssync, expect, 'got all results sync')
-  t.same(sasync, expect, 'got all results async')
+  assert.deepEqual(ssync, expect, 'got all results sync')
+  assert.deepEqual(sasync, expect, 'got all results async')
   for (const p of syncRes) {
-    t.ok(p.depth() <= startDepth + maxDepth, 'does not exceed maxDepth', {
-      max: startDepth + maxDepth,
-      actual: p.depth(),
-      file: p.relative(),
-      results: 'sync',
-    })
+    assert(
+      p.depth() <= startDepth + maxDepth,
+      `does not exceed maxDepth (sync): ${p.relative()} depth=${p.depth()} max=${startDepth + maxDepth}`,
+    )
   }
   for (const p of asyncRes) {
-    t.ok(p.depth() <= startDepth + maxDepth, 'does not exceed maxDepth', {
-      max: startDepth + maxDepth,
-      actual: p.depth(),
-      file: p.relative(),
-      results: 'async',
-    })
+    assert(
+      p.depth() <= startDepth + maxDepth,
+      `does not exceed maxDepth (async): ${p.relative()} depth=${p.depth()} max=${startDepth + maxDepth}`,
+    )
   }
 
-  t.same(
+  assert.deepEqual(
     j(
       await globStream(pattern, { cwd, maxDepth, follow: true }).collect(),
     ),
     expect,
     'maxDepth with stream',
   )
-  t.same(
+  assert.deepEqual(
     j(
       await globStreamSync(pattern, {
         cwd,
@@ -84,34 +81,34 @@ t.test('set maxDepth', async t => {
     'maxDepth with streamSync',
   )
 
-  t.same(
+  assert.deepEqual(
     await glob(pattern, { cwd, maxDepth: -1, follow: true }),
     [],
     'async maxDepth -1',
   )
-  t.same(
+  assert.deepEqual(
     globSync(pattern, { cwd, maxDepth: -1, follow: true }),
     [],
     'sync maxDepth -1',
   )
 
-  t.same(
+  assert.deepEqual(
     await glob(pattern, { cwd, maxDepth: 0, follow: true }),
     ['.'],
     'async maxDepth 0',
   )
-  t.same(
+  assert.deepEqual(
     globSync(pattern, { cwd, maxDepth: 0, follow: true }),
     ['.'],
     'async maxDepth 0',
   )
 
   const g = new Glob(pattern, { cwd, follow: true, maxDepth })
-  t.same(j([...g]), expect, 'maxDepth with iteration')
+  assert.deepEqual(j([...g]), expect, 'maxDepth with iteration')
   const ai = new Glob(pattern, g)
   const aires: string[] = []
   for await (const res of ai) {
     aires.push(res)
   }
-  t.same(j(aires), expect, 'maxDepth with async iteration')
+  assert.deepEqual(j(aires), expect, 'maxDepth with async iteration')
 })

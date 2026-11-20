@@ -1,17 +1,17 @@
-import t from 'tap'
+import { assert, test, testdir } from 'ubqtest'
 import { glob } from '../dist/esm/index.js'
 
-const dir = t.testdir({
+const dir = testdir({
   'package.json': '{}',
   README: 'x',
 })
 
-t.test('glob', async t => {
+test('glob', async () => {
   var opt = {
     cwd: dir,
     nocase: true,
     mark: true,
   }
 
-  t.same(await glob('README?(.*)', opt), ['README'])
+  assert.deepEqual(await glob('README?(.*)', opt), ['README'])
 })

@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import { resolve } from 'path'
-import t from 'tap'
+import { assert, describe, mockImport, test, testdir } from 'ubqtest'
+import './00-setup.js'
 import { fileURLToPath } from 'url'
 import {
   glob,
@@ -12,10 +13,10 @@ import {
 const mocks = (ac: AbortController) => ({
   fs: {
     ...fs,
-    readdirSync: (path: string, options: any) => {
+    readdirSync: ((path: string, options: any) => {
       ac.abort(yeet)
       return fs.readdirSync(path, options)
-    },
+    }) as typeof fs.readdirSync,
   },
 })
 
@@ -24,79 +25,90 @@ const cwd = resolve(__dirname, 'fixtures/a')
 
 const yeet = new Error('yeet')
 
-t.test('pre abort walk', async t => {
+test('pre abort walk', async () => {
   const ac = new AbortController()
   ac.abort(yeet)
-  await t.rejects(glob('./**', { cwd, signal: ac.signal }), yeet)
+  await assert.rejects(glob('./**', { cwd, signal: ac.signal }), {
+    message: yeet.message,
+  })
 })
 
-t.test('mid-abort walk', async t => {
+test('mid-abort walk', async () => {
   const ac = new AbortController()
   const res = glob('./**', { cwd, signal: ac.signal })
   ac.abort(yeet)
-  await t.rejects(res, yeet)
+  await assert.rejects(res, { message: yeet.message })
 })
 
-t.test('pre abort sync walk', t => {
+test('pre abort sync walk', () => {
   const ac = new AbortController()
   ac.abort(yeet)
-  t.throws(() => globSync('./**', { cwd, signal: ac.signal }))
-  t.end()
+  assert.throws(() => globSync('./**', { cwd, signal: ac.signal }), Error)
 })
 
-t.test('mid-abort sync walk', async t => {
+test('mid-abort sync walk', async () => {
   const ac = new AbortController()
-  const { globSync } = await t.mockImport(
-    '../dist/esm/index.js',
-    mocks(ac),
+  // glob does its fs work in path-scurry, a package in node_modules,
+  // so the mock of fs goes to an instance of path-scurry.
+  const scurry = await mockImport(
+    () => import('path-scurry'),
+    [[() => import('fs'), mocks(ac).fs]],
   )
-  t.throws(() => globSync('./**', { cwd, signal: ac.signal }))
+  const { globSync } = await mockImport(
+    () => import('../dist/esm/index.js'),
+    [[() => import('path-scurry'), scurry]],
+  )
+  assert.throws(() => globSync('./**', { cwd, signal: ac.signal }), Error)
 })
 
-t.test('pre abort stream', t => {
-  const ac = new AbortController()
-  ac.abort(yeet)
-  const s = globStream('./**', { cwd, signal: ac.signal })
-  s.on('error', er => {
-    t.equal(er, yeet)
-    t.end()
-  })
-})
+test('pre abort stream', () =>
+  new Promise<void>(end => {
+    const ac = new AbortController()
+    ac.abort(yeet)
+    const s = globStream('./**', { cwd, signal: ac.signal })
+    s.on('error', er => {
+      assert.equal(er, yeet)
+      end()
+    })
+  }))
 
-t.test('mid-abort stream', t => {
-  const ac = new AbortController()
-  const s = globStream('./**', { cwd, signal: ac.signal })
-  s.on('error', er => {
-    t.equal(er, yeet)
-    t.end()
-  })
-  s.once('data', () => ac.abort(yeet))
-})
+test('mid-abort stream', () =>
+  new Promise<void>(end => {
+    const ac = new AbortController()
+    const s = globStream('./**', { cwd, signal: ac.signal })
+    s.on('error', er => {
+      assert.equal(er, yeet)
+      end()
+    })
+    s.once('data', () => ac.abort(yeet))
+  }))
 
-t.test('pre abort sync stream', t => {
-  const ac = new AbortController()
-  ac.abort(yeet)
-  const s = globStreamSync('./**', { cwd, signal: ac.signal })
-  s.on('error', er => {
-    t.equal(er, yeet)
-    t.end()
-  })
-})
+test('pre abort sync stream', () =>
+  new Promise<void>(end => {
+    const ac = new AbortController()
+    ac.abort(yeet)
+    const s = globStreamSync('./**', { cwd, signal: ac.signal })
+    s.on('error', er => {
+      assert.equal(er, yeet)
+      end()
+    })
+  }))
 
-t.test('mid-abort sync stream', t => {
-  const ac = new AbortController()
-  const s = globStreamSync('./**', { cwd, signal: ac.signal })
-  s.on('error', er => {
-    t.equal(er, yeet)
-    t.end()
-  })
-  s.on('data', () => ac.abort(yeet))
-})
+test('mid-abort sync stream', () =>
+  new Promise<void>(end => {
+    const ac = new AbortController()
+    const s = globStreamSync('./**', { cwd, signal: ac.signal })
+    s.on('error', er => {
+      assert.equal(er, yeet)
+      end()
+    })
+    s.on('data', () => ac.abort(yeet))
+  }))
 
-t.test('no more reads after abort', async t => {
+describe('no more reads after abort', () => {
   const mk = (n: number): Record<string, any> =>
     n ? { a: mk(n - 1), b: mk(n - 1), f: '' } : { f: '' }
-  const cwd = t.testdir(mk(5))
+  const cwd = testdir(mk(5))
   const counted = (ac: AbortController) => {
     const c = { calls: 0 }
     const abortFirst = () => {
@@ -116,24 +128,27 @@ t.test('no more reads after abort', async t => {
     return { c, cfs }
   }
 
-  t.test('async', async t => {
+  test('async', async () => {
     const ac = new AbortController()
     const { c, cfs } = counted(ac)
-    await t.rejects(glob('**', { cwd, signal: ac.signal, fs: cfs }), yeet)
+    await assert.rejects(glob('**', { cwd, signal: ac.signal, fs: cfs }), {
+      message: yeet.message,
+    })
     const atReject = c.calls
     await new Promise(r => setTimeout(r, 100))
-    t.equal(c.calls, atReject)
+    assert.equal(c.calls, atReject)
   })
 
-  t.test('sync stream', t => {
-    const ac = new AbortController()
-    const { c, cfs } = counted(ac)
-    const s = globStreamSync('**', { cwd, signal: ac.signal, fs: cfs })
-    s.on('error', er => {
-      t.equal(er, yeet)
-      t.equal(c.calls, 1)
-      t.end()
-    })
-    s.resume()
-  })
+  test('sync stream', () =>
+    new Promise<void>(end => {
+      const ac = new AbortController()
+      const { c, cfs } = counted(ac)
+      const s = globStreamSync('**', { cwd, signal: ac.signal, fs: cfs })
+      s.on('error', er => {
+        assert.equal(er, yeet)
+        assert.equal(c.calls, 1)
+        end()
+      })
+      s.resume()
+    }))
 })

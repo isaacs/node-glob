@@ -5,7 +5,7 @@
 ### Tech Stack
 
 - `tshy` for building typescript
-- `tap` for testing
+- `ubq` (the `ubqtest` package) for testing
 - `npm` for package management and running project scripts
 - `oxlint` for linting
 - `prettier` for formatting
@@ -18,7 +18,7 @@
 ### Structure
 
 - `./src/*.ts` Source files
-- `./test/*.ts` Tap test files
+- `./test/*.ts` ubq test files
 - `./test/fixtures/` test fixtures
 - `./scripts/` various project scripts
 
@@ -75,7 +75,7 @@ _smallest_ possible increase to the API surface area.
   directory.
 - Run `npm test` before proposing a solution to ensure no
   regressions.
-- Mock external API calls using `t.mockImport`.
+- Mock external API calls using `mockImport` from `ubqtest`.
 
 ### Documentation
 

@@ -1,4 +1,4 @@
-import t from 'tap'
+import { assert, test } from 'ubqtest'
 import { glob } from '../dist/esm/index.js'
 
 // Patterns that cannot match anything
@@ -9,10 +9,9 @@ const patterns = [
   'just doesnt happen to match anything so this is a control',
 ]
 
-t.plan(patterns.length)
 for (const p of patterns) {
-  t.test(JSON.stringify(p), async t => {
+  test(JSON.stringify(p), async () => {
     const f = await glob(p)
-    t.same(f, [], 'no returned values')
+    assert.deepEqual(f, [], 'no returned values')
   })
 }

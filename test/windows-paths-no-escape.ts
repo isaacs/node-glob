@@ -1,4 +1,4 @@
-import t from 'tap'
+import { assert, cleanup, test } from 'ubqtest'
 import { Glob } from '../dist/esm/index.js'
 
 const platforms = ['win32', 'posix']
@@ -6,19 +6,23 @@ const originalPlatform = Object.getOwnPropertyDescriptor(
   process,
   'platform',
 ) as PropertyDescriptor
-t.teardown(() => {
+cleanup(() => {
   Object.defineProperty(process, 'platform', originalPlatform)
 })
 
 for (const p of platforms) {
-  t.test(p, t => {
+  test(p, () => {
     Object.defineProperty(process, 'platform', {
       value: p,
       enumerable: true,
       configurable: true,
       writable: true,
     })
-    t.equal(process.platform, p, 'gut check: actually set platform')
+    assert.equal<string>(
+      process.platform,
+      p,
+      'gut check: actually set platform',
+    )
     const pattern = '/a/b/c/x\\[a-b\\]y\\*'
     const def = new Glob(pattern, {})
     const winpath = new Glob(pattern, {
@@ -31,7 +35,7 @@ for (const p of platforms) {
       windowsPathsNoEscape: false,
     })
 
-    t.strictSame(
+    assert.deepEqual(
       [
         def.pattern,
         nowinpath.pattern,
@@ -45,7 +49,6 @@ for (const p of platforms) {
         ['/a/b/c/x/[a-b/]y/*'],
       ],
     )
-    t.end()
   })
 }
 

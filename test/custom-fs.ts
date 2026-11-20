@@ -1,30 +1,35 @@
-import t from 'tap'
+import { assert, test, testdir } from 'ubqtest'
 import { globSync } from '../dist/esm/index.js'
 
 // just a rudimentary test, since PathScurry tests it more anyway
 import { readdirSync } from 'fs'
-let readdirCalled = 0
-const myReaddirSync = (path: string, options: { withFileTypes: true }) => {
-  readdirCalled++
-  return readdirSync(path, options)
-}
+test('a custom fs.readdirSync is used', () => {
+  let readdirCalled = 0
+  const myReaddirSync = (
+    path: string,
+    options: { withFileTypes: true },
+  ) => {
+    readdirCalled++
+    return readdirSync(path, options)
+  }
 
-const cwd = t.testdir({
-  a: '',
-  b: '',
-  c: {},
+  const cwd = testdir({
+    a: '',
+    b: '',
+    c: {},
+  })
+
+  assert.deepEqual(
+    new Set(['a', 'b', 'c', '.']),
+    new Set(
+      globSync('**', {
+        fs: {
+          readdirSync: myReaddirSync,
+        },
+        cwd,
+      }),
+    ),
+  )
+
+  assert.equal(readdirCalled, 2)
 })
-
-t.same(
-  new Set(['a', 'b', 'c', '.']),
-  new Set(
-    globSync('**', {
-      fs: {
-        readdirSync: myReaddirSync,
-      },
-      cwd,
-    }),
-  ),
-)
-
-t.equal(readdirCalled, 2)

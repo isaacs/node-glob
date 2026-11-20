@@ -2,10 +2,10 @@
 
 import * as fs from 'fs'
 import { PathScurryWin32 } from 'path-scurry'
-import t from 'tap'
+import { assert, test, testdir } from 'ubqtest'
 import { glob, globSync } from '../dist/esm/index.js'
 
-const dir = t.testdir({
+const dir = testdir({
   a: { x: '', y: '' },
   b: { x: '' },
 })
@@ -43,23 +43,25 @@ for (const pattern of [
   '//?/unc/HOST/share/*/x',
   '//?/UNC/host/share/a/../*/x',
 ]) {
-  t.test(pattern, async t => {
+  test(pattern, async () => {
     const opts = {
       platform: 'win32',
       posix: true,
       scurry: scurry(),
     } as const
-    t.strictSame(globSync(pattern, opts).sort(), expect, 'sync')
-    t.strictSame((await glob(pattern, opts)).sort(), expect, 'async')
+    assert.deepEqual(globSync(pattern, opts).sort(), expect, 'sync')
+    assert.deepEqual((await glob(pattern, opts)).sort(), expect, 'async')
   })
 }
 
-t.test('ignore', async t => {
+test('ignore', async () => {
   const opts = {
     platform: 'win32',
     posix: true,
     scurry: scurry(),
     ignore: ['//?/UNC/host/share/a/**'],
   } as const
-  t.strictSame(globSync('//host/share/*/x', opts), ['//HOST/SHARE/b/x'])
+  assert.deepEqual(globSync('//host/share/*/x', opts), [
+    '//HOST/SHARE/b/x',
+  ])
 })

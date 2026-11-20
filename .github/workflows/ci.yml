@@ -52,10 +52,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run Tests Windows (incomplete coverage)
-        if: matrix.platform.os == 'windows-latest'
-        run: npm test -- -c -t0 --allow-incomplete-coverage
+      - name: Run Tests
+        run: npm test
 
-      - name: Run Tests Unix (complete coverage)
+      - name: Check Coverage (Unix only, Windows skips some tests)
         if: matrix.platform.os != 'windows-latest'
-        run: npm test -- -c -t0
+        run: npx ubq uncovered

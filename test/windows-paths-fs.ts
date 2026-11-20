@@ -1,10 +1,10 @@
 // test that escape chars are handled properly according to configs
 // when found in patterns and paths containing glob magic.
 
-import t from 'tap'
+import { assert, describe, stub, test, testdir } from 'ubqtest'
 import { glob } from '../dist/esm/index.js'
 
-const dir = t.testdir({
+const dir = testdir({
   // treat escapes as path separators
   a: {
     '[x': {
@@ -21,21 +21,20 @@ const dir = t.testdir({
   'a[x]by': '',
 })
 
-t.test('treat backslash as escape', t => {
+describe('treat backslash as escape', () => {
   const cases = Object.entries({
     'a[x]b/y': [],
     'a\\[x\\]b/y': ['a[x]b/y'],
     'a\\[x\\]b\\y': ['a[x]by'],
   })
-  t.plan(cases.length)
   for (const [pattern, expect] of cases) {
-    t.test(pattern, async t => {
-      t.strictSame(
+    test(pattern, async () => {
+      assert.deepEqual(
         glob.globSync(pattern, { cwd: dir, posix: true }),
         expect,
         'sync',
       )
-      t.strictSame(
+      assert.deepEqual(
         (await glob(pattern, { cwd: dir })).map(s =>
           s.replace(/\\/g, '/'),
         ),
@@ -46,26 +45,23 @@ t.test('treat backslash as escape', t => {
   }
 })
 
-t.test('treat backslash as separator', t => {
-  Object.defineProperty(process, 'platform', {
-    value: 'win32',
-  })
+describe('treat backslash as separator', () => {
   const cases = Object.entries({
     'a[x]b/y': [],
     'a\\[x\\]b/y': ['a/[x/]b/y'],
     'a\\[x\\]b\\y': ['a/[x/]b/y'],
   })
-  t.plan(cases.length)
   for (const [pattern, expect] of cases) {
-    t.test(pattern, async t => {
-      t.strictSame(
+    test(pattern, async () => {
+      stub(process, 'platform', 'win32')
+      assert.deepEqual(
         glob
           .globSync(pattern, { cwd: dir, windowsPathsNoEscape: true })
           .map(s => s.replace(/\\/g, '/')),
         expect,
         'sync',
       )
-      t.strictSame(
+      assert.deepEqual(
         (
           await glob(pattern, { cwd: dir, windowsPathsNoEscape: true })
         ).map(s => s.replace(/\\/g, '/')),

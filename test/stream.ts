@@ -1,5 +1,6 @@
 import { resolve, sep } from 'path'
-import t from 'tap'
+import { assert, test, testdir } from 'ubqtest'
+import './00-setup.js'
 import { fileURLToPath } from 'url'
 import {
   Glob,
@@ -40,231 +41,230 @@ const expect = j([
   : []),
 ])
 
-t.test('stream', t => {
-  let sync: boolean = true
-  const s = new Glob('./**', { cwd })
-  const stream = s.stream()
-  const e = new Set(expect)
-  stream.on('data', c => {
-    t.equal(e.has(c), true, JSON.stringify(c))
-    e.delete(c)
-  })
-  stream.on('end', () => {
-    t.equal(e.size, 0, 'saw all entries')
-    t.equal(sync, false, 'did not finish in one tick')
-    const d = new Glob('./**', s)
-    const dream = d.stream()
-    const f = new Set(expect)
-    dream.on('data', c => {
-      t.equal(f.has(c), true, JSON.stringify(c))
-      f.delete(c)
+test('stream', () =>
+  new Promise<void>(done => {
+    let sync: boolean = true
+    const s = new Glob('./**', { cwd })
+    const stream = s.stream()
+    const e = new Set(expect)
+    stream.on('data', c => {
+      assert.equal(e.has(c), true, JSON.stringify(c))
+      e.delete(c)
     })
-    dream.on('end', () => {
-      t.equal(f.size, 0, 'saw all entries')
-      t.end()
+    stream.on('end', () => {
+      assert.equal(e.size, 0, 'saw all entries')
+      assert.equal(sync, false, 'did not finish in one tick')
+      const d = new Glob('./**', s)
+      const dream = d.stream()
+      const f = new Set(expect)
+      dream.on('data', c => {
+        assert.equal(f.has(c), true, JSON.stringify(c))
+        f.delete(c)
+      })
+      dream.on('end', () => {
+        assert.equal(f.size, 0, 'saw all entries')
+        done()
+      })
     })
-  })
-  sync = false
-})
+    sync = false
+  }))
 
-t.test('streamSync', t => {
-  let sync: boolean = true
-  const s = new Glob('./**', { cwd })
-  const stream = s.streamSync()
-  const e = new Set(expect)
-  stream.on('data', c => {
-    t.equal(e.has(c), true, JSON.stringify(c))
-    e.delete(c)
-  })
-  stream.on('end', () => {
-    t.equal(e.size, 0, 'saw all entries')
-    const d = new Glob('./**', s)
-    const dream = d.streamSync()
-    const f = new Set(expect)
-    dream.on('data', c => {
-      t.equal(f.has(c), true, JSON.stringify(c))
-      f.delete(c)
+test('streamSync', () =>
+  new Promise<void>(done => {
+    let sync: boolean = true
+    const s = new Glob('./**', { cwd })
+    const stream = s.streamSync()
+    const e = new Set(expect)
+    stream.on('data', c => {
+      assert.equal(e.has(c), true, JSON.stringify(c))
+      e.delete(c)
     })
-    dream.on('end', () => {
-      t.equal(f.size, 0, 'saw all entries')
-      t.equal(sync, true, 'finished synchronously')
-      t.end()
+    stream.on('end', () => {
+      assert.equal(e.size, 0, 'saw all entries')
+      const d = new Glob('./**', s)
+      const dream = d.streamSync()
+      const f = new Set(expect)
+      dream.on('data', c => {
+        assert.equal(f.has(c), true, JSON.stringify(c))
+        f.delete(c)
+      })
+      dream.on('end', () => {
+        assert.equal(f.size, 0, 'saw all entries')
+        assert.equal(sync, true, 'finished synchronously')
+        done()
+      })
     })
-  })
-  sync = false
-})
+    sync = false
+  }))
 
-t.test('iterate', async t => {
+test('iterate', async () => {
   const s = new Glob('./**', { cwd })
   const e = new Set(expect)
   for await (const c of s.iterate()) {
-    t.equal(e.has(c), true, JSON.stringify(c))
+    assert.equal(e.has(c), true, JSON.stringify(c))
     e.delete(c)
   }
-  t.equal(e.size, 0, 'saw all entries')
+  assert.equal(e.size, 0, 'saw all entries')
 
   const f = new Set(expect)
   const d = new Glob('./**', s)
   for await (const c of d.iterate()) {
-    t.equal(f.has(c), true, JSON.stringify(c))
+    assert.equal(f.has(c), true, JSON.stringify(c))
     f.delete(c)
   }
-  t.equal(f.size, 0, 'saw all entries')
+  assert.equal(f.size, 0, 'saw all entries')
 })
 
-t.test('iterateSync', t => {
+test('iterateSync', () => {
   const s = new Glob('./**', { cwd })
   const e = new Set(expect)
   for (const c of s.iterateSync()) {
-    t.equal(e.has(c), true, JSON.stringify(c))
+    assert.equal(e.has(c), true, JSON.stringify(c))
     e.delete(c)
   }
-  t.equal(e.size, 0, 'saw all entries')
+  assert.equal(e.size, 0, 'saw all entries')
 
   const f = new Set(expect)
   const d = new Glob('./**', s)
   for (const c of d.iterateSync()) {
-    t.equal(f.has(c), true, JSON.stringify(c))
+    assert.equal(f.has(c), true, JSON.stringify(c))
     f.delete(c)
   }
-  t.equal(f.size, 0, 'saw all entries')
-  t.end()
+  assert.equal(f.size, 0, 'saw all entries')
 })
 
-t.test('walk', async t => {
+test('walk', async () => {
   const s = new Glob('./**', { cwd })
   const e = new Set(expect)
   const actual = new Set(await s.walk())
-  t.same(actual, e)
+  assert.deepEqual(actual, e)
   const d = new Glob('./**', s)
   const dactual = new Set(await d.walk())
-  t.same(dactual, e)
+  assert.deepEqual(dactual, e)
 })
 
-t.test('walkSync', t => {
+test('walkSync', () => {
   const s = new Glob('./**', { cwd })
   const e = new Set(expect)
   const actual = new Set(s.walkSync())
-  t.same(actual, e)
+  assert.deepEqual(actual, e)
   const d = new Glob('./**', s)
   const dactual = new Set(d.walkSync())
-  t.same(dactual, e)
-  t.end()
+  assert.deepEqual(dactual, e)
 })
 
-t.test('for await', async t => {
+test('for await', async () => {
   const s = new Glob('./**', { cwd })
   const e = new Set(expect)
   for await (const c of s) {
-    t.equal(e.has(c), true, JSON.stringify(c))
+    assert.equal(e.has(c), true, JSON.stringify(c))
     e.delete(c)
   }
-  t.equal(e.size, 0, 'saw all entries')
+  assert.equal(e.size, 0, 'saw all entries')
 
   const f = new Set(expect)
   const d = new Glob('./**', s)
   for await (const c of d) {
-    t.equal(f.has(c), true, JSON.stringify(c))
+    assert.equal(f.has(c), true, JSON.stringify(c))
     f.delete(c)
   }
-  t.equal(f.size, 0, 'saw all entries')
+  assert.equal(f.size, 0, 'saw all entries')
 })
 
-t.test('for of', t => {
+test('for of', () => {
   const s = new Glob('./**', { cwd })
   const e = new Set(expect)
   for (const c of s) {
-    t.equal(e.has(c), true, JSON.stringify(c))
+    assert.equal(e.has(c), true, JSON.stringify(c))
     e.delete(c)
   }
-  t.equal(e.size, 0, 'saw all entries')
+  assert.equal(e.size, 0, 'saw all entries')
 
   const f = new Set(expect)
   const d = new Glob('./**', s)
   for (const c of d) {
-    t.equal(f.has(c), true, JSON.stringify(c))
+    assert.equal(f.has(c), true, JSON.stringify(c))
     f.delete(c)
   }
-  t.equal(f.size, 0, 'saw all entries')
-  t.end()
+  assert.equal(f.size, 0, 'saw all entries')
 })
 
-t.test('iterate on main', async t => {
+test('iterate on main', async () => {
   const s = globIterate('./**', { cwd })
   const e = new Set(expect)
   for await (const c of s) {
-    t.equal(e.has(c), true, JSON.stringify(c))
+    assert.equal(e.has(c), true, JSON.stringify(c))
     e.delete(c)
   }
-  t.equal(e.size, 0, 'saw all entries')
+  assert.equal(e.size, 0, 'saw all entries')
 })
 
-t.test('iterateSync on main', t => {
+test('iterateSync on main', () => {
   const s = globIterateSync('./**', { cwd })
   const e = new Set(expect)
   for (const c of s) {
-    t.equal(e.has(c), true, JSON.stringify(c))
+    assert.equal(e.has(c), true, JSON.stringify(c))
     e.delete(c)
   }
-  t.equal(e.size, 0, 'saw all entries')
-  t.end()
+  assert.equal(e.size, 0, 'saw all entries')
 })
 
-t.test('stream on main', t => {
-  let sync: boolean = true
-  const stream = globStream('./**', { cwd })
-  const e = new Set(expect)
-  stream.on('data', c => {
-    t.equal(e.has(c), true, JSON.stringify(c))
-    e.delete(c)
-  })
-  stream.on('end', () => {
-    t.equal(e.size, 0, 'saw all entries')
-    t.equal(sync, false, 'did not finish in one tick')
-    t.end()
-  })
-  sync = false
-})
+test('stream on main', () =>
+  new Promise<void>(done => {
+    let sync: boolean = true
+    const stream = globStream('./**', { cwd })
+    const e = new Set(expect)
+    stream.on('data', c => {
+      assert.equal(e.has(c), true, JSON.stringify(c))
+      e.delete(c)
+    })
+    stream.on('end', () => {
+      assert.equal(e.size, 0, 'saw all entries')
+      assert.equal(sync, false, 'did not finish in one tick')
+      done()
+    })
+    sync = false
+  }))
 
-t.test('streamSync on main', t => {
-  let sync: boolean = true
-  const stream = globStreamSync('./**', { cwd })
-  const e = new Set(expect)
-  stream.on('data', c => {
-    t.equal(e.has(c), true, JSON.stringify(c))
-    e.delete(c)
-  })
-  stream.on('end', () => {
-    t.equal(e.size, 0, 'saw all entries')
-    t.equal(sync, true, 'finished synchronously')
-    t.end()
-  })
-  sync = false
-})
+test('streamSync on main', () =>
+  new Promise<void>(done => {
+    let sync: boolean = true
+    const stream = globStreamSync('./**', { cwd })
+    const e = new Set(expect)
+    stream.on('data', c => {
+      assert.equal(e.has(c), true, JSON.stringify(c))
+      e.delete(c)
+    })
+    stream.on('end', () => {
+      assert.equal(e.size, 0, 'saw all entries')
+      assert.equal(sync, true, 'finished synchronously')
+      done()
+    })
+    sync = false
+  }))
 
-t.test('walk on main', async t => {
+test('walk on main', async () => {
   const s = glob('./**', { cwd })
   const e = new Set(expect)
   const actual = new Set(await s)
-  t.same(actual, e)
+  assert.deepEqual(actual, e)
 })
 
-t.test('walkSync', t => {
+test('globSync', () => {
   const s = globSync('./**', { cwd })
   const e = new Set(expect)
   const actual = new Set(s)
-  t.same(actual, e)
-  t.end()
+  assert.deepEqual(actual, e)
 })
 
-t.test('stream paused while reads are pending', async t => {
+test('stream paused while reads are pending', async () => {
   const mk = (n: number): Record<string, any> =>
     n ? { a: mk(n - 1), b: mk(n - 1), f: '' } : { f: '' }
-  const cwd = t.testdir(mk(5))
+  const cwd = testdir(mk(5))
   const s = globStream('**', { cwd })
   // do not read until the walk has paused on a full buffer
   await new Promise(r => setTimeout(r, 50))
   const found: string[] = []
   for await (const p of s) found.push(p)
-  t.same(new Set(found), new Set(globSync('**', { cwd })))
+  assert.deepEqual(new Set(found), new Set(globSync('**', { cwd })))
 })

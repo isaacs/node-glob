@@ -2,7 +2,8 @@
 // Show that glob ignores results matching pattern on ignore option
 
 import { sep } from 'path'
-import t from 'tap'
+import { assert, cleanup, test } from 'ubqtest'
+import './00-setup.js'
 import { fileURLToPath } from 'url'
 import type { GlobOptions } from '../dist/esm/index.js'
 import { glob } from '../dist/esm/index.js'
@@ -358,28 +359,28 @@ for (const c of cases) {
       ex.filter(e => !/\bsymlink\b/.test(e))
     : ex).sort()
   expect.sort()
-  const opt: GlobOptions =
+  const base: GlobOptions =
     (typeof optCwd === 'string' ? { cwd: optCwd } : optCwd) || {}
   const name = `p=${pattern} i=${JSON.stringify(ignore)} ${JSON.stringify(
-    opt,
+    base,
   )}`
+  const opt: GlobOptions = ignore ? { ...base, ignore } : base
 
-  if (ignore) {
-    opt.ignore = ignore
-  }
-
-  t.test(name, async t => {
+  test(name, async () => {
     const res = await glob(pattern, opt)
-    t.same(res.sort(), expect, 'async')
+    assert.deepEqual(res.sort(), expect, 'async')
     const resSync = glob.globSync(pattern, opt)
-    t.same(resSync.sort(), expect, 'sync')
+    assert.deepEqual(resSync.sort(), expect, 'sync')
   })
 }
 
-t.test('race condition', async t => {
+// these must run at the same time
+test('race condition', async () => {
+  const fixtures = process.cwd()
   process.chdir(__dirname)
+  cleanup(() => process.chdir(fixtures))
   var pattern = 'fixtures/*'
-  t.jobs = 64
+  const runs: Promise<void>[] = []
   for (const dot of [true, false]) {
     for (const ignore of ['fixtures/**', undefined]) {
       for (const cwd of [undefined, process.cwd(), '.']) {
@@ -389,12 +390,23 @@ t.test('race condition', async t => {
         }
         if (cwd) opt.cwd = cwd
         const expect = ignore ? [] : j(['fixtures/a'])
-        t.test(JSON.stringify(opt), async t => {
-          t.plan(2)
-          t.same(glob.globSync(pattern, opt).sort(), expect)
-          t.same((await glob(pattern, opt)).sort(), expect)
-        })
+        const msg = JSON.stringify(opt)
+        runs.push(
+          (async () => {
+            assert.deepEqual(
+              glob.globSync(pattern, opt).sort(),
+              expect,
+              msg,
+            )
+            assert.deepEqual(
+              (await glob(pattern, opt)).sort(),
+              expect,
+              msg,
+            )
+          })(),
+        )
       }
     }
   }
+  await Promise.all(runs)
 })
