@@ -1,13 +1,16 @@
+import { getEventListeners } from 'node:events'
 import * as fs from 'fs'
 import { resolve } from 'path'
 import t from 'tap'
 import { fileURLToPath } from 'url'
 import {
+  Glob,
   glob,
   globStream,
   globStreamSync,
   globSync,
 } from '../dist/esm/index.js'
+import { GlobStream } from '../dist/esm/walker.js'
 
 const mocks = (ac: AbortController) => ({
   fs: {
@@ -136,4 +139,64 @@ t.test('no more reads after abort', async t => {
     })
     s.resume()
   })
+})
+
+t.test('completed array walks do not retain abort listeners', async t => {
+  const ac = new AbortController()
+  const options = { cwd, signal: ac.signal }
+  const expected = globSync('./**', { cwd }).sort()
+  const listener = () => {}
+  ac.signal.addEventListener('abort', listener)
+  for (let i = 0; i < 20; i++) {
+    t.same((await glob('./**', options)).sort(), expected)
+    t.same(globSync('./**', options).sort(), expected)
+    t.same(getEventListeners(ac.signal, 'abort'), [listener])
+  }
+})
+
+t.test('aborted array walks do not retain abort listeners', async t => {
+  const ac = new AbortController()
+  ac.abort(yeet)
+  await t.rejects(glob('./**', { cwd, signal: ac.signal }), yeet)
+  t.throws(() => globSync('./**', { cwd, signal: ac.signal }), yeet)
+  t.same(getEventListeners(ac.signal, 'abort'), [])
+})
+
+t.test('reused Glob does not retain abort listeners', async t => {
+  const ac = new AbortController()
+  const g = new Glob('./**', { cwd, signal: ac.signal })
+  const expected = globSync('./**', { cwd }).sort()
+  for (let i = 0; i < 20; i++) {
+    t.same((await g.walk()).sort(), expected)
+    t.same(g.walkSync().sort(), expected)
+    t.same(getEventListeners(ac.signal, 'abort'), [])
+  }
+})
+
+t.test('empty array walks do not retain abort listeners', async t => {
+  const ac = new AbortController()
+  const options = { cwd, signal: ac.signal }
+  t.same(await glob('no-such-file', options), [])
+  t.same(globSync('no-such-file', options), [])
+  t.same(getEventListeners(ac.signal, 'abort'), [])
+})
+
+t.test('mid-abort array walk does not retain abort listeners', async t => {
+  const ac = new AbortController()
+  const res = glob('./**', { cwd, signal: ac.signal })
+  ac.abort(yeet)
+  await t.rejects(res, yeet)
+  t.same(getEventListeners(ac.signal, 'abort'), [])
+})
+
+t.test('repeated stream pauses share one queue-clearing listener', t => {
+  const ac = new AbortController()
+  const g = new Glob('./**', { cwd, signal: ac.signal })
+  const s = new GlobStream(g.patterns, g.scurry.cwd, g.opts)
+  const listeners = getEventListeners(ac.signal, 'abort').length
+  for (let i = 0; i < 20; i++) s.pause()
+  t.equal(getEventListeners(ac.signal, 'abort').length, listeners + 1)
+  s.results.on('error', () => {})
+  ac.abort(yeet)
+  t.end()
 })

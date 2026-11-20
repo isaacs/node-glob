@@ -98,6 +98,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   paused: boolean = false
   aborted: boolean = false
   #onResume: (() => unknown)[] = []
+  #onAbort?: () => void
   #ignore?: IgnoreLike
   #sep: '\\' | '/'
   signal?: AbortSignal
@@ -126,12 +127,7 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
     /* c8 ignore start */
     this.maxDepth = opts.maxDepth || Infinity
     /* c8 ignore stop */
-    if (opts.signal) {
-      this.signal = opts.signal
-      this.signal.addEventListener('abort', () => {
-        this.#onResume.length = 0
-      })
-    }
+    this.signal = opts.signal
   }
 
   #ignored(path: Path): boolean {
@@ -144,6 +140,13 @@ export abstract class GlobUtil<O extends GlobWalkerOpts = GlobWalkerOpts> {
   // backpressure mechanism
   pause() {
     this.paused = true
+    // Array walkers never pause, so they do not need an abort listener.
+    if (this.signal && !this.#onAbort) {
+      this.#onAbort = () => {
+        this.#onResume.length = 0
+      }
+      this.signal.addEventListener('abort', this.#onAbort, { once: true })
+    }
   }
   resume() {
     /* c8 ignore start */
