@@ -524,4 +524,4 @@ export class GlobStream<
     this.walkCBSync(this.path, this.patterns, () => this.results.end())
     return this.results
   }
-        }
+}
