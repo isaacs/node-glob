@@ -41,6 +41,11 @@ jobs:
         shell: ${{ matrix.platform.shell }}
 
     steps:
+      # coverage of a file merges only if it has the same content
+      - name: Keep LF Line Endings
+        if: matrix.platform.os == 'windows-latest'
+        run: git config --global core.autocrlf false
+
       - name: Checkout Repository
         uses: actions/checkout@v6
 
