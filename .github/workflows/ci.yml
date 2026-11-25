@@ -52,9 +52,42 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # the coverage job checks the merged coverage of all systems
       - name: Run Tests
         run: npm test
+        env:
+          UBQ_COVERAGE_CHECK: 'off'
 
-      - name: Check Coverage (Unix only, Windows skips some tests)
-        if: matrix.platform.os != 'windows-latest'
+      - name: Save Coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: store-${{ matrix.platform.os }}-${{ matrix.platform.shell }}-${{ matrix.node-version }}
+          path: .ubq/runs.db*
+          include-hidden-files: true
+
+  coverage:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Use Nodejs 26.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26.x
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Get Coverage of Each System
+        uses: actions/download-artifact@v8
+        with:
+          pattern: store-*
+          path: stores
+
+      - name: Merge Coverage
+        run: npx ubq merge stores/*
+
+      - name: Check Coverage
         run: npx ubq uncovered

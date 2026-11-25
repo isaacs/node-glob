@@ -95,7 +95,7 @@
     "rimraf": "^6.1.3",
     "tshy": "^4.1.3",
     "typedoc": "^0.28.20",
-    "ubqtest": "^0.0.26"
+    "ubqtest": "^0.0.30"
   },
   "license": "BlueOak-1.0.0",
   "funding": {
@@ -120,6 +120,7 @@
       "test/bash-results.ts",
       "test/fixtures/**",
       "test/native-fs-glob.ts"
-    ]
+    ],
+    "coverage": "full"
   }
 }

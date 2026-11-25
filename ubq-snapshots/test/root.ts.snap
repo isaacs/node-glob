@@ -30,39 +30,39 @@ exports[`set root option > absolute=false > sync 1`] = `
 
 exports[`set root option > absolute=true > async 1`] = `
 [
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/a',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/x/a',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/x/y',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/x/y/r',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/y',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/y/r',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/y',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/y/r',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/y/r'
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/a',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/x/a',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/x/y',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/x/y/r',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/y',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/y/r',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/y',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/y/r',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/y/r'
 ]
 `
 
 exports[`set root option > absolute=true > sync 1`] = `
 [
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/a',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/x/a',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/x/y',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/x/y/r',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/y',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/y/r',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/y',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/y/r',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/y/r'
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/a',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/x/a',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/x/y',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/x/y/r',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/y',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/y/r',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/y',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/y/r',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/y/r'
 ]
 `
 
 exports[`set root option > absolute=undefined > async 1`] = `
 [
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/a',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/x/a',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/x/y',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/y',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/y',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/a',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/x/a',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/x/y',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/y',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/y',
   'x/x/x/y/r',
   'x/x/y/r',
   'x/y/r',
@@ -72,11 +72,11 @@ exports[`set root option > absolute=undefined > async 1`] = `
 
 exports[`set root option > absolute=undefined > sync 1`] = `
 [
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/a',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/x/a',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/x/y',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/x/y',
-  '{CWD}/.ubq/testdir/test/root.ts/_file/x/y',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/a',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/x/a',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/x/y',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/x/y',
+  '{CWD}/.ubq/testdir/test/root.ts/_group-set-root-option/x/y',
   'x/x/x/y/r',
   'x/x/y/r',
   'x/y/r',
